@@ -1,4 +1,7 @@
 #!/bin/sh
+# SPDX-FileCopyrightText: 2026 Carl Allen
+# SPDX-License-Identifier: AGPL-3.0-only
+
 # M0 object-store mini-spike runner: MinIO in Docker, bucket via mc, then
 # the measurement example. Point SPIKE_ENDPOINT etc. at Hetzner Object
 # Storage instead to reproduce the numbers against the real target.

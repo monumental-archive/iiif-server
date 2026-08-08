@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Carl Allen
+// SPDX-License-Identifier: AGPL-3.0-only
+
 //! M0 object-store mini-spike: range-read latency profile against an
 //! S3-compatible endpoint (`MinIO` locally; Hetzner later is an env-var
 //! swap). Produces the metadata-cache sizing numbers for M4.

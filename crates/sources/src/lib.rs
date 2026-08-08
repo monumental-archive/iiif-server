@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Carl Allen
+// SPDX-License-Identifier: AGPL-3.0-only
+
 //! Source backends implementing [`iiif_core::source::ByteRangeSource`].
 //!
 //! M0 ships the local-filesystem backend; `object_store` backends arrive

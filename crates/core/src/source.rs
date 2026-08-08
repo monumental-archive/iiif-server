@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Carl Allen
+// SPDX-License-Identifier: AGPL-3.0-only
+
 //! The source-read seam — a founding interface (see design spec,
 //! Architecture).
 //!

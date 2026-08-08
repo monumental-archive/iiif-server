@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Carl Allen
+// SPDX-License-Identifier: AGPL-3.0-only
+
 //! Typed IIIF Image API 3.0 request grammar.
 //!
 //! Parsing is strict: every accepted string is spec-legal, every value is

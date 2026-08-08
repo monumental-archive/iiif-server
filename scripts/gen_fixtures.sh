@@ -1,4 +1,7 @@
 #!/bin/sh
+# SPDX-FileCopyrightText: 2026 Carl Allen
+# SPDX-License-Identifier: AGPL-3.0-only
+
 # Regenerate the committed test masters in tests/fixtures/.
 #
 # Dev-time fixture generation is exempt from the zero-C doctrine (design

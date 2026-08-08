@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Carl Allen
+// SPDX-License-Identifier: AGPL-3.0-only
+
 //! Request evaluation: a parsed [`ImageRequest`] plus concrete image
 //! dimensions and deployment limits become an executable [`Plan`] — or a
 //! spec-mandated error.

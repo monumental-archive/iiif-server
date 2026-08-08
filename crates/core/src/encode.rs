@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Carl Allen
+// SPDX-License-Identifier: AGPL-3.0-only
+
 //! Output encoders: the complete spec table.
 //!
 //! `jpg`/`png` are the level-2 core; `tif`, `gif`, `jp2` (lossless), `pdf`

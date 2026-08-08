@@ -1,4 +1,7 @@
 #!/bin/sh
+# SPDX-FileCopyrightText: 2026 Carl Allen
+# SPDX-License-Identifier: AGPL-3.0-only
+
 # SPIKE 1 fixtures: JPEG-in-TIFF (ModernJPEG, tag 7) pyramids, including
 # subsampled YCbCr and shared JPEGTables — the M0 de-risking spike for the
 # tiff crate's JPEG delegation to zune-jpeg.

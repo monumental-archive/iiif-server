@@ -1,4 +1,7 @@
 #!/bin/sh
+# SPDX-FileCopyrightText: 2026 Carl Allen
+# SPDX-License-Identifier: AGPL-3.0-only
+
 # Release phase 1, step 1: work out the next version and stage everything the
 # Release PR should contain.
 #

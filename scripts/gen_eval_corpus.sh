@@ -1,4 +1,7 @@
 #!/bin/sh
+# SPDX-FileCopyrightText: 2026 Carl Allen
+# SPDX-License-Identifier: AGPL-3.0-only
+
 # Corpus for the Cantaloupe head-to-head eval (docs/bench/cantaloupe-eval.md).
 #
 # Fully synthetic, mirroring common digitization profiles (issue #1): a

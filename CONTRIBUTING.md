@@ -10,6 +10,14 @@ require agreeing to the [Individual Contributor License Agreement](CLA.md)
 CLA-assistant bot will prompt you on your first pull request; agreement is
 recorded once and covers subsequent contributions.
 
+The repository is [REUSE 3.3](https://reuse.software/spec-3.3/) compliant and CI
+enforces it, so a new Rust or shell file needs the same two-line header every
+other one carries — an `SPDX-FileCopyrightText` line and an
+`SPDX-License-Identifier` line naming AGPL-3.0-only, above the `//!` docs in
+Rust and below the shebang in shell. Copy it from any neighbouring file. Every
+other file type is covered by the blanket entry in `REUSE.toml` and needs
+nothing.
+
 ## Scope
 
 Read [docs/design-spec.md](docs/design-spec.md) first. The feature surface is

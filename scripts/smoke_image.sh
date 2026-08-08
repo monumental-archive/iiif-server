@@ -1,4 +1,7 @@
 #!/bin/sh
+# SPDX-FileCopyrightText: 2026 Carl Allen
+# SPDX-License-Identifier: AGPL-3.0-only
+
 # Prove a built container image actually serves IIIF before it is published.
 #
 # Not a conformance check — scripts/validate.sh runs the official validators,

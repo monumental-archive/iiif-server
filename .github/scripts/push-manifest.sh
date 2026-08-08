@@ -1,4 +1,7 @@
 #!/bin/sh
+# SPDX-FileCopyrightText: 2026 Carl Allen
+# SPDX-License-Identifier: AGPL-3.0-only
+
 # Assemble the per-architecture digests into one multi-architecture manifest
 # and apply the tag ladder, then emit the manifest digest.
 #

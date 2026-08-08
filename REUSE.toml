@@ -1,0 +1,34 @@
+# REUSE Specification 3.3 (reuse.software/spec-3.3) licensing metadata.
+#
+# Every Covered File needs a copyright notice and an SPDX licence identifier.
+# Source files carry theirs in a two-line comment header; everything else —
+# config, docs, lockfiles, committed fixtures — is covered by the blanket
+# entry below, because those formats either cannot hold a comment (JSON, the
+# binary fixtures) or would be made worse by one.
+#
+# Not Covered Files, and so deliberately absent: LICENSES/, the root LICENSE,
+# .git/, anything gitignored (the generated fixture masters under
+# tests/fixtures/generated/ among them), and this file.
+#
+# The licence text lives in LICENSES/AGPL-3.0-only.txt, which is a byte-exact
+# copy of the root LICENSE. Both are kept: LICENSES/ is what REUSE tooling
+# reads, the root LICENSE is what GitHub and OpenSSF Scorecard read. No
+# contact address on SPDX-PackageSupplier — the project publishes none, and
+# SECURITY.md routes reports through GitHub's advisory form instead.
+#
+# `reuse lint` runs as its own CI job (ci.yml), not from the local lint set:
+# the fsfe action is one docker pull with no toolchain to pin, which is the
+# house canon (renovate-config templates/badges/README.md).
+version = 1
+SPDX-PackageName = "iiif-server"
+SPDX-PackageSupplier = "Carl Allen"
+SPDX-PackageDownloadLocation = "https://github.com/CarlAllenn/iiif-server"
+
+# precedence = "closest" is the spec default, stated explicitly because it is
+# the point of this entry: a file's own header always wins, and this blanket
+# applies only where there is none.
+[[annotations]]
+path = "**"
+precedence = "closest"
+SPDX-FileCopyrightText = "2026 Carl Allen"
+SPDX-License-Identifier = "AGPL-3.0-only"

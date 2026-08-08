@@ -1,4 +1,7 @@
 #!/bin/sh
+# SPDX-FileCopyrightText: 2026 Carl Allen
+# SPDX-License-Identifier: AGPL-3.0-only
+
 # Run the official IIIF validator against the Cantaloupe eval image, for
 # the side-by-side compliance table in docs/bench/cantaloupe-eval.md.
 #

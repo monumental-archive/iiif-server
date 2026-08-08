@@ -1,4 +1,7 @@
 #!/bin/sh
+# SPDX-FileCopyrightText: 2026 Carl Allen
+# SPDX-License-Identifier: AGPL-3.0-only
+
 # Release phase 1, step 2: the Release PR has been merged, so tag it and cut
 # the draft release. Publishes nothing — pushing the tag is what starts
 # phase 2 (publish.yml), which builds, signs and fills the draft.

@@ -1,4 +1,7 @@
 #!/bin/sh
+# SPDX-FileCopyrightText: 2026 Carl Allen
+# SPDX-License-Identifier: AGPL-3.0-only
+
 # Build a native macOS binary for the release. The Linux binaries come out of
 # the container image instead (see extract-binary.sh).
 #

@@ -1,4 +1,7 @@
 #!/bin/sh
+# SPDX-FileCopyrightText: 2026 Carl Allen
+# SPDX-License-Identifier: AGPL-3.0-only
+
 # Verify the published image the way a stranger would, and specifically that
 # the signature and provenance name THIS TAG.
 #

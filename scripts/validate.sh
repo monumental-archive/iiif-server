@@ -1,4 +1,7 @@
 #!/bin/sh
+# SPDX-FileCopyrightText: 2026 Carl Allen
+# SPDX-License-Identifier: AGPL-3.0-only
+
 # Run the official IIIF validator against a locally built server.
 #
 # The validator is pinned from the IIIF/image-validator git repo (the PyPI

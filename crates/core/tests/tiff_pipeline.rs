@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Carl Allen
+// SPDX-License-Identifier: AGPL-3.0-only
+
 //! End-to-end pixel path against the committed deterministic fixture:
 //! open a pyramidal TIFF, derive info.json from its real structure,
 //! decode a region, resize, transform, encode — and verify actual pixel

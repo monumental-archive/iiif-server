@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Carl Allen
+// SPDX-License-Identifier: AGPL-3.0-only
+
 //! Plain JPEG and PNG masters: decoded whole (they have no pyramid or tiles to
 //! exploit), served by cropping the resident raster.
 //!
