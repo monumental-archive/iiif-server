@@ -18,7 +18,7 @@ Do not add features; correctness, security, docs, and test coverage are the welc
 Tooling is pinned with mise: `mise install` (also installs git hooks via lefthook). All workflows go
 through go-task:
 
-- `task ci` — the local gate (lint + test); matches GitHub except for the one CI-only job below
+- `task ci` — everything CI runs (lint + test), identical locally and on GitHub
 - `task test` — full test suite (`cargo test --workspace --all-features`)
 - `cargo test -p iiif-core --test <name> <filter>` — a single test/integration file
 - `task lint` — every linter; `task lint:rust` for just rustfmt-check + clippy
@@ -31,10 +31,10 @@ through go-task:
 Lint/test tasks are checksum-fingerprinted; unchanged inputs skip. `task --force` overrides.
 Security gates (`lint:deny`, `scan:image`) are deliberately never fingerprinted.
 
-REUSE compliance is the one gate `task ci` does not carry: it runs in CI only, as the `fsfe`
-action's container. The alternatives were measured and are worse — mise's pipx backend silently
-drops the `[charset-normalizer]` extra `reuse` needs, leaving an install that depends on libmagic,
-a system C library. To check it locally, run it the way the verification did:
+REUSE compliance runs as its own CI job — the `fsfe` action's container — with no `task` target,
+as do the MSRV, coverage and rustdoc jobs. Pinning `reuse` in mise instead was measured and
+rejected: the pipx backend silently drops the `[charset-normalizer]` extra it needs, leaving an
+install that depends on libmagic, a system C library. Check it locally with
 `uv tool run --from 'reuse[charset-normalizer]' reuse lint`.
 
 ## Ground rules
