@@ -67,5 +67,13 @@ cosign verify ghcr.io/carlallenn/iiif-server@sha256:… \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
 
+**cosign 3.0 or newer is required.** From v0.2.0 on, signatures are produced in
+the standardised Sigstore bundle format and stored as an OCI 1.1 referring
+artifact rather than as a legacy `sha256-<digest>.sig` tag. We publish that
+format only — no legacy fallback — so there is one verification path rather
+than a matrix of "which flag do I need". cosign 3.x auto-detects both formats,
+so the command above also verifies the older v0.1.0 signature unchanged.
+`gh attestation verify` is unaffected and has no minimum version.
+
 A signature nobody checks does no work — if you deploy this, wire one of those
 into your pipeline.
