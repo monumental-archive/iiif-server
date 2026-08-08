@@ -268,6 +268,38 @@ no reading of the workflow could have predicted — Docker Hub's CloudFront blob
 host, npm reached through mise's hierarchical config, the attestation bundle
 host, and mise's own version index. Each discovery cost a full release cycle.
 
+**That exception is now closed.** Every Linux job in `ci.yml`, `release.yml`
+and `publish.yml` is back on `block`, with lists derived from the runs that
+actually happened rather than from reading — the v0.1.0 publish and tag runs
+for the release path, and eight `ci.yml` runs for the gates. What the audit
+produced that no reading would have: `cafe.github.com`, resolved by `gh`
+during the GraphQL `createCommitOnBranch` call that makes the Release PR's
+commit; `check.trivy.dev`, trivy's own version check, distinct from the
+database hosts; and `*.blob.storage.azure.net`, the arm runner's OS disk.
+
+Two things did not move, and both are recorded at the jobs themselves:
+
+- **The macOS jobs stay on `audit`** — `ci.yml`'s test job and `publish.yml`'s
+  darwin binary matrix. harden-runner is monitor-only on macOS runners, so
+  `block` would assert enforcement that does not occur. The audit data shows
+  the second reason: those runners resolve Apple's update, safebrowsing and
+  distribution hosts throughout a run, none of it the job's own traffic.
+- **Three GitHub infrastructure families are wildcarded, not pinned.** The
+  host index rotates between runs — `run-actions-N-azure-REGION` was observed
+  as 1, 2 and 3 in three different jobs, and `productionresultssaNN` from 0 to
+  19 — so a literal entry is a latent failure rather than a tighter policy.
+  The block-mode verification settled it: harden-runner injected
+  `productionresultssa9` into the policy and the same run then resolved
+  `productionresultssa10`.
+
+One correction for whoever derives the next one. The extraction command
+recorded in issue #69 matches nothing against harden-runner v2.20.1, so a job
+that made hundreds of requests looks identical to one that made none. The
+agent changed format: today the resolutions are `[dns-request] ... domain=`
+lines, and the old `domain resolved:` form only appears in logs from the
+v0.1.0 era. Keep `exe=` in the match — attributing each domain to the process
+that resolved it is what separates the job's traffic from the runner's.
+
 What this does and does not weaken: egress policy protects the *build* from a
 compromised dependency exfiltrating or calling home. It has no bearing on
 artifact integrity or the signature chain — v0.1.0 is still built from a
@@ -276,17 +308,13 @@ re-verified, validated by the official validators, signed by cosign with the
 workflow's own identity at the tag, attested, and that attestation checked as
 a stranger would check it.
 
-The follow-up restores `block` on all fourteen jobs using the endpoints that
-run actually observed, and that gets verified by the next release. After
-that, the only legitimate way to change an allowlist is another audit run.
+`ci.yml` and `release.yml` verify themselves on every push. `publish.yml`
+runs only on a tag, so its restored policy is verified by the next release —
+not by a delete-and-retry cycle. After that, the only legitimate way to
+change an allowlist is another audit run.
 
 ## Known gaps
 
-- **`release.yml`'s allowlist is still derived by construction.**
-  `publish.yml`'s is now audit-derived, from v0.1.0's first successful
-  publish; two of its endpoints — `uploads.github.com` and
-  `tuf-repo.github.com` — could not have been produced by reading. Do the
-  same for `release.yml` when it next runs under audit.
 - **Reproducible image builds are not yet asserted.** The inputs are pinned
   (base images by digest, dependencies by lockfile, `--locked`), but nothing
   proves two builds of a tag produce the same digest.
