@@ -139,4 +139,22 @@ path semantics; Windows adds backslash separators, reserved device names and
 drive-relative paths, which will be tested before anything is published for it
 ([#44](https://github.com/CarlAllenn/iiif-server/issues/44)).
 
-Licensed [AGPL-3.0-only](LICENSE).
+## Licensing
+
+Licensed [AGPL-3.0-only](LICENSE). Running it — including as a public
+service, at any scale — obliges you to publish nothing. The network clause
+applies only if you *modify* the server and offer your modified version
+over a network, and then only to the users of that service.
+
+It does not reach your viewer, manifests or discovery layer: those talk to
+this server over HTTP as separate processes, so they keep whatever licences
+they already have, proprietary included. That is the question most AGPL
+hesitancy turns out to be about.
+
+Alternative terms, including commercial, are available — external
+contributions carry a [CLA](CLA.md) whose relicensing grant exists for
+exactly that, and which also commits that the project always remains
+available under its open-source licence. Open an issue to ask.
+
+The full FAQ, including why AGPL rather than a permissive licence, is
+[docs/licensing.md](docs/licensing.md).

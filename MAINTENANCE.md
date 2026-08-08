@@ -63,6 +63,19 @@ days** and released as signed patch releases. The visible heartbeat —
 merged Renovate PRs, signed patch releases, green scheduled CI — is what
 tells adoption committees the stillness is intentional.
 
+## Licensing
+
+AGPL-3.0-only, and permanently available as such: the [CLA](CLA.md)'s
+relicensing grant lets the maintainer offer additional terms, and the same
+clause commits that "the Project itself will always remain available under
+its open-source license". Alternative terms are offered alongside the AGPL,
+never in place of it.
+
+The three questions an adoption committee asks — does running it oblige us
+to publish anything, does it reach our viewer, can we get other terms — are
+answered at [docs/licensing.md](docs/licensing.md). The short answers are
+no, no, and yes.
+
 ## Pre-refusals
 
 Written down now so future refusals are quotes, not debates:
