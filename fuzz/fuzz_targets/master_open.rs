@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Carl Allen
+// SPDX-License-Identifier: AGPL-3.0-only
+
 //! Every decoder boundary: hostile bytes may be rejected, never panic.
 //! Successful opens additionally serve one bounded crop through the full
 //! pipeline (decode → resize → encode).

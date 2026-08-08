@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Carl Allen
+// SPDX-License-Identifier: AGPL-3.0-only
+
 //! M0 allocator bench: the concurrent decode→resize→encode workload that
 //! musl's malloc is known to serialize on. Built twice — default allocator
 //! and `--features mimalloc` — inside a musl container by

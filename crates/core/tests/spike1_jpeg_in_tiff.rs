@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Carl Allen
+// SPDX-License-Identifier: AGPL-3.0-only
+
 //! SPIKE 1 (M0): JPEG-in-TIFF pyramid correctness, especially subsampled
 //! YCbCr, against libvips/libjpeg golden decodes of the same files.
 //!

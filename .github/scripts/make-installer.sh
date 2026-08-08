@@ -1,4 +1,7 @@
 #!/bin/sh
+# SPDX-FileCopyrightText: 2026 Carl Allen
+# SPDX-License-Identifier: AGPL-3.0-only
+
 # Generate the `curl | sh` installer for this release and write it to
 # dist/install.sh, with the version and every checksum baked in.
 #

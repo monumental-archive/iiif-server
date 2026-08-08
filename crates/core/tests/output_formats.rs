@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Carl Allen
+// SPDX-License-Identifier: AGPL-3.0-only
+
 //! The complete output-format table: every spec format encodes, and the
 //! decodable ones round-trip with correct pixels against the committed
 //! deterministic fixture.

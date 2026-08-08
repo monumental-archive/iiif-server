@@ -1,4 +1,7 @@
 #!/bin/sh
+# SPDX-FileCopyrightText: 2026 Carl Allen
+# SPDX-License-Identifier: AGPL-3.0-only
+
 # SPIKE 2 fixtures: pyramidal JP2 masters + OpenJPEG golden decodes.
 #
 # Produces, under tests/fixtures/generated/:

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Carl Allen
+// SPDX-License-Identifier: AGPL-3.0-only
+
 //! Identifier decoding is a named security component: never panics, and
 //! nothing that decodes successfully contains a traversal shape.
 #![no_main]

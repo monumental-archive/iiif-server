@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Carl Allen
+// SPDX-License-Identifier: AGPL-3.0-only
+
 //! Hand-rolled Prometheus text exposition — the fixed, frozen metric set from
 //! the design spec: request counts, latency histogram, worker-queue depth, 503
 //! count, plus build info.

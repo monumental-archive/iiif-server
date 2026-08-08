@@ -1,4 +1,7 @@
 #!/bin/sh
+# SPDX-FileCopyrightText: 2026 Carl Allen
+# SPDX-License-Identifier: AGPL-3.0-only
+
 # M2 benchmark gate: our tile-serving latency vs a libvips reference on
 # the same masters and the same requests.
 #

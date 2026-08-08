@@ -1,4 +1,7 @@
 #!/bin/sh
+# SPDX-FileCopyrightText: 2026 Carl Allen
+# SPDX-License-Identifier: AGPL-3.0-only
+
 # Attach every asset to the draft release, then publish it — in that order,
 # and only after the image has been proven and verified.
 #

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Carl Allen
+// SPDX-License-Identifier: AGPL-3.0-only
+
 //! JP2 / HTJ2K masters via the pure-Rust `j2k` crate — the capability no
 //! `OpenJPEG`-based incumbent has, validated bit-exact against `OpenJPEG` by
 //! SPIKE 2.

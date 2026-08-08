@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Carl Allen
+// SPDX-License-Identifier: AGPL-3.0-only
+
 //! Codec layer: turns master files into [`Raster`] regions, behind the
 //! [`Master`] trait (the codec seam the design spec requires — Plan B for
 //! any one format is a contained swap).

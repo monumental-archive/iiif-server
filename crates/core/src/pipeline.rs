@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Carl Allen
+// SPDX-License-Identifier: AGPL-3.0-only
+
 //! Plan execution: level selection → region decode → resample → quality →
 //! mirror/rotate → encode. Pure compute; the caller owns threading and
 //! backpressure.

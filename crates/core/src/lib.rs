@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Carl Allen
+// SPDX-License-Identifier: AGPL-3.0-only
+
 //! Pure library for the IIIF Image API engine: URL grammar, identifier
 //! rules, the byte-range source seam, info.json, and the image pipeline.
 //!

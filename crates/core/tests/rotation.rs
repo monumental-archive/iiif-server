@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Carl Allen
+// SPDX-License-Identifier: AGPL-3.0-only
+
 //! Arbitrary rotation semantics: canvas growth, transparent corners for
 //! PNG, white corners for JPEG, and interior pixel preservation.
 

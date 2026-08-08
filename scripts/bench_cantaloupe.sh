@@ -1,4 +1,7 @@
 #!/bin/sh
+# SPDX-FileCopyrightText: 2026 Carl Allen
+# SPDX-License-Identifier: AGPL-3.0-only
+
 # Head-to-head latency: iiif-server vs Cantaloupe (docs/bench/cantaloupe-eval.md).
 #
 # Both servers are measured as full HTTP round trips in release/production

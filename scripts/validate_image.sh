@@ -1,4 +1,7 @@
 #!/bin/sh
+# SPDX-FileCopyrightText: 2026 Carl Allen
+# SPDX-License-Identifier: AGPL-3.0-only
+
 # Run the official IIIF validators against a container image.
 #
 # The point of the indirection: scripts/validate.sh normally builds a host

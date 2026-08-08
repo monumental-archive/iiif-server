@@ -2,6 +2,7 @@
   "Exclude": [
     "^\\.claude/",
     "^LICENSE$",
+    "^LICENSES/",
     "^tests/fixtures/",
     "^mise\\.lock$"
   ]

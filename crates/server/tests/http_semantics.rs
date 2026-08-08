@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Carl Allen
+// SPDX-License-Identifier: AGPL-3.0-only
+
 //! HTTP-layer conformance semantics, tested against the real handler with
 //! the committed fixture — no sockets, exact header assertions.
 

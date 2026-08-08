@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Carl Allen
+// SPDX-License-Identifier: AGPL-3.0-only
+
 //! The in-memory raster model and the pure-compute transforms.
 //!
 //! M0 ships 8-bit gray and RGB; the M2 source-format matrix widens input

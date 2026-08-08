@@ -1,4 +1,7 @@
 #!/bin/sh
+# SPDX-FileCopyrightText: 2026 Carl Allen
+# SPDX-License-Identifier: AGPL-3.0-only
+
 # M0 allocator bench: musl-native malloc vs mimalloc under concurrent
 # decode, inside a musl Linux container (the shipping environment).
 # Requires: Docker, and the spike1 fixture (scripts/gen_spike1.sh).

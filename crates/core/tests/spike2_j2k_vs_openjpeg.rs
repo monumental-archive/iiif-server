@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Carl Allen
+// SPDX-License-Identifier: AGPL-3.0-only
+
 //! SPIKE 2 (M0): `j2k` correctness and region-at-scale performance against
 //! `OpenJPEG` goldens, on a large tiled pyramidal JP2.
 //!

@@ -1,4 +1,7 @@
 #!/bin/sh
+# SPDX-FileCopyrightText: 2026 Carl Allen
+# SPDX-License-Identifier: AGPL-3.0-only
+
 # End-to-end object-store serving: MinIO in Docker, fixtures uploaded via
 # mc, the real server pointed at s3://…, and pixel-bearing requests
 # verified over HTTP. Point the env at Hetzner Object Storage to run the

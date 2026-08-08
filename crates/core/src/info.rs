@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Carl Allen
+// SPDX-License-Identifier: AGPL-3.0-only
+
 //! The Image Information document (info.json), Image API 3.0 §5.
 //!
 //! Capability is baked in, not toggled: the only inputs here are the image

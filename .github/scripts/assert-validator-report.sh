@@ -1,4 +1,7 @@
 #!/bin/sh
+# SPDX-FileCopyrightText: 2026 Carl Allen
+# SPDX-License-Identifier: AGPL-3.0-only
+
 # The validator report is attached to the release as conformance evidence, so
 # it has to actually be evidence.
 #

@@ -1,4 +1,7 @@
 #!/bin/sh
+# SPDX-FileCopyrightText: 2026 Carl Allen
+# SPDX-License-Identifier: AGPL-3.0-only
+
 # Refuse to publish from anything that is not a version tag, and refuse to
 # publish a tag that disagrees with the manifest.
 #

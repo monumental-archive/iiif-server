@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Carl Allen
+// SPDX-License-Identifier: AGPL-3.0-only
+
 //! Image API 2.1 translation layer.
 //!
 //! The full 18-feature v2.1 endpoint
