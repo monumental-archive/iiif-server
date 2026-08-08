@@ -18,10 +18,7 @@ vars:
 
 tasks:
   ci:
-    # REUSE compliance is the one CI job this does not carry — it runs as the
-    # fsfe action's container, with no sound way to pin the same tool locally
-    # (CLAUDE.md records the measurement). Everything else is identical.
-    desc: The local gate (lint + test) — matches GitHub bar the CI-only REUSE job
+    desc: Everything CI runs — the full gate, identical locally and on GitHub
     deps: [lint, test]
 
   test:
