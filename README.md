@@ -5,6 +5,7 @@
 [![release](https://img.shields.io/github/v/release/CarlAllenn/iiif-server)](https://github.com/CarlAllenn/iiif-server/releases/latest)
 [![IIIF 3.0 level 2](https://img.shields.io/badge/IIIF%203.0%20level%202-33%2F33-blue)](https://github.com/CarlAllenn/iiif-server/releases/latest/download/validator-report.txt)
 [![IIIF 2.1](https://img.shields.io/badge/IIIF%202.1-30%2F30-blue)](https://github.com/CarlAllenn/iiif-server/releases/latest/download/validator-report.txt)
+[![REUSE status](https://api.reuse.software/badge/github.com/CarlAllenn/iiif-server)](https://api.reuse.software/info/github.com/CarlAllenn/iiif-server)
 [![license](https://img.shields.io/badge/license-AGPL--3.0--only-blue.svg)](LICENSE)
 
 A complete, correct, boring implementation of the [IIIF Image
