@@ -61,7 +61,7 @@ jobs:
       # (issue #6 canon). Derived by construction rather than from an audit
       # run — replace with audit-derived endpoints after the first live
       # release, per templates/ci/README.md.
-      - uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
+      - uses: step-security/harden-runner@b09bb98e06d4d774595224525879c09bc6e98c40 # v2.20.1
         with:
           egress-policy: audit
           disable-sudo: true
@@ -81,10 +81,10 @@ jobs:
           # The tag is pushed with the PAT below, so the checkout credential
           # is neither needed nor wanted.
           persist-credentials: false
-      - uses: jdx/mise-action@9e7f7633ff6f6d6048a9418a68d48f288f50eb14 # v4.2.3
+      - uses: jdx/mise-action@7e36c90d9ab29c415a2384db3006f3ec8a8cc654 # v4.2.4
         with:
           # renovate: datasource=github-releases depName=jdx/mise
-          version: 2026.7.12
+          version: 2026.7.18
           # Single-purpose job: install only its own tools (canon rule,
           # templates/ci/README.md).
           install_args: taplo aqua:orhun/git-cliff
@@ -114,7 +114,7 @@ jobs:
       contents: write # push the release branch
       pull-requests: write # open/update the Release PR
     steps:
-      - uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
+      - uses: step-security/harden-runner@b09bb98e06d4d774595224525879c09bc6e98c40 # v2.20.1
         with:
           egress-policy: audit
           disable-sudo: true
@@ -135,10 +135,10 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: jdx/mise-action@9e7f7633ff6f6d6048a9418a68d48f288f50eb14 # v4.2.3
+      - uses: jdx/mise-action@7e36c90d9ab29c415a2384db3006f3ec8a8cc654 # v4.2.4
         with:
           # renovate: datasource=github-releases depName=jdx/mise
-          version: 2026.7.12
+          version: 2026.7.18
           install_args: rust taplo aqua:orhun/git-cliff
       - name: Prepare the release
         id: prepare

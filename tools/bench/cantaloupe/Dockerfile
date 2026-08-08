@@ -25,7 +25,7 @@ RUN wget -q -O /tmp/src.tar.gz \
     && mkdir /src \
     && tar xzf /tmp/src.tar.gz -C /src --strip-components=1
 
-FROM maven:3-eclipse-temurin-21@sha256:2b4496088e7b80ae10a8c9f74e574ea21380325a006ec684532ad6bad5bc7273 AS build
+FROM maven:3-eclipse-temurin-21@sha256:c07f7ccfb8ca6c9fa29ee523f00afa7d2ca6132c92f8652c4aebb5ee3491f502 AS build
 
 # Security backports upstream hasn't merged yet (see #962). bouncycastle is
 # shaded inside jruby-complete — unreachable by dependencyManagement — so its
@@ -65,7 +65,12 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends libopenjp2-tools \
     && rm -rf /var/lib/apt/lists/*
 
-RUN useradd -r -s /usr/sbin/nologin cantaloupe \
+# Fixed numeric ids, not just a name: the runtime resolves USER against the
+# image's /etc/passwd, but a host reading the bind-mounted /imageroot sees only
+# the raw uid. Pinning it keeps ownership legible from outside the container
+# (and satisfies hadolint DL3066, which is why the ids are spelled out twice).
+RUN groupadd -r -g 10001 cantaloupe \
+    && useradd -r -u 10001 -g 10001 -s /usr/sbin/nologin cantaloupe \
     && mkdir -p /imageroot /var/cache/cantaloupe /opt/cantaloupe \
     && chown cantaloupe:cantaloupe /imageroot /var/cache/cantaloupe
 
@@ -77,7 +82,7 @@ COPY --from=build /cantaloupe.jar /opt/cantaloupe/cantaloupe.jar
 # eval-cache-{on,off}.properties over this per pass.
 COPY eval-cache-off.properties /opt/cantaloupe/cantaloupe.properties
 
-USER cantaloupe
+USER 10001:10001
 
 EXPOSE 8182
 
