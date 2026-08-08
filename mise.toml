@@ -64,7 +64,16 @@ uv = "0.12.1"
 # libFuzzer driver (fuzz.yml); runs cargo +nightly itself
 "cargo:cargo-fuzz" = "0.13.2"
 # bench-harness Dockerfile (issue #8: every format linted)
-hadolint = "2.15.1"
+#
+# Held at 2.14.0 deliberately. `mise lock` on macOS records
+# provenance = "github-attestations" for 2.15.x, but no attestation exists for
+# any of the three published assets (GitHub's attestations API 404s on all
+# three digests), so install-time verification on Linux finds nothing and
+# locked_verify_provenance correctly refuses the install — CI fails closed.
+# The alternatives are all worse than waiting: weakening the setting, or
+# committing a lockfile that claims provenance we cannot verify. Revisit when
+# hadolint publishes attestations or mise stops inferring them at lock time.
+hadolint = "2.14.0"
 # per-PR coverage visibility (no threshold gate)
 "aqua:taiki-e/cargo-llvm-cov" = "0.8.7"
 shellcheck = "0.11.0"

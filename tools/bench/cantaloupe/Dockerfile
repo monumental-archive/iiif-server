@@ -67,8 +67,8 @@ RUN apt-get update \
 
 # Fixed numeric ids, not just a name: the runtime resolves USER against the
 # image's /etc/passwd, but a host reading the bind-mounted /imageroot sees only
-# the raw uid. Pinning it keeps ownership legible from outside the container
-# (and satisfies hadolint DL3066, which is why the ids are spelled out twice).
+# the raw uid. Pinning it keeps ownership legible from outside the container,
+# and is what hadolint's DL3066 asks for once that pin moves past 2.14.0.
 RUN groupadd -r -g 10001 cantaloupe \
     && useradd -r -u 10001 -g 10001 -s /usr/sbin/nologin cantaloupe \
     && mkdir -p /imageroot /var/cache/cantaloupe /opt/cantaloupe \
