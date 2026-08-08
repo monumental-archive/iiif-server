@@ -1,6 +1,12 @@
 # iiif-server (working name)
 
 [![ci](https://github.com/CarlAllenn/iiif-server/actions/workflows/ci.yml/badge.svg)](https://github.com/CarlAllenn/iiif-server/actions/workflows/ci.yml)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/CarlAllenn/iiif-server/badge)](https://scorecard.dev/viewer/?uri=github.com/CarlAllenn/iiif-server)
+[![release](https://img.shields.io/github/v/release/CarlAllenn/iiif-server)](https://github.com/CarlAllenn/iiif-server/releases/latest)
+[![IIIF 3.0 level 2](https://img.shields.io/badge/IIIF%203.0%20level%202-33%2F33-blue)](https://github.com/CarlAllenn/iiif-server/releases/latest/download/validator-report.txt)
+[![IIIF 2.1](https://img.shields.io/badge/IIIF%202.1-30%2F30-blue)](https://github.com/CarlAllenn/iiif-server/releases/latest/download/validator-report.txt)
+[![REUSE status](https://api.reuse.software/badge/github.com/CarlAllenn/iiif-server)](https://api.reuse.software/info/github.com/CarlAllenn/iiif-server)
+[![license](https://img.shields.io/badge/license-AGPL--3.0--only-blue.svg)](LICENSE)
 
 A complete, correct, boring implementation of the [IIIF Image
 API](https://iiif.io/api/image/3.0/) — **3.0 and 2.1, level 2 plus the
