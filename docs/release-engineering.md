@@ -280,7 +280,7 @@ The follow-up restores `block` on all fourteen jobs using the endpoints that
 run actually observed, and that gets verified by the next release. After
 that, the only legitimate way to change an allowlist is another audit run.
 
-## Known gaps## Known gaps## Known gaps
+## Known gaps
 
 - **`release.yml`'s allowlist is still derived by construction.**
   `publish.yml`'s is now audit-derived, from v0.1.0's first successful
