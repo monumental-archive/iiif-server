@@ -100,6 +100,14 @@ licensed (enforced by `cargo deny`). See
 [CLA](CLA.md)) and [docs/design-spec.md](docs/design-spec.md) — the
 founding document this build follows.
 
+Also: [GOVERNANCE.md](GOVERNANCE.md) (how decisions get made, and what
+happens if the maintainer disappears),
+[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md),
+[docs/roadmap.md](docs/roadmap.md) (what this will and will not do), and
+[docs/assurance-case.md](docs/assurance-case.md) — the threat model, trust
+boundaries and the argument that the security requirements in
+[SECURITY.md](SECURITY.md) actually hold.
+
 Deployment recipes (CDN caching, forward-auth, systemd):
 [docs/deployment.md](docs/deployment.md).
 
