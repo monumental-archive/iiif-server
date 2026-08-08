@@ -4,8 +4,8 @@
 # scanners. These jobs are the never-fingerprint class — their inputs
 # (the GitHub API's advisory/repo state, the public internet) change
 # without commits — so they run on a weekly cron and never gate pushes.
-# The deterministic siblings live in ci.yml. Decision records:
-# README.md in this directory.
+# The deterministic siblings live in ci.yml. Each job's rationale is the
+# comment above it and the issue that comment cites.
 name: scheduled
 
 "on":
