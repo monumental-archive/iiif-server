@@ -1,0 +1,88 @@
+---
+# CodeQL static analysis (SAST). Canon: renovate-config
+# templates/badges/codeql.yml — keep the shape, adapt only the language
+# matrix.
+#
+# This exists because OpenSSF Scorecard's SAST check detects CodeQL,
+# SonarCloud or LGTM and nothing else. The lint set this repo already
+# enforces — clippy at all/pedantic/nursery/cargo with zero allow
+# attributes, zizmor at pedantic, cargo-deny — scores zero there, because
+# Scorecard cannot see any of it. That is a limitation of the scanner, not
+# a judgement about the lints: CodeQL is additive here, not a replacement
+# for the gates in ci.yml.
+#
+# Rust runs with build-mode: none — CodeQL extracts from source without
+# invoking cargo, so this job installs no toolchain and the workspace's
+# feature-exclusive crates pose no build problem. The `actions` language
+# scans the workflows in this directory.
+#
+# Only rust and actions are in the matrix because that is what the
+# repository contains: 33 .rs files and 8 workflows. The 24 shell scripts
+# are not a CodeQL language and are covered by shellcheck in ci.yml.
+#
+# Gates pull requests alongside ci.yml, and runs weekly so advisory-driven
+# query-pack updates re-scan an unchanged main — the same never-fingerprint
+# rationale as scheduled.yml.
+name: codeql
+
+"on":
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # One hour after scheduled.yml (07:00), two after ci.yml's weekly gate
+    # (06:00), so the runs don't contend and a shared-cause failure is
+    # distinguishable by timing.
+    - cron: 0 8 * * 1
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  analyze:
+    name: analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # checkout
+      security-events: write # upload SARIF to code scanning
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: rust
+            build-mode: none
+          - language: actions
+            build-mode: none
+    steps:
+      # Audit, not block, and deliberately so on a NEW job: the CodeQL
+      # bundle and query packs download from a wide, version-varying set of
+      # hosts, and this repo's rule (issue #69) is that allowlists are
+      # derived from an audit run rather than guessed at from reading the
+      # workflow. Every hand-written allowlist here that was reasoned into
+      # existence broke on an endpoint nobody predicted. This job joins the
+      # same derivation: read the observed list off live runs, unfiltered,
+      # then switch to block. Nothing secret-bearing runs in it beyond the
+      # scoped SARIF upload token.
+      - uses: step-security/harden-runner@b09bb98e06d4d774595224525879c09bc6e98c40 # v2.20.1
+        with:
+          egress-policy: audit
+          disable-sudo: true
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - uses: github/codeql-action/init@5595ccaf912efad79be6eef63a5619ff05969be3 # v4.37.6
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+
+      - uses: github/codeql-action/analyze@5595ccaf912efad79be6eef63a5619ff05969be3 # v4.37.6
+        with:
+          category: /language:${{ matrix.language }}
