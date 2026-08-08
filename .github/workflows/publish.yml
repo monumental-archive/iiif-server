@@ -1,15 +1,19 @@
 ---
-# TEMPORARY — EGRESS IS IN AUDIT MODE ACROSS EVERY JOB IN THIS FILE.
+# Every allowlist in this file is audit-derived (issue #69), read off the
+# runs that actually happened rather than written by construction. The
+# construction-written versions broke four separate release attempts, each on
+# an endpoint no reading of the workflow would produce — Docker Hub's
+# CloudFront blob host, npm reached through mise's hierarchical config, the
+# attestation bundle host, mise's own version index. Do not prune an entry
+# because it looks unnecessary; re-derive it from an audit run or leave it.
 #
-# The allowlists here were written by construction and have broken four
-# separate runs, each time on an endpoint that reading the workflow could not
-# have predicted (Docker Hub's CloudFront blob host, npm via mise's
-# hierarchical config, the attestation bundle host, mise's version index).
-# Fixing them one discovery at a time costs a release cycle each.
-#
-# This run derives the real list for EVERY job at once. The follow-up restores
-# `block` everywhere with observed endpoints, and after that the only way to
-# change an allowlist is another audit run — not judgement.
+# Three GitHub infrastructure families are wildcarded rather than pinned,
+# because the host index or region rotates between runs and a literal entry
+# is a latent failure rather than a tighter policy:
+# *.actions.githubusercontent.com (run-actions-N-azure-REGION, broker,
+# results-receiver), *.blob.core.windows.net (productionresultssaNN, NN
+# observed 0-19), and *.githubapp.com (the hosted-compute watchdog and
+# orchestrator, which fuzz.yml records reaping runners when blocked).
 name: publish
 
 # Phase 2 of two, triggered by the tag phase 1 pushes. This is where anything
@@ -77,9 +81,12 @@ jobs:
       # replace with audit-derived endpoints after the first live release.
       - uses: step-security/harden-runner@b09bb98e06d4d774595224525879c09bc6e98c40 # v2.20.1
         with:
-          egress-policy: audit
+          egress-policy: block
           disable-sudo: true
           allowed-endpoints: >
+            *.actions.githubusercontent.com:443
+            *.blob.core.windows.net:443
+            *.githubapp.com:443
             api.github.com:443
             auth.docker.io:443
             codeload.github.com:443
@@ -207,6 +214,14 @@ jobs:
         with:
           egress-policy: audit
           disable-sudo: true
+          # This matrix is macOS-only — the Linux binaries are extracted from
+          # the image rather than built here — so it keeps audit while every
+          # Linux job moves to block (issue #69). harden-runner is
+          # monitor-only on macOS runners, and those runners resolve Apple's
+          # own update, safebrowsing and distribution hosts throughout the
+          # run; `block` here would claim enforcement that does not happen.
+          # The list stays as the record of what this job needs.
+          #
           # mise resolves which toolchain version to install through
           # mise-versions.jdx.dev. Without it the DNS request is dropped and
           # rustup dies with "no exit status", which reads like a transient
@@ -286,9 +301,12 @@ jobs:
           # Do not prune this by inspection. If an entry looks superfluous,
           # that is not evidence it is. Re-derive it from an audit run or leave
           # it alone.
-          egress-policy: audit
+          egress-policy: block
           disable-sudo: true
           allowed-endpoints: >
+            *.actions.githubusercontent.com:443
+            *.blob.core.windows.net:443
+            *.githubapp.com:443
             api.github.com:443
             api.npmjs.org:443
             api.osv.dev:443
@@ -300,8 +318,6 @@ jobs:
             fulcio.sigstore.dev:443
             ghcr.io:443
             github.com:443
-            hosted-compute-request-orchestrator-prod-eus-02.githubapp.com:443
-            hosted-compute-watchdog-prod-eus-02.githubapp.com:443
             index.crates.io:443
             mise-versions.jdx.dev:443
             mise.jdx.dev:443
@@ -312,19 +328,14 @@ jobs:
             prod.app-api.stepsecurity.io:443
             production.cloudflare.docker.com:443
             production.cloudfront.docker.com:443
-            productionresultssa2.blob.core.windows.net:443
             pypi.org:443
             raw.githubusercontent.com:443
             registry-1.docker.io:443
             registry.npmjs.org:443
             rekor.sigstore.dev:443
             release-assets.githubusercontent.com:443
-            results-receiver.actions.githubusercontent.com:443
-            run-actions-2-azure-eastus.actions.githubusercontent.com:443
             static.crates.io:443
             static.rust-lang.org:443
-            tmaproduction.blob.core.windows.net:443
-            token.actions.githubusercontent.com:443
             tuf-repo-cdn.sigstore.dev:443
             tuf-repo.github.com:443
             uploads.github.com:443

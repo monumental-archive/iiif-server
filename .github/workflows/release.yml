@@ -1,15 +1,19 @@
 ---
-# TEMPORARY — EGRESS IS IN AUDIT MODE ACROSS EVERY JOB IN THIS FILE.
+# Every allowlist in this file is audit-derived (issue #69), read off the
+# runs that actually happened rather than written by construction. The
+# construction-written versions broke four separate release attempts, each on
+# an endpoint no reading of the workflow would produce — Docker Hub's
+# CloudFront blob host, npm reached through mise's hierarchical config, the
+# attestation bundle host, mise's own version index. Do not prune an entry
+# because it looks unnecessary; re-derive it from an audit run or leave it.
 #
-# The allowlists here were written by construction and have broken four
-# separate runs, each time on an endpoint that reading the workflow could not
-# have predicted (Docker Hub's CloudFront blob host, npm via mise's
-# hierarchical config, the attestation bundle host, mise's version index).
-# Fixing them one discovery at a time costs a release cycle each.
-#
-# This run derives the real list for EVERY job at once. The follow-up restores
-# `block` everywhere with observed endpoints, and after that the only way to
-# change an allowlist is another audit run — not judgement.
+# Three GitHub infrastructure families are wildcarded rather than pinned,
+# because the host index or region rotates between runs and a literal entry
+# is a latent failure rather than a tighter policy:
+# *.actions.githubusercontent.com (run-actions-N-azure-REGION, broker,
+# results-receiver), *.blob.core.windows.net (productionresultssaNN, NN
+# observed 0-19), and *.githubapp.com (the hosted-compute watchdog and
+# orchestrator, which fuzz.yml records reaping runners when blocked).
 name: release
 
 # Phase 1 of two. This workflow decides the version, maintains the Release PR,
@@ -63,9 +67,12 @@ jobs:
       # release, per templates/ci/README.md.
       - uses: step-security/harden-runner@b09bb98e06d4d774595224525879c09bc6e98c40 # v2.20.1
         with:
-          egress-policy: audit
+          egress-policy: block
           disable-sudo: true
           allowed-endpoints: >
+            *.actions.githubusercontent.com:443
+            *.blob.core.windows.net:443
+            *.githubapp.com:443
             api.github.com:443
             codeload.github.com:443
             github.com:443
@@ -116,10 +123,19 @@ jobs:
     steps:
       - uses: step-security/harden-runner@b09bb98e06d4d774595224525879c09bc6e98c40 # v2.20.1
         with:
-          egress-policy: audit
+          egress-policy: block
           disable-sudo: true
+          # cafe.github.com is the entry no reading produces: the `gh`
+          # process resolves it while this job drives the GraphQL
+          # createCommitOnBranch call that makes the Release PR's commit.
+          # It appears in the audit runs and nowhere in any documentation,
+          # which is the whole argument for deriving these lists.
           allowed-endpoints: >
+            *.actions.githubusercontent.com:443
+            *.blob.core.windows.net:443
+            *.githubapp.com:443
             api.github.com:443
+            cafe.github.com:443
             codeload.github.com:443
             crates.io:443
             github.com:443
