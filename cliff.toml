@@ -43,9 +43,8 @@ and versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 over the surface named in [MAINTENANCE.md](MAINTENANCE.md) — the HTTP API, the
 CLI flags and the container contract. Internal Rust APIs are not covered:
 nothing in this workspace is published to a registry.
-
 """
-body = """
+body = """\
 {% if version %}\
 ## [{{ version | trim_start_matches(pat="v") }}]\
 {% if previous.version %}\
@@ -60,11 +59,28 @@ body = """
 ### {{ group }}
 
 {% for commit in commits %}\
-- {{ commit.message }}\
-{% if commit.remote.pr_number %} ([#{{ commit.remote.pr_number }}](https://github.com/CarlAllenn/iiif-server/pull/{{ commit.remote.pr_number }})){% endif %}
+{% if commit.remote.pr_number %}\
+- {{ commit.message | trim_end_matches(pat=" (#" ~ commit.remote.pr_number ~ ")") }} ([#{{ commit.remote.pr_number }}](https://github.com/CarlAllenn/iiif-server/pull/{{ commit.remote.pr_number }}))
+{% else %}\
+- {{ commit.message }}
+{% endif %}\
 {% endfor %}\
-{% endfor %}"""
-trim = true
+{% endfor %}
+"""
+# trim = false is load-bearing, and the whitespace here is exact. git-cliff
+# renders each release independently and joins them with a single newline.
+# Under trim = true each section was stripped back to end at its last bullet,
+# so that lone join-newline was all that separated the bullet from the next
+# release's `## [x.y.z]` heading — no blank line, i.e. MD032 and MD022, both
+# fatal under this repo's markdownlint. It stayed invisible through v0.1.0
+# because the first release has nothing beneath it to collide with; it would
+# have failed every release from the second one onward.
+#
+# With trim = false the last bullet keeps its own trailing newline, and
+# git-cliff's join newline then makes the blank line. So the body must add no
+# trailing newline of its own (two blanks is MD012), and must start with `\`
+# to eat the newline after `"""` — the header supplies that side.
+trim = false
 footer = ""
 
 [git]
