@@ -174,6 +174,17 @@ Residual risks, stated plainly:
   publish-boundary controls, because the signing identity is a workflow in
   this repository. Branch protection, required status checks and tag
   immutability raise the cost; they do not remove it.
+- **The published Branch-Protection score stops short of full marks, and
+  cannot be raised.** `main` is governed by rulesets with no bypass
+  actors: pull requests required, strict status checks, linear history,
+  signed commits, no force-push, no deletion. Those rules live in a
+  ruleset rather than in classic branch protection specifically so that
+  OpenSSF Scorecard can read them — the ruleset API is public, whereas
+  the classic settings need an admin token the workflow deliberately does
+  not hold. The score still stops at 4/10, because the remaining points
+  require approving reviewers, CODEOWNERS review and last-push approval,
+  none of which a single-maintainer project can satisfy. The gap is the
+  review tier, not an absent control.
 
 This document is reviewed when the threat model changes — a new input
 class, a new trust boundary, or a new publishing path — and at minimum
