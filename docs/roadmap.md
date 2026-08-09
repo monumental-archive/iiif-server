@@ -53,8 +53,7 @@ masters is a codec-level follow-up.
 
 **Platform and packaging breadth.** Windows support, which needs Windows
 identifier-resolution path semantics first. Broader CI platform coverage
-so contributor dev builds are guaranteed. An image-size assertion in CI so
-the size claim in the README cannot rot.
+so contributor dev builds are guaranteed.
 
 **Adoption surface.** A licensing FAQ answering the AGPL question before
 an evaluator has to ask it, and a public demo instance.

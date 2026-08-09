@@ -227,6 +227,15 @@ tasks:
       - task: image
       - scripts/smoke_image.sh iiif-server:local
 
+  image:size:
+    desc: Assert a built image is under its size ceiling (IMAGE=ref, default iiif-server:local)
+    # Not fingerprinted: the input is a built image, not a file in the tree, so
+    # a source checksum cannot tell whether the thing being measured changed.
+    vars:
+      IMAGE: '{{.IMAGE | default "iiif-server:local"}}'
+    cmds:
+      - scripts/check_image_size.sh {{.IMAGE}}
+
   scan:image:
     desc: trivy CVE scan of a built image (IMAGE=ref, default iiif-server:local)
     # Deliberately NOT fingerprinted, for the same reason lint:deny is not: a
