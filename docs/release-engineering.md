@@ -188,11 +188,11 @@ ships as a file with `SSL_CERT_FILE` pointing at it.
 Worth knowing how that failure would have presented: serving local files works
 fine without it. Only `s3://` deployments break.
 
-The size that buys — about 6 MB to pull, 16 MB unpacked, against the
-incumbent's 769 MB — is asserted rather than remembered.
+The size that buys — about 6 MB to pull, 16 MB unpacked on arm64 and 18 MB on
+amd64, against the incumbent's 769 MB — is asserted rather than remembered.
 `scripts/check_image_size.sh` runs in the `Container image` CI job and fails
-the pull request if the unpacked image passes 25 MB, which is roughly 60%
-above today's. It measures with `docker export`, because
+the pull request if the unpacked image passes 25 MB, about 40% above the
+amd64 build the job measures. It measures with `docker export`, because
 `docker image inspect .Size` means the unpacked total under one image store
 and the compressed total under the other. The ceiling is meant to be raised
 when growth is real; the gate exists so raising it is a decision recorded in a

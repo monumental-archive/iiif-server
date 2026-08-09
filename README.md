@@ -31,10 +31,10 @@ curl -LsSf https://github.com/CarlAllenn/iiif-server/releases/latest/download/in
 ```
 
 The image is one static binary and a certificate bundle on nothing else —
-no shell, no package manager, no distro — about 6 MB to pull and 16 MB
-unpacked, against the incumbent's 769 MB. That comparison is a gate, not a
-boast: every pull request builds the image and fails if it exceeds 25 MB
-unpacked. Static binaries for Linux and macOS are attached to each
+no shell, no package manager, no distro — about 6 MB to pull and 16–18 MB
+unpacked depending on architecture, against the incumbent's 769 MB. That
+comparison is a gate, not a boast: every pull request builds the image and
+fails if it exceeds 25 MB unpacked. Static binaries for Linux and macOS are attached to each
 [release](https://github.com/CarlAllenn/iiif-server/releases); both are signed
 with build provenance you can verify
 ([SECURITY.md](SECURITY.md)). Recipes, including a hardened compose file, are

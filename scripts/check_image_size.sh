@@ -11,10 +11,13 @@
 # published claim without turning anything red. This makes that a build
 # failure instead.
 #
-# The ceiling is deliberately loose: today's image is about 15.6 MB, so 25 MB
-# leaves room for honest growth (a toolchain bump, another codec) while still
-# catching a regression large enough to make "one static binary" a lie.
-# Raising it is allowed. Raising it silently is not, and that is the point.
+# The ceiling is deliberately loose: today's image is 18.1 MB on amd64 and
+# 15.6 MB on arm64 — codegen for the same source, not different content — so
+# 25 MB leaves room for honest growth (a toolchain bump, another codec) while
+# still catching a regression large enough to make "one static binary" a lie.
+# The ceiling is a single number for both architectures, and amd64 is the one
+# that has to fit under it. Raising it is allowed. Raising it silently is not,
+# and that is the point.
 #
 # Measured with `docker export` — the flattened, uncompressed root filesystem.
 # Deliberately not `docker image inspect --format '{{.Size}}'`: that field is

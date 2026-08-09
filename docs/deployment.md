@@ -9,8 +9,8 @@ derivative cache. Each of those is one proven layer in front of it.
 
 The official image is `ghcr.io/carlallenn/iiif-server` — one static binary and
 a certificate bundle on nothing else. No shell, no package manager, no distro,
-about 6 MB to pull and 16 MB unpacked — a ceiling CI enforces, so the figure
-cannot drift away from the artifact.
+about 6 MB to pull and 16–18 MB unpacked depending on architecture — under a
+ceiling CI enforces, so the figure cannot drift away from the artifact.
 
 ```bash
 docker run --rm -p 6363:6363 -v ./masters:/imageroot:ro \

@@ -315,7 +315,7 @@ non-conformant rather than serving.
 
 | | iiif-server | Cantaloupe |
 | --- | --- | --- |
-| Deployable artifact | **16 MB** image, one static binary (CI-gated ≤ 25 MB) | 769 MB image (JRE 25 + JAR + OpenJPEG) |
+| Deployable artifact | **18 MB** image on amd64, one static binary (CI-gated ≤ 25 MB) | 769 MB image (JRE 25 + JAR + OpenJPEG) |
 | Startup → healthy (median) | **37 ms** | 1.08 s (container-inclusive) |
 | Idle RSS | **7.9 MB** | 152 MiB |
 | Peak RSS, 4-client mixed load | 2.5 GB (fallback-driven; see issue #1 section) | **1.0 GiB** |
