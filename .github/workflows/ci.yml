@@ -487,6 +487,11 @@ jobs:
           cache-to: type=gha,mode=max,scope=ci-amd64
       # The same script the release runs before it publishes anything.
       - run: scripts/smoke_image.sh iiif-server:ci
+      # The README's size comparison against the incumbent's 769 MB, as a gate.
+      # Runs here rather than in the release for the same reason the trivy scan
+      # does: a PR proves identical content, and a bump that quietly adds ten
+      # megabytes should turn the pull request red, not the publish.
+      - run: scripts/check_image_size.sh iiif-server:ci
       - uses: jdx/mise-action@7e36c90d9ab29c415a2384db3006f3ec8a8cc654 # v4.2.4
         with:
           # renovate: datasource=github-releases depName=jdx/mise

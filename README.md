@@ -5,6 +5,7 @@
 [![release](https://img.shields.io/github/v/release/CarlAllenn/iiif-server)](https://github.com/CarlAllenn/iiif-server/releases/latest)
 [![IIIF 3.0 level 2](https://img.shields.io/badge/IIIF%203.0%20level%202-33%2F33-blue)](https://github.com/CarlAllenn/iiif-server/releases/latest/download/validator-report.txt)
 [![IIIF 2.1](https://img.shields.io/badge/IIIF%202.1-30%2F30-blue)](https://github.com/CarlAllenn/iiif-server/releases/latest/download/validator-report.txt)
+[![image size](https://img.shields.io/badge/image-%3C25%20MB-blue)](https://github.com/CarlAllenn/iiif-server/actions/workflows/ci.yml)
 [![REUSE status](https://api.reuse.software/badge/github.com/CarlAllenn/iiif-server)](https://api.reuse.software/info/github.com/CarlAllenn/iiif-server)
 [![license](https://img.shields.io/badge/license-AGPL--3.0--only-blue.svg)](LICENSE)
 
@@ -30,8 +31,10 @@ curl -LsSf https://github.com/CarlAllenn/iiif-server/releases/latest/download/in
 ```
 
 The image is one static binary and a certificate bundle on nothing else —
-no shell, no package manager, no distro — about 5.7 MB to pull, against the
-incumbent's 769 MB. Static binaries for Linux and macOS are attached to each
+no shell, no package manager, no distro — about 6 MB to pull and 16 MB
+unpacked, against the incumbent's 769 MB. That comparison is a gate, not a
+boast: every pull request builds the image and fails if it exceeds 25 MB
+unpacked. Static binaries for Linux and macOS are attached to each
 [release](https://github.com/CarlAllenn/iiif-server/releases); both are signed
 with build provenance you can verify
 ([SECURITY.md](SECURITY.md)). Recipes, including a hardened compose file, are

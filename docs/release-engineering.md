@@ -188,6 +188,17 @@ ships as a file with `SSL_CERT_FILE` pointing at it.
 Worth knowing how that failure would have presented: serving local files works
 fine without it. Only `s3://` deployments break.
 
+The size that buys — about 6 MB to pull, 16 MB unpacked, against the
+incumbent's 769 MB — is asserted rather than remembered.
+`scripts/check_image_size.sh` runs in the `Container image` CI job and fails
+the pull request if the unpacked image passes 25 MB, which is roughly 60%
+above today's. It measures with `docker export`, because
+`docker image inspect .Size` means the unpacked total under one image store
+and the compressed total under the other. The ceiling is meant to be raised
+when growth is real; the gate exists so raising it is a decision recorded in a
+diff, alongside the figures in README.md and docs/deployment.md, rather than a
+claim that quietly stopped being true.
+
 ## Why `cargo auditable` is not optional
 
 Rust discards dependency information at compile time. A scanner pointed at a
