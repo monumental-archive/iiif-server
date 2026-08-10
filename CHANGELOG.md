@@ -8,6 +8,50 @@ over the surface named in [MAINTENANCE.md](MAINTENANCE.md) — the HTTP API, the
 CLI flags and the container contract. Internal Rust APIs are not covered:
 nothing in this workspace is published to a registry.
 
+## [0.2.0](https://github.com/CarlAllenn/iiif-server/compare/v0.1.0...v0.2.0) - 2026-08-10
+
+### Added
+
+- cooldown 14 days -> 7 (mise leg, three-layer policy) ([#79](https://github.com/CarlAllenn/iiif-server/pull/79))
+- add CodeQL SAST workflow (rust + actions, build-mode none) ([#97](https://github.com/CarlAllenn/iiif-server/pull/97))
+- run OpenSSF Scorecard weekly and publish the result ([#99](https://github.com/CarlAllenn/iiif-server/pull/99))
+
+### CI
+
+- assert the image size so the under-25MB claim cannot rot ([#113](https://github.com/CarlAllenn/iiif-server/pull/113))
+
+### Dependencies
+
+- update eclipse-temurin:25-jre-noble docker digest to fbcf915 ([#86](https://github.com/CarlAllenn/iiif-server/pull/86))
+- sweep every pin to current — actions, mise tools, both lockfiles ([#94](https://github.com/CarlAllenn/iiif-server/pull/94))
+- update dependency jdx/mise to v2026.8.0 ([#116](https://github.com/CarlAllenn/iiif-server/pull/116))
+- update mise tools ([#117](https://github.com/CarlAllenn/iiif-server/pull/117))
+
+### Documentation
+
+- add CLAUDE.md (agent guidance: commands, ground rules, architecture) ([#85](https://github.com/CarlAllenn/iiif-server/pull/85))
+- Best Practices doc pack (CoC, governance, roadmap, assurance case) ([#98](https://github.com/CarlAllenn/iiif-server/pull/98))
+- add the README badge row now that each one is backed ([#101](https://github.com/CarlAllenn/iiif-server/pull/101))
+- fix two stale references ([#109](https://github.com/CarlAllenn/iiif-server/pull/109))
+- the licensing pass — AGPL FAQ, plus the task ci correction ([#112](https://github.com/CarlAllenn/iiif-server/pull/112))
+- state the Branch-Protection ceiling; unbreak lychee on the AGPL text ([#114](https://github.com/CarlAllenn/iiif-server/pull/114))
+
+### Fixed
+
+- commit fuzz/Cargo.lock and gate the harness --locked ([#84](https://github.com/CarlAllenn/iiif-server/pull/84))
+- changelog template emits malformed markdown from the second release on ([#96](https://github.com/CarlAllenn/iiif-server/pull/96))
+- unjam the mise-action comments in scheduled.yml ([#100](https://github.com/CarlAllenn/iiif-server/pull/100))
+- derive egress allowlists for codeql and scorecard, switch to block ([#108](https://github.com/CarlAllenn/iiif-server/pull/108))
+- restore egress-policy block across the release path from audit data ([#110](https://github.com/CarlAllenn/iiif-server/pull/110))
+
+### Miscellaneous
+
+- repoint j2k pin from fork to upstream main (all fixes merged) ([#78](https://github.com/CarlAllenn/iiif-server/pull/78))
+- raise scan:image floor to the trivy canon (renovate-config#15) ([#81](https://github.com/CarlAllenn/iiif-server/pull/81))
+- drop the CI dependency-snapshot SBOM job (scan-shaped, stale) ([#82](https://github.com/CarlAllenn/iiif-server/pull/82))
+- consume j2k 0.8.1 — drop the temporary [patch.crates-io] pin ([#83](https://github.com/CarlAllenn/iiif-server/pull/83))
+- make the repository REUSE 3.3 compliant ([#111](https://github.com/CarlAllenn/iiif-server/pull/111))
+
 ## [0.1.0](https://github.com/CarlAllenn/iiif-server/releases/tag/v0.1.0) - 2026-08-01
 
 ### Added
@@ -27,16 +71,16 @@ nothing in this workspace is published to a registry.
 - object-store serving — s3:// roots, pixel-verified e2e
 - iiif-server check — offline master inspection
 - fuzzing — and it found a real 25 GB decompression bomb
-- adopt shared preset (github>CarlAllenn/renovate-config) (#17) ([#17](https://github.com/CarlAllenn/iiif-server/pull/17))
-- every tile grid takes the region fast path (#22) ([#22](https://github.com/CarlAllenn/iiif-server/pull/22))
-- task baseline de-drift — ci umbrella, per-tool lint tasks, fingerprint every gate (#24) ([#24](https://github.com/CarlAllenn/iiif-server/pull/24))
-- lefthook baseline — universal lint layer consumed live via remotes (#27) ([#27](https://github.com/CarlAllenn/iiif-server/pull/27))
-- adopt cargo-deny supply-chain baseline (renovate-config#5) (#30) ([#30](https://github.com/CarlAllenn/iiif-server/pull/30))
-- harden-runner block mode (renovate-config#6) (#31) ([#31](https://github.com/CarlAllenn/iiif-server/pull/31))
-- scanner baseline — gitleaks, machete, lychee (#7) (#32) ([#32](https://github.com/CarlAllenn/iiif-server/pull/32))
-- #8 tooling baseline — full lint canon, rustfmt, fuzz CI, SBOM (#34) ([#34](https://github.com/CarlAllenn/iiif-server/pull/34))
-- JP2 zoom-outs decode to the ladder's full depth, not the 1/8 cap (#40) ([#40](https://github.com/CarlAllenn/iiif-server/pull/40))
-- official container image, release pipeline, and installer (#49) ([#49](https://github.com/CarlAllenn/iiif-server/pull/49))
+- adopt shared preset (github>CarlAllenn/renovate-config) ([#17](https://github.com/CarlAllenn/iiif-server/pull/17))
+- every tile grid takes the region fast path ([#22](https://github.com/CarlAllenn/iiif-server/pull/22))
+- task baseline de-drift — ci umbrella, per-tool lint tasks, fingerprint every gate ([#24](https://github.com/CarlAllenn/iiif-server/pull/24))
+- lefthook baseline — universal lint layer consumed live via remotes ([#27](https://github.com/CarlAllenn/iiif-server/pull/27))
+- adopt cargo-deny supply-chain baseline (renovate-config#5) ([#30](https://github.com/CarlAllenn/iiif-server/pull/30))
+- harden-runner block mode (renovate-config#6) ([#31](https://github.com/CarlAllenn/iiif-server/pull/31))
+- scanner baseline — gitleaks, machete, lychee (#7) ([#32](https://github.com/CarlAllenn/iiif-server/pull/32))
+- #8 tooling baseline — full lint canon, rustfmt, fuzz CI, SBOM ([#34](https://github.com/CarlAllenn/iiif-server/pull/34))
+- JP2 zoom-outs decode to the ladder's full depth, not the 1/8 cap ([#40](https://github.com/CarlAllenn/iiif-server/pull/40))
+- official container image, release pipeline, and installer ([#49](https://github.com/CarlAllenn/iiif-server/pull/49))
 
 ### CI
 
@@ -45,9 +89,9 @@ nothing in this workspace is published to a registry.
 
 ### Dependencies
 
-- pin dependencies (#6) ([#6](https://github.com/CarlAllenn/iiif-server/pull/6))
-- update actions/upload-artifact digest to 043fb46 (#7) ([#7](https://github.com/CarlAllenn/iiif-server/pull/7))
-- update dependency aqua:taiki-e/cargo-llvm-cov to v0.8.7 (#35) ([#35](https://github.com/CarlAllenn/iiif-server/pull/35))
+- pin dependencies ([#6](https://github.com/CarlAllenn/iiif-server/pull/6))
+- update actions/upload-artifact digest to 043fb46 ([#7](https://github.com/CarlAllenn/iiif-server/pull/7))
+- update dependency aqua:taiki-e/cargo-llvm-cov to v0.8.7 ([#35](https://github.com/CarlAllenn/iiif-server/pull/35))
 
 ### Documentation
 
@@ -58,38 +102,38 @@ nothing in this workspace is published to a registry.
 - AGPL-3.0-only license + Apache-ICLA-derived CLA
 - reflow prose to 120 columns for markdownlint
 - session build report
-- record the filed upstream issue and the fast-path-only caveat (#5) ([#5](https://github.com/CarlAllenn/iiif-server/pull/5))
-- head-to-head eval vs Cantaloupe — the partial-grid numbers (#11) ([#11](https://github.com/CarlAllenn/iiif-server/pull/11))
-- freshness pass — three catches not one, gate revisit happened, j2k bug filed (#16) ([#16](https://github.com/CarlAllenn/iiif-server/pull/16))
-- drop stale fallback-path wording in eval corpus comment (#23) ([#23](https://github.com/CarlAllenn/iiif-server/pull/23))
-- ci badge in README (#26) ([#26](https://github.com/CarlAllenn/iiif-server/pull/26))
-- eval rerun after the decode-stack changes; sharpen the HTJ2K claim (#42) ([#42](https://github.com/CarlAllenn/iiif-server/pull/42))
+- record the filed upstream issue and the fast-path-only caveat ([#5](https://github.com/CarlAllenn/iiif-server/pull/5))
+- head-to-head eval vs Cantaloupe — the partial-grid numbers ([#11](https://github.com/CarlAllenn/iiif-server/pull/11))
+- freshness pass — three catches not one, gate revisit happened, j2k bug filed ([#16](https://github.com/CarlAllenn/iiif-server/pull/16))
+- drop stale fallback-path wording in eval corpus comment ([#23](https://github.com/CarlAllenn/iiif-server/pull/23))
+- ci badge in README ([#26](https://github.com/CarlAllenn/iiif-server/pull/26))
+- eval rerun after the decode-stack changes; sharpen the HTJ2K claim ([#42](https://github.com/CarlAllenn/iiif-server/pull/42))
 
 ### Fixed
 
 - conda fixture tools get their own config root
 - validator script installs fixture tools explicitly
-- never fingerprint lint:deny — RustSec DB is an unseen input; weekly scheduled gate (#25) ([#25](https://github.com/CarlAllenn/iiif-server/pull/25))
-- drop en-GB_to_en-US dictionary — the house dialect is en-GB (#29) ([#29](https://github.com/CarlAllenn/iiif-server/pull/29))
-- taplo-stable comment style in [tools] — Renovate bumps broke alignment (#36) ([#36](https://github.com/CarlAllenn/iiif-server/pull/36))
-- resource-ceiling refusals answer 403, not 500 corrupt master (#12) (#39) ([#39](https://github.com/CarlAllenn/iiif-server/pull/39))
-- sign the Release PR commit via the GitHub API (#51) ([#51](https://github.com/CarlAllenn/iiif-server/pull/51))
-- lowercase the image name; reset for a clean 0.1.0 (#54) ([#54](https://github.com/CarlAllenn/iiif-server/pull/54))
-- audit egress for one run; drop unused tool installs (#56) ([#56](https://github.com/CarlAllenn/iiif-server/pull/56))
-- scan via mise-pinned trivy on PRs; cosign from mise (#58) ([#58](https://github.com/CarlAllenn/iiif-server/pull/58))
-- real conformance evidence, enforced egress (#60) ([#60](https://github.com/CarlAllenn/iiif-server/pull/60))
-- export STAGING to the embedded python (#61) ([#61](https://github.com/CarlAllenn/iiif-server/pull/61))
-- use the observed endpoints, not a filtered version (#63) ([#63](https://github.com/CarlAllenn/iiif-server/pull/63))
-- use the complete observed endpoint list (#65) ([#65](https://github.com/CarlAllenn/iiif-server/pull/65))
-- audit egress everywhere; binaries job mise hosts (#67) ([#67](https://github.com/CarlAllenn/iiif-server/pull/67))
+- never fingerprint lint:deny — RustSec DB is an unseen input; weekly scheduled gate ([#25](https://github.com/CarlAllenn/iiif-server/pull/25))
+- drop en-GB_to_en-US dictionary — the house dialect is en-GB ([#29](https://github.com/CarlAllenn/iiif-server/pull/29))
+- taplo-stable comment style in [tools] — Renovate bumps broke alignment ([#36](https://github.com/CarlAllenn/iiif-server/pull/36))
+- resource-ceiling refusals answer 403, not 500 corrupt master (#12) ([#39](https://github.com/CarlAllenn/iiif-server/pull/39))
+- sign the Release PR commit via the GitHub API ([#51](https://github.com/CarlAllenn/iiif-server/pull/51))
+- lowercase the image name; reset for a clean 0.1.0 ([#54](https://github.com/CarlAllenn/iiif-server/pull/54))
+- audit egress for one run; drop unused tool installs ([#56](https://github.com/CarlAllenn/iiif-server/pull/56))
+- scan via mise-pinned trivy on PRs; cosign from mise ([#58](https://github.com/CarlAllenn/iiif-server/pull/58))
+- real conformance evidence, enforced egress ([#60](https://github.com/CarlAllenn/iiif-server/pull/60))
+- export STAGING to the embedded python ([#61](https://github.com/CarlAllenn/iiif-server/pull/61))
+- use the observed endpoints, not a filtered version ([#63](https://github.com/CarlAllenn/iiif-server/pull/63))
+- use the complete observed endpoint list ([#65](https://github.com/CarlAllenn/iiif-server/pull/65))
+- audit egress everywhere; binaries job mise hosts ([#67](https://github.com/CarlAllenn/iiif-server/pull/67))
 
 ### Miscellaneous
 
 - tooling standup — pinned, locked, max enforcement
-- port the proven pieces from edtf and monumental-archive (#9) ([#9](https://github.com/CarlAllenn/iiif-server/pull/9))
-- rust toolchain surfaces as a PR, not a dashboard line (#10) ([#10](https://github.com/CarlAllenn/iiif-server/pull/10))
-- adopt max-enforcement linter baseline from renovate-config (#28) ([#28](https://github.com/CarlAllenn/iiif-server/pull/28))
-- de-drift the mise settings block to canon (#43) ([#43](https://github.com/CarlAllenn/iiif-server/pull/43))
+- port the proven pieces from edtf and monumental-archive ([#9](https://github.com/CarlAllenn/iiif-server/pull/9))
+- rust toolchain surfaces as a PR, not a dashboard line ([#10](https://github.com/CarlAllenn/iiif-server/pull/10))
+- adopt max-enforcement linter baseline from renovate-config ([#28](https://github.com/CarlAllenn/iiif-server/pull/28))
+- de-drift the mise settings block to canon ([#43](https://github.com/CarlAllenn/iiif-server/pull/43))
 
 ### Performance
 
