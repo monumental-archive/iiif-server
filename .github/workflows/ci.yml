@@ -89,7 +89,7 @@ jobs:
       - uses: jdx/mise-action@7e36c90d9ab29c415a2384db3006f3ec8a8cc654 # v4.2.4
         with:
           # renovate: datasource=github-releases depName=jdx/mise
-          version: 2026.7.18
+          version: 2026.8.0
       # go-task fingerprints (Taskfile `sources:`): a hit means a gate's
       # inputs are byte-identical to a run that already passed, so it skips.
       # go-task only writes checksums after a task succeeds, and
@@ -174,7 +174,7 @@ jobs:
       - uses: jdx/mise-action@7e36c90d9ab29c415a2384db3006f3ec8a8cc654 # v4.2.4
         with:
           # renovate: datasource=github-releases depName=jdx/mise
-          version: 2026.7.18
+          version: 2026.8.0
           # Scanner jobs install only their own tools — the history scan
           # must not pay (or egress for) the whole toolchain.
           install_args: gitleaks task
@@ -221,7 +221,7 @@ jobs:
       - uses: jdx/mise-action@7e36c90d9ab29c415a2384db3006f3ec8a8cc654 # v4.2.4
         with:
           # renovate: datasource=github-releases depName=jdx/mise
-          version: 2026.7.18
+          version: 2026.8.0
       - run: mise trust tools/fixtures/mise.toml
       - run: |
           set -o pipefail
@@ -272,7 +272,7 @@ jobs:
       - uses: jdx/mise-action@7e36c90d9ab29c415a2384db3006f3ec8a8cc654 # v4.2.4
         with:
           # renovate: datasource=github-releases depName=jdx/mise
-          version: 2026.7.18
+          version: 2026.8.0
           # Single-purpose job: install only its own tools (canon rule,
           # templates/ci/README.md).
           install_args: taplo
@@ -321,7 +321,7 @@ jobs:
       - uses: jdx/mise-action@7e36c90d9ab29c415a2384db3006f3ec8a8cc654 # v4.2.4
         with:
           # renovate: datasource=github-releases depName=jdx/mise
-          version: 2026.7.18
+          version: 2026.8.0
           # Single-purpose job: install only its own tools (canon rule,
           # templates/ci/README.md).
           install_args: rust
@@ -364,7 +364,7 @@ jobs:
       - uses: jdx/mise-action@7e36c90d9ab29c415a2384db3006f3ec8a8cc654 # v4.2.4
         with:
           # renovate: datasource=github-releases depName=jdx/mise
-          version: 2026.7.18
+          version: 2026.8.0
           # Single-purpose job: install only its own tools (canon rule,
           # templates/ci/README.md).
           install_args: rust aqua:taiki-e/cargo-llvm-cov
@@ -428,7 +428,7 @@ jobs:
       - uses: jdx/mise-action@7e36c90d9ab29c415a2384db3006f3ec8a8cc654 # v4.2.4
         with:
           # renovate: datasource=github-releases depName=jdx/mise
-          version: 2026.7.18
+          version: 2026.8.0
           install_args: rust
       - run: cargo test --workspace --all-features
 
@@ -495,7 +495,7 @@ jobs:
       - uses: jdx/mise-action@7e36c90d9ab29c415a2384db3006f3ec8a8cc654 # v4.2.4
         with:
           # renovate: datasource=github-releases depName=jdx/mise
-          version: 2026.7.18
+          version: 2026.8.0
           install_args: trivy task
           # This step runs after the image is built, so a poisoned cache
           # entry could reach an artifact (zizmor cache-poisoning).
