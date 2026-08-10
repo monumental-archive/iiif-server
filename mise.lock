@@ -127,43 +127,25 @@ url_api = "https://api.github.com/repos/taiki-e/cargo-llvm-cov/releases/assets/4
 provenance = "github-attestations"
 
 [[tools."aqua:zizmorcore/zizmor"]]
-version = "1.28.0"
+version = "1.29.0"
 backend = "aqua:zizmorcore/zizmor"
 
 [tools."aqua:zizmorcore/zizmor"."platforms.linux-arm64"]
-checksum = "sha256:324e43770cfacf4216f8aefb287263b5b5c733c85b03bf7583b5cc4a0460239e"
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.28.0/zizmor-aarch64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/zizmorcore/zizmor/releases/assets/485211654"
-provenance = "github-attestations"
-
-[tools."aqua:zizmorcore/zizmor"."platforms.linux-arm64-musl"]
+checksum = "sha256:415eaa7c0a06479a701b8e44a3e812c1047decc848ec4bede7bd6bbf49f22d20"
+url = "https://github.com/zizmorcore/zizmor/releases/download/v1.29.0/zizmor-aarch64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/zizmorcore/zizmor/releases/assets/498263143"
 provenance = "github-attestations"
 
 [tools."aqua:zizmorcore/zizmor"."platforms.linux-x64"]
-checksum = "sha256:e87b67160194884e375a46a12c57ccc904f762b53845f254fab7f17d98809c09"
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.28.0/zizmor-x86_64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/zizmorcore/zizmor/releases/assets/485211657"
-provenance = "github-attestations"
-
-[tools."aqua:zizmorcore/zizmor"."platforms.linux-x64-musl"]
+checksum = "sha256:dd96df044a6e8538d5f423790f453bdd03d49e5b2bcc38214acc41a2f1297839"
+url = "https://github.com/zizmorcore/zizmor/releases/download/v1.29.0/zizmor-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/zizmorcore/zizmor/releases/assets/498263145"
 provenance = "github-attestations"
 
 [tools."aqua:zizmorcore/zizmor"."platforms.macos-arm64"]
-checksum = "sha256:54949bbd6b4c8527046bb8990bac9e0dab3eec787640f4e6199ae121dd1040be"
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.28.0/zizmor-aarch64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/zizmorcore/zizmor/releases/assets/485211655"
-provenance = "github-attestations"
-
-[tools."aqua:zizmorcore/zizmor"."platforms.macos-x64"]
-checksum = "sha256:40a58d8560d65c71357b3977d0da425773bf8f10bf1ffd38099d963d3afdf3aa"
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.28.0/zizmor-x86_64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/zizmorcore/zizmor/releases/assets/485211652"
-provenance = "github-attestations"
-
-[tools."aqua:zizmorcore/zizmor"."platforms.windows-x64"]
-checksum = "sha256:06e5b2345323201ed4c55897651862fee3b43f79ddced799f1236f0f0d1c1c0f"
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.28.0/zizmor-x86_64-pc-windows-msvc.zip"
-url_api = "https://api.github.com/repos/zizmorcore/zizmor/releases/assets/485211651"
+checksum = "sha256:720322fade9e83a9c7953944c438f2ba942636b86b96a8f0e6b15ce94c8a6b6f"
+url = "https://github.com/zizmorcore/zizmor/releases/download/v1.29.0/zizmor-aarch64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/zizmorcore/zizmor/releases/assets/498263141"
 provenance = "github-attestations"
 
 [[tools."cargo:cargo-fuzz"]]
@@ -270,23 +252,26 @@ url = "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8
 url_api = "https://api.github.com/repos/gitleaks/gitleaks/releases/assets/378332059"
 
 [[tools.hadolint]]
-version = "2.14.0"
+version = "2.15.1"
 backend = "aqua:hadolint/hadolint"
 
 [tools.hadolint."platforms.linux-arm64"]
-checksum = "sha256:331f1d3511b84a4f1e3d18d52fec284723e4019552f4f47b19322a53ce9a40ed"
-url = "https://github.com/hadolint/hadolint/releases/download/v2.14.0/hadolint-linux-arm64"
-url_api = "https://api.github.com/repos/hadolint/hadolint/releases/assets/295944081"
+checksum = "sha256:f6198ef8090f404dbb771abfee086eb8c48ac177f30da7fd3510aca35b344b5d"
+url = "https://github.com/hadolint/hadolint/releases/download/v2.15.1/hadolint-linux-arm64"
+url_api = "https://api.github.com/repos/hadolint/hadolint/releases/assets/496546507"
+provenance = "github-attestations"
 
 [tools.hadolint."platforms.linux-x64"]
-checksum = "sha256:6bf226944684f56c84dd014e8b979d27425c0148f61b3bd99bcc6f39e9dc5a47"
-url = "https://github.com/hadolint/hadolint/releases/download/v2.14.0/hadolint-linux-x86_64"
-url_api = "https://api.github.com/repos/hadolint/hadolint/releases/assets/295944080"
+checksum = "sha256:c7187db94eeeeca956519a6af171adc31453941a1e777961f6e680f697c8c507"
+url = "https://github.com/hadolint/hadolint/releases/download/v2.15.1/hadolint-linux-x86_64"
+url_api = "https://api.github.com/repos/hadolint/hadolint/releases/assets/496546506"
+provenance = "github-attestations"
 
 [tools.hadolint."platforms.macos-arm64"]
-checksum = "sha256:3625e2e9f43dcfe7bd38738a5f5520ed50ce39ed28485266e6803dd7bc197b10"
-url = "https://github.com/hadolint/hadolint/releases/download/v2.14.0/hadolint-macos-arm64"
-url_api = "https://api.github.com/repos/hadolint/hadolint/releases/assets/295944077"
+checksum = "sha256:5c09f3213f8e40406abe048233d985eebef336d4a6a20021be47fadb6cf480a2"
+url = "https://github.com/hadolint/hadolint/releases/download/v2.15.1/hadolint-macos-arm64"
+url_api = "https://api.github.com/repos/hadolint/hadolint/releases/assets/496546505"
+provenance = "github-attestations"
 
 [[tools.lefthook]]
 version = "2.1.10"
@@ -354,20 +339,20 @@ url = "https://github.com/lycheeverse/lychee/releases/download/lychee-v0.24.2/ly
 url_api = "https://api.github.com/repos/lycheeverse/lychee/releases/assets/409957951"
 
 [[tools.node]]
-version = "26.5.1"
+version = "26.6.0"
 backend = "core:node"
 
 [tools.node."platforms.linux-arm64"]
-checksum = "sha256:21194bbf41c18d9ec277545c4d14cce8597d57a9d9f494c323d8121a25de33e8"
-url = "https://nodejs.org/dist/v26.5.1/node-v26.5.1-linux-arm64.tar.gz"
+checksum = "sha256:51c59de738843677a3c97bccbdbf9895141cb308bf25a95daeafd1aade09f0d5"
+url = "https://nodejs.org/dist/v26.6.0/node-v26.6.0-linux-arm64.tar.gz"
 
 [tools.node."platforms.linux-x64"]
-checksum = "sha256:2b07f09c218d473a26442bff5a90151f53f7b7c0a23bad244eda2c26303a2ba7"
-url = "https://nodejs.org/dist/v26.5.1/node-v26.5.1-linux-x64.tar.gz"
+checksum = "sha256:714f352a7539c5ce09af15e440cbaadbe935bb23ba23fcee66b066d00a063822"
+url = "https://nodejs.org/dist/v26.6.0/node-v26.6.0-linux-x64.tar.gz"
 
 [tools.node."platforms.macos-arm64"]
-checksum = "sha256:f4387df0b46556516d19abf2f2d6806481ac8368aa7f9d96bafed422a56a1d01"
-url = "https://nodejs.org/dist/v26.5.1/node-v26.5.1-darwin-arm64.tar.gz"
+checksum = "sha256:75480cd43b6fcb35d8e772dd18983fbd9f691b2f03b1c94393206098e9944b5e"
+url = "https://nodejs.org/dist/v26.6.0/node-v26.6.0-darwin-arm64.tar.gz"
 
 [[tools."npm:markdownlint-cli2"]]
 version = "0.23.2"
