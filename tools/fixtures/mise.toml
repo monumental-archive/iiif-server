@@ -8,7 +8,7 @@
 # (an explicit lockfile = false alongside locked = true is a hard error).
 # Compensating controls here: exact version pins and the 72h release
 # cooldown; conda-forge serves checksummed artifacts.
-min_version = "2026.7.12"
+min_version = "2026.8.0"
 
 [settings]
 lockfile = false

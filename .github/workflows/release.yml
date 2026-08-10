@@ -91,7 +91,7 @@ jobs:
       - uses: jdx/mise-action@7e36c90d9ab29c415a2384db3006f3ec8a8cc654 # v4.2.4
         with:
           # renovate: datasource=github-releases depName=jdx/mise
-          version: 2026.7.18
+          version: 2026.8.0
           # Single-purpose job: install only its own tools (canon rule,
           # templates/ci/README.md).
           install_args: taplo aqua:orhun/git-cliff
@@ -154,7 +154,7 @@ jobs:
       - uses: jdx/mise-action@7e36c90d9ab29c415a2384db3006f3ec8a8cc654 # v4.2.4
         with:
           # renovate: datasource=github-releases depName=jdx/mise
-          version: 2026.7.18
+          version: 2026.8.0
           install_args: rust taplo aqua:orhun/git-cliff
       - name: Prepare the release
         id: prepare

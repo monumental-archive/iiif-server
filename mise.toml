@@ -1,6 +1,6 @@
 # Settings block: canonical baseline from CarlAllenn/renovate-config
 # templates/mise/settings.toml — drift-audited, do not edit locally.
-min_version = "2026.7.12"
+min_version = "2026.8.0"
 
 [settings]
 lockfile = true                 # mise.lock records resolved versions + checksums
