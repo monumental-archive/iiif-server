@@ -18,11 +18,7 @@ fuzz_target!(|data: &[u8]| {
         return; // decompression-bomb guard mirrors the server's limits
     }
     drop(master.describe());
-    let limits = iiif_core::info::Limits {
-        width: 512,
-        height: 512,
-        area: 262_144,
-    };
+    let limits = iiif_core::info::Limits::new(512, 512, 262_144);
     let Ok(request) = iiif_core::grammar::ImageRequest::parse("full/!64,64/90/gray.png") else {
         return;
     };
