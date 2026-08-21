@@ -30,6 +30,13 @@ use crate::{
 
 /// A fully decoded single-resolution master.
 #[derive(Debug)]
+#[expect(
+    clippy::module_name_repetitions,
+    reason = "`jp2::Master` and `simple::Master` would SHADOW `codec::Master`, \
+          the trait they implement, in any scope importing both. The \
+          prefix is what keeps the implementation distinguishable from \
+          the interface."
+)]
 pub struct SimpleMaster {
     /// The whole image, decoded once at open time — these formats carry
     /// no pyramid to decode a region from.

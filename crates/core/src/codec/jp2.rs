@@ -59,6 +59,13 @@ const DEFAULT_TILE: u32 = 1024;
 /// Owns the compressed bytes; decoders borrow them per request (parse state is
 /// cheap relative to pixel work, and a fresh decoder per decode keeps the type
 /// `Send` for the worker pool).
+#[expect(
+    clippy::module_name_repetitions,
+    reason = "`jp2::Master` and `simple::Master` would SHADOW `codec::Master`, \
+          the trait they implement, in any scope importing both. The \
+          prefix is what keeps the implementation distinguishable from \
+          the interface."
+)]
 pub struct Jp2Master {
     /// The whole compressed codestream. The `Debug` impl below skips it
     /// deliberately — it is megabytes.

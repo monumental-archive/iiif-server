@@ -27,6 +27,15 @@ use crate::{grammar::Format, image::Raster};
 /// limits) are 400s; the rest are internal.
 #[derive(Debug)]
 #[non_exhaustive]
+#[expect(
+    clippy::module_name_repetitions,
+    reason = "the `<Module>Error` convention, and the alternative is worse here \
+          rather than merely different: five modules each own an error \
+          type, so renaming them all to `Error` would produce five types \
+          of that name that cannot be imported into one scope without \
+          aliases at every call site. The path already disambiguates; the \
+          name is what appears in a caller's `match`."
+)]
 pub enum EncodeError {
     /// The output dimensions exceed what the format can represent (JPEG
     /// caps at 65535 per side).
@@ -81,6 +90,13 @@ const JPEG_QUALITY: u8 = 85;
 /// See [`EncodeError`]; every format succeeds for any raster within the
 /// format's own representational limits.
 #[inline]
+#[expect(
+    clippy::module_name_repetitions,
+    reason = "`encode::encode(raster, format)` is how this reads at the \
+          call site, and the module is the noun while the function is \
+          the verb. Renaming the verb to avoid the noun would make both \
+          worse."
+)]
 pub fn encode(raster: &Raster, format: Format) -> Result<Vec<u8>, EncodeError> {
     match format {
         Format::Jpg => encode_jpeg(raster),

@@ -181,6 +181,14 @@ impl ParseError {
 
 impl fmt::Display for ParseError {
     #[inline]
+    #[expect(
+        clippy::use_debug,
+        reason = "`{:?}` deliberately: `self.input` is the client's raw \
+                      path segment, and Debug's escaping is what keeps a \
+                      control character or a newline out of a log line or \
+                      an error body verbatim. Display here would echo \
+                      attacker bytes unquoted."
+    )]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let what = match self.component {
             Component::Region => "region",
@@ -190,14 +198,6 @@ impl fmt::Display for ParseError {
             Component::Format => "format",
             Component::Structure => "request path",
         };
-        #[expect(
-            clippy::use_debug,
-            reason = "`{:?}` deliberately: `self.input` is the client's raw \
-                      path segment, and Debug's escaping is what keeps a \
-                      control character or a newline out of a log line or \
-                      an error body verbatim. Display here would echo \
-                      attacker bytes unquoted."
-        )]
         write!(f, "malformed {what}: {:?}", self.input)
     }
 }

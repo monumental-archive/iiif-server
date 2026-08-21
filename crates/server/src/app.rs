@@ -420,7 +420,7 @@ impl App {
                 Err(err) => return parse_error(&err),
             },
             Version::V2 => match iiif_core::v2::parse_image_request(rest) {
-                Ok(parsed) => (parsed.request, Some(parsed)),
+                Ok(parsed) => (parsed.as_v3, Some(parsed)),
                 Err(err) => return parse_error(&err),
             },
         };

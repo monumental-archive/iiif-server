@@ -92,6 +92,12 @@ pub struct ImageDescription {
 /// The serialized info.json document.
 #[derive(Debug, Clone, Serialize)]
 #[non_exhaustive]
+#[expect(
+    clippy::module_name_repetitions,
+    reason = "the info.json document, and `info::Info` is what the IIIF \
+          specification calls it. A synonym here would be this crate \
+          inventing a name the spec does not use."
+)]
 pub struct Info {
     /// The Image API 3.0 context URI.
     #[serde(rename = "@context")]

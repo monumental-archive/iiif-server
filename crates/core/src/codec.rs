@@ -212,6 +212,15 @@ pub struct LevelInfo {
 /// Codec-layer failure.
 #[derive(Debug)]
 #[non_exhaustive]
+#[expect(
+    clippy::module_name_repetitions,
+    reason = "the `<Module>Error` convention, and the alternative is worse here \
+          rather than merely different: five modules each own an error \
+          type, so renaming them all to `Error` would produce five types \
+          of that name that cannot be imported into one scope without \
+          aliases at every call site. The path already disambiguates; the \
+          name is what appears in a caller's `match`."
+)]
 pub enum CodecError {
     /// The master is outside the supported matrix — one actionable
     /// message, never a wrong image.

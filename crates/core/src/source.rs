@@ -19,6 +19,13 @@ pub type BoxFuture<'fut, T> = Pin<Box<dyn Future<Output = T> + Send + 'fut>>;
 
 /// A byte-addressable, immutable-for-the-duration source of one master
 /// image file.
+#[expect(
+    clippy::module_name_repetitions,
+    reason = "the trait name states the contract — a source served by BYTE \
+          RANGE, which is the whole seam. `source::Source` would say \
+          nothing, and dropping `Source` would leave `ByteRange`, which \
+          names a value type rather than a capability."
+)]
 pub trait ByteRangeSource: Send + Sync {
     /// Read exactly `len` bytes starting at `offset`. Short reads are
     /// errors: callers always know the byte layout they are asking for.
@@ -32,6 +39,15 @@ pub trait ByteRangeSource: Send + Sync {
 /// 5xx (the master exists but could not be read).
 #[derive(Debug)]
 #[non_exhaustive]
+#[expect(
+    clippy::module_name_repetitions,
+    reason = "the `<Module>Error` convention, and the alternative is worse here \
+          rather than merely different: five modules each own an error \
+          type, so renaming them all to `Error` would produce five types \
+          of that name that cannot be imported into one scope without \
+          aliases at every call site. The path already disambiguates; the \
+          name is what appears in a caller's `match`."
+)]
 pub enum SourceError {
     /// The identifier resolves to nothing in this source.
     NotFound,
