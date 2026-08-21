@@ -16,10 +16,6 @@ pub mod jp2;
 pub mod simple;
 
 use core::{error::Error, fmt};
-#[expect(
-    clippy::std_instead_of_core,
-    reason = "`core::io` is not stable on this toolchain — measured: clippy marks the `core::io` suggestion machine-applicable and the replacement does not compile (E0658, `core_io`). One import carries the exception for the whole file. Revisit when core::io stabilises."
-)]
 use std::io::{self, Read, Seek, SeekFrom};
 
 use num_traits::cast::ToPrimitive as _;
@@ -165,7 +161,7 @@ where
                 clippy::std_instead_of_core,
                 reason = "`core::io` is not stable on this toolchain — measured: clippy marks this suggestion machine-applicable and the replacement does not compile (E0658, `core_io`). Revisit when core::io stabilises."
             )]
-            Err(err) if err.kind() == std::io::ErrorKind::Interrupted => {}
+            Err(err) if err.kind() == io::ErrorKind::Interrupted => {}
             Err(err) => return Err(err),
         }
     }

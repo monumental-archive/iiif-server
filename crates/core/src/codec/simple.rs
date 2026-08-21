@@ -7,10 +7,6 @@
 //! `check` advises converting large ones to pyramids; small images are fine
 //! here.
 
-#[expect(
-    clippy::std_instead_of_core,
-    reason = "`core::io` is not stable on this toolchain — measured: clippy marks the `core::io` suggestion machine-applicable and the replacement does not compile (E0658, `core_io`). One import carries the exception for the whole file. Revisit when core::io stabilises."
-)]
 use std::io;
 
 use super::{CodecError, Master, guard_resident_pixels};

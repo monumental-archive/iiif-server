@@ -16,7 +16,7 @@ use crate::{
     grammar::{
         Component, Format, ImageRequest, ParseError, Quality, Region, Rotation, Size, SizeKind,
     },
-    info::{ImageDescription, Limits, SizeEntry, TileSet},
+    info::{ImageDescription, Limits},
 };
 
 /// A parsed v2.1 request plus what the v2 canonical form needs to
@@ -234,7 +234,10 @@ mod tests {
     )]
 
     use super::*;
-    use crate::eval::evaluate;
+    use crate::{
+        eval::evaluate,
+        info::{SizeEntry, TileSet},
+    };
 
     const LIMITS: Limits = Limits {
         width: 4000,
