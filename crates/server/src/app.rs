@@ -7,6 +7,28 @@
 //!
 //! Pure request→response logic; `main.rs` owns sockets and runtime.
 
+#![expect(
+    clippy::std_instead_of_core,
+    reason = "`core::io` is not stable on this toolchain — measured: the \
+              suggestion is marked machine-applicable and does not compile \
+              (E0658, `core_io`). Revisit when core::io stabilises."
+)]
+#![expect(
+    clippy::pattern_type_mismatch,
+    reason = "matches on a `&self` or `&err` receiver using default binding \
+          modes, the edition-2021/2024 idiom. `match *self` does not \
+          compile on these types — `error[E0507]: cannot move out of \
+          a shared reference` — and what satisfies the lint is `ref` \
+          bindings, the pre-2018 style default binding modes replaced."
+)]
+#![expect(
+    clippy::single_call_fn,
+    reason = "the response helpers and the route classifier are each called \
+          once, from the one handler that needs them. Folding them into \
+          it would put routing, CORS and every error mapping in one \
+          body."
+)]
+
 extern crate alloc;
 
 use alloc::sync::Arc;
@@ -58,9 +80,10 @@ const LD_JSON_V2: &str = "application/ld+json;profile=\"http://iiif.io/api/image
 /// job is correct revalidation semantics.
 const CACHE_CONTROL_VALUE: &str = "public, max-age=3600";
 
-/// The M5 `ETag` definition: hash of (source identity, source version
-/// [mtime+size], canonical request URI, binary version). Cheap, correct,
-/// no state. Two `DefaultHasher` passes with domain separation give 128
+/// The M5 `ETag` definition.
+///
+/// A hash of (source identity, source version [mtime+size], canonical
+/// request URI, binary version). Cheap, correct, no state. Two `DefaultHasher` passes with domain separation give 128
 /// bits against accidental collision; `DefaultHasher::new()` is
 /// deterministic across runs of the same binary, and the binary version
 /// is part of the input.
@@ -82,7 +105,7 @@ fn etag_for(identifier: &str, source_version: (u64, u64), canonical: &str) -> St
 fn if_none_match_hits<B>(req: &Request<B>, etag: &str) -> bool {
     req.headers()
         .get(IF_NONE_MATCH)
-        .and_then(|v| v.to_str().ok())
+        .and_then(|value| value.to_str().ok())
         .is_some_and(|value| {
             value == "*"
                 || value
@@ -91,7 +114,9 @@ fn if_none_match_hits<B>(req: &Request<B>, etag: &str) -> bool {
         })
 }
 
-/// Finish a response builder whose inputs are statically valid. The builder
+/// Finish a response builder whose inputs are statically valid.
+///
+/// The builder
 /// only errors on malformed status codes or header values; every call site
 /// passes constants or already-validated strings, so the fallback exists
 /// purely to keep the server panic-free if that invariant ever breaks.
@@ -159,6 +184,7 @@ impl Version {
 /// Where masters come from: a local directory or an S3-compatible
 /// object store — the prefix→root map whose default size is one.
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum SourceRoot {
     /// Masters under a local directory.
     Local(LocalRoot),
@@ -176,6 +202,11 @@ enum Resolved {
 
 impl SourceRoot {
     /// Resolve an identifier against this root, whichever backend it is.
+    ///
+    /// # Errors
+    ///
+    /// [`SourceError::NotFound`] when the identifier resolves to nothing,
+    /// and [`SourceError::Io`] for anything the backend could not read.
     async fn resolve(&self, id: &Identifier) -> Result<Resolved, SourceError> {
         match self {
             Self::Local(root) => root.resolve(id).map(Resolved::Local),
@@ -217,6 +248,15 @@ enum SourceReader {
     Memory(Cursor<Bytes>),
 }
 
+#[expect(
+    clippy::missing_trait_methods,
+    reason = "unsatisfiable on stable, measured with rustc: `read_buf` is \
+          `error[E0658]: use of unstable library feature `read_buf``, and \
+          its `BorrowedCursor` argument is `core_io_borrowed_buf`. The \
+          provided methods this lint asks for are the ones std reserves \
+          to itself; `read` and `seek` are the whole contract a caller \
+          uses."
+)]
 impl Read for SourceReader {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         match self {
@@ -226,6 +266,15 @@ impl Read for SourceReader {
     }
 }
 
+#[expect(
+    clippy::missing_trait_methods,
+    reason = "unsatisfiable on stable, measured with rustc: `read_buf` is \
+          `error[E0658]: use of unstable library feature `read_buf``, and \
+          its `BorrowedCursor` argument is `core_io_borrowed_buf`. The \
+          provided methods this lint asks for are the ones std reserves \
+          to itself; `read` and `seek` are the whole contract a caller \
+          uses."
+)]
 impl Seek for SourceReader {
     fn seek(&mut self, pos: SeekFrom) -> io::Result<u64> {
         match self {
@@ -236,6 +285,20 @@ impl Seek for SourceReader {
 }
 
 /// Shared server state: source root, limits, and the bounded decode pool.
+#[expect(
+    clippy::module_name_repetitions,
+    reason = "`app::App` is the application itself; the crate refers to it \
+              as `App` everywhere and a synonym would name nothing."
+)]
+#[expect(
+    clippy::exhaustive_structs,
+    reason = "the application's own wiring, built exactly once by this \
+              crate's binary from parsed CLI flags. `#[non_exhaustive]` \
+              would buy nothing — there is no external constructor to \
+              protect — and would cost an eight-parameter constructor in \
+              place of a struct literal whose field names are the \
+              documentation."
+)]
 pub struct App {
     /// Where masters are resolved from.
     pub root: SourceRoot,
@@ -259,6 +322,7 @@ pub struct App {
 }
 
 impl fmt::Debug for App {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("App")
             .field("root", &self.root)
@@ -278,11 +342,19 @@ impl App {
     ///
     /// Only if `hyper`'s response builder rejects statically valid
     /// header/status combinations — structurally impossible.
+    #[inline]
     pub async fn handle<B>(self: Arc<Self>, req: Request<B>) -> Response<Full<Bytes>>
     where
         B: Send + Sync,
     {
         let started = Instant::now();
+        #[expect(
+            clippy::wildcard_enum_match_arm,
+            reason = "only the two counted families have distinct labels; \
+                      every other route is `Other` by definition, and \
+                      naming them would be a list to keep in step with the \
+                      router for no gain."
+        )]
         let family = match Route::of(req.uri().path()) {
             Route::InfoJson { .. } => Family::Info,
             Route::Image { .. } => Family::Image,
@@ -315,6 +387,15 @@ impl App {
                     .header(CONTENT_TYPE, "text/plain")
                     .body(Full::new(Bytes::from_static(b"ok\n"))),
             ),
+            #[expect(
+                clippy::arithmetic_side_effects,
+                clippy::as_conversions,
+                reason = "`workers + queue_depth` is the admission bound this \
+                          server configured and validated at startup, and the \
+                          gauges widen `usize` to `u64` for the Prometheus \
+                          text format — lossless on every target this ships \
+                          to."
+            )]
             Route::Metrics => {
                 let in_flight = self
                     .workers
@@ -360,7 +441,7 @@ impl App {
                 let if_none_match = req
                     .headers()
                     .get(IF_NONE_MATCH)
-                    .and_then(|v| v.to_str().ok())
+                    .and_then(|value| value.to_str().ok())
                     .map(str::to_owned);
                 self.image(version, identifier, rest, &base, if_none_match)
                     .await
@@ -422,7 +503,7 @@ impl App {
         let accept = req
             .headers()
             .get(ACCEPT)
-            .and_then(|v| v.to_str().ok())
+            .and_then(|value| value.to_str().ok())
             .unwrap_or("");
         let content_type = if accept.contains("application/ld+json") {
             version.ld_json()
@@ -501,7 +582,7 @@ impl App {
                 && (candidates == "*"
                     || candidates
                         .split(',')
-                        .any(|c| c.trim().trim_start_matches("W/") == etag))
+                        .any(|candidate| candidate.trim().trim_start_matches("W/") == etag))
             {
                 return Ok(ImageOutcome::NotModified { etag });
             }
@@ -554,7 +635,7 @@ impl App {
         let host = req
             .headers()
             .get(HOST)
-            .and_then(|v| v.to_str().ok())
+            .and_then(|value| value.to_str().ok())
             .unwrap_or("localhost");
         format!("http://{host}")
     }
@@ -611,7 +692,7 @@ impl ImageFailure {
 }
 
 /// The resource shapes under `/iiif/3/` and `/iiif/2/`.
-enum Route<'p> {
+enum Route<'path> {
     /// `GET /healthz`.
     Health,
     /// `GET /metrics`.
@@ -621,32 +702,32 @@ enum Route<'p> {
         /// Which API version the path was routed under.
         version: Version,
         /// The percent-encoded identifier, still unvalidated.
-        identifier: &'p str,
+        identifier: &'path str,
     },
     /// An info.json request.
     InfoJson {
         /// Which API version the path was routed under.
         version: Version,
         /// The percent-encoded identifier, still unvalidated.
-        identifier: &'p str,
+        identifier: &'path str,
     },
     /// An image request; `rest` is the unparsed IIIF parameter path.
     Image {
         /// Which API version the path was routed under.
         version: Version,
         /// The percent-encoded identifier, still unvalidated.
-        identifier: &'p str,
+        identifier: &'path str,
         /// The remaining `{region}/{size}/{rotation}/{quality}.{format}`.
-        rest: &'p str,
+        rest: &'path str,
     },
     /// Nothing this server routes.
     None,
 }
 
-impl<'p> Route<'p> {
+impl<'path> Route<'path> {
     /// Classify a request path. The IIIF grammar IS the router, so
     /// this is the whole routing table.
-    fn of(path: &'p str) -> Self {
+    fn of(path: &'path str) -> Self {
         if path == "/healthz" {
             return Self::Health;
         }
@@ -673,6 +754,15 @@ impl<'p> Route<'p> {
                 version,
                 identifier,
             },
+            #[expect(
+                clippy::string_slice,
+                clippy::arithmetic_side_effects,
+                reason = "`rest` was split on '/' to produce `identifier`, so \
+                          `identifier.len() + 1` is a character boundary in \
+                          `rest` by construction — the slice cannot panic and \
+                          the addition cannot overflow a path that already \
+                          fits in memory."
+            )]
             [identifier, _region, _size, _rotation, _file] => Self::Image {
                 version,
                 identifier,
@@ -730,6 +820,12 @@ fn parse_error(err: &ParseError) -> Response<Full<Bytes>> {
 }
 
 /// Map a source failure onto 404 or 500.
+#[expect(
+    clippy::wildcard_enum_match_arm,
+    reason = "only NotFound has a distinct status; everything else a source \
+              can fail with is a 500 to the client, and enumerating them \
+              would leak backend detail into the response mapping."
+)]
 fn source_error(err: &SourceError) -> Response<Full<Bytes>> {
     match err {
         SourceError::NotFound => error(StatusCode::NOT_FOUND, "unknown identifier"),
@@ -759,7 +855,8 @@ fn codec_error(err: &CodecError) -> Response<Full<Bytes>> {
         CodecError::LimitExceeded(msg) => {
             error(StatusCode::FORBIDDEN, &format!("limit exceeded: {msg}"))
         }
-        CodecError::Raster(_) => error(StatusCode::INTERNAL_SERVER_ERROR, "pipeline failure"),
-        _ => error(StatusCode::INTERNAL_SERVER_ERROR, "pipeline failure"),
+        // Raster failures and any future variant are both "the pipeline
+        // could not produce an image", which is a 500 either way.
+        CodecError::Raster(_) | _ => error(StatusCode::INTERNAL_SERVER_ERROR, "pipeline failure"),
     }
 }
