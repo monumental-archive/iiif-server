@@ -117,10 +117,10 @@ where
 {
     let mut magic = [0_u8; 12];
     let got = read_up_to(&mut reader, &mut magic)
-        .map_err(|e| CodecError::Corrupt(format!("cannot read file header: {e}")))?;
+        .map_err(|err| CodecError::Corrupt(format!("cannot read file header: {err}")))?;
     reader
         .seek(SeekFrom::Start(0))
-        .map_err(|e| CodecError::Corrupt(format!("cannot rewind: {e}")))?;
+        .map_err(|err| CodecError::Corrupt(format!("cannot rewind: {err}")))?;
     let magic = &magic[..got];
     if magic.starts_with(b"II*\0") || magic.starts_with(b"MM\0*") {
         return Ok(Box::new(TiffPyramid::open(reader)?));
@@ -128,7 +128,7 @@ where
     let mut bytes = Vec::new();
     reader
         .read_to_end(&mut bytes)
-        .map_err(|e| CodecError::Corrupt(format!("cannot read master: {e}")))?;
+        .map_err(|err| CodecError::Corrupt(format!("cannot read master: {err}")))?;
     if (magic.len() >= 12 && &magic[4..12] == b"jP  \r\n\x87\n")
         || magic.starts_with(b"\xFF\x4F\xFF\x51")
     {
@@ -159,8 +159,8 @@ where
                 clippy::std_instead_of_core,
                 reason = "`core::io` is not stable on this toolchain — measured: clippy marks this suggestion machine-applicable and the replacement does not compile (E0658, `core_io`). Revisit when core::io stabilises."
             )]
-            Err(e) if e.kind() == std::io::ErrorKind::Interrupted => {}
-            Err(e) => return Err(e),
+            Err(err) if err.kind() == std::io::ErrorKind::Interrupted => {}
+            Err(err) => return Err(err),
         }
     }
     Ok(filled)
@@ -208,7 +208,7 @@ impl fmt::Display for CodecError {
             Self::Unsupported(msg) => write!(f, "unsupported master: {msg}"),
             Self::Corrupt(msg) => write!(f, "corrupt master: {msg}"),
             Self::LimitExceeded(msg) => write!(f, "limit exceeded: {msg}"),
-            Self::Raster(e) => write!(f, "pixel bookkeeping: {e}"),
+            Self::Raster(err) => write!(f, "pixel bookkeeping: {err}"),
         }
     }
 }
@@ -217,15 +217,15 @@ impl core::error::Error for CodecError {}
 
 impl From<RasterError> for CodecError {
     #[inline]
-    fn from(e: RasterError) -> Self {
-        Self::Raster(e)
+    fn from(err: RasterError) -> Self {
+        Self::Raster(err)
     }
 }
 
 impl From<tiff::TiffError> for CodecError {
     #[inline]
-    fn from(e: tiff::TiffError) -> Self {
-        match e {
+    fn from(err: tiff::TiffError) -> Self {
+        match err {
             tiff::TiffError::UnsupportedError(inner) => Self::Unsupported(inner.to_string()),
             other => Self::Corrupt(other.to_string()),
         }

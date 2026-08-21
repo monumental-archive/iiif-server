@@ -75,8 +75,8 @@ impl Jp2Master {
     /// current matrix.
     #[inline]
     pub fn new(bytes: Vec<u8>) -> Result<Self, CodecError> {
-        let decoder =
-            J2kDecoder::new(&bytes).map_err(|e| CodecError::Corrupt(format!("JP2 parse: {e}")))?;
+        let decoder = J2kDecoder::new(&bytes)
+            .map_err(|err| CodecError::Corrupt(format!("JP2 parse: {err}")))?;
         let info = decoder.info();
         let (width, height) = info.dimensions;
         let components = info.components;
@@ -205,7 +205,7 @@ impl Master for Jp2Master {
     #[inline]
     fn decode_crop(&mut self, crop: CropRect, needed: f64) -> Result<Raster, CodecError> {
         let mut decoder = J2kDecoder::new(&self.bytes)
-            .map_err(|e| CodecError::Corrupt(format!("JP2 parse: {e}")))?;
+            .map_err(|err| CodecError::Corrupt(format!("JP2 parse: {err}")))?;
         // Pool pressure decides: an idle pool wants the codec's internal
         // parallelism (1.7× lower latency), a saturated one does not
         // (oversubscription costs ~16% throughput). See
@@ -233,7 +233,7 @@ impl Master for Jp2Master {
         let mut out = vec![0_u8; stride * scaled.h as usize];
         decoder
             .decode_region_scaled_pow2_into(&mut pool, &mut out, stride, fmt, roi, levels)
-            .map_err(|e| CodecError::Corrupt(format!("JP2 decode: {e}")))?;
+            .map_err(|err| CodecError::Corrupt(format!("JP2 decode: {err}")))?;
         Ok(raster_of(fmt, scaled.w, scaled.h, out))
     }
 }

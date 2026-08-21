@@ -60,7 +60,7 @@ impl fmt::Display for SourceError {
                 f,
                 "range {offset}+{len} out of bounds for source of {source_len} bytes"
             ),
-            Self::Io(e) => write!(f, "source I/O error: {e}"),
+            Self::Io(err) => write!(f, "source I/O error: {err}"),
         }
     }
 }
@@ -69,7 +69,7 @@ impl core::error::Error for SourceError {
     #[inline]
     fn source(&self) -> Option<&(dyn core::error::Error + 'static)> {
         match self {
-            Self::Io(e) => Some(e),
+            Self::Io(err) => Some(err),
             _ => None,
         }
     }
@@ -81,11 +81,11 @@ impl core::error::Error for SourceError {
 )]
 impl From<std::io::Error> for SourceError {
     #[inline]
-    fn from(e: std::io::Error) -> Self {
-        if e.kind() == std::io::ErrorKind::NotFound {
+    fn from(err: std::io::Error) -> Self {
+        if err.kind() == std::io::ErrorKind::NotFound {
             Self::NotFound
         } else {
-            Self::Io(e)
+            Self::Io(err)
         }
     }
 }

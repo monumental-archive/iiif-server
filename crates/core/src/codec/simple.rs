@@ -40,7 +40,7 @@ impl SimpleMaster {
         // any pixel buffer is allocated.
         decoder
             .decode_headers()
-            .map_err(|e| CodecError::Corrupt(format!("JPEG headers: {e}")))?;
+            .map_err(|err| CodecError::Corrupt(format!("JPEG headers: {err}")))?;
         if let Some((width, height)) = decoder.dimensions() {
             guard_resident_pixels(
                 u32::try_from(width).unwrap_or(u32::MAX),
@@ -49,7 +49,7 @@ impl SimpleMaster {
         }
         let pixels = decoder
             .decode()
-            .map_err(|e| CodecError::Corrupt(format!("JPEG decode: {e}")))?;
+            .map_err(|err| CodecError::Corrupt(format!("JPEG decode: {err}")))?;
         let (width, height) = decoder
             .dimensions()
             .ok_or_else(|| CodecError::Corrupt("JPEG has no dimensions".to_owned()))?;
@@ -81,7 +81,7 @@ impl SimpleMaster {
         let decoder = png::Decoder::new(std::io::Cursor::new(bytes));
         let mut reader = decoder
             .read_info()
-            .map_err(|e| CodecError::Corrupt(format!("PNG decode: {e}")))?;
+            .map_err(|err| CodecError::Corrupt(format!("PNG decode: {err}")))?;
         // Header dimensions are known here; the frame buffer is not yet
         // allocated. Guard before it is.
         {
@@ -96,7 +96,7 @@ impl SimpleMaster {
         ];
         let info = reader
             .next_frame(&mut buf)
-            .map_err(|e| CodecError::Corrupt(format!("PNG decode: {e}")))?;
+            .map_err(|err| CodecError::Corrupt(format!("PNG decode: {err}")))?;
         buf.truncate(info.buffer_size());
         let (width, height) = (info.width, info.height);
         let raster = match (info.color_type, info.bit_depth) {

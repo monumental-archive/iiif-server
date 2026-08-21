@@ -83,7 +83,7 @@ fn encode_tiff(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
     let mut cursor = std::io::Cursor::new(Vec::new());
     {
         let mut encoder =
-            TiffEncoder::new(&mut cursor).map_err(|e| EncodeError::Internal(e.to_string()))?;
+            TiffEncoder::new(&mut cursor).map_err(|err| EncodeError::Internal(err.to_string()))?;
         match &raster {
             Raster::Gray8 {
                 width,
@@ -91,14 +91,14 @@ fn encode_tiff(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
                 data,
             } => encoder
                 .write_image::<colortype::Gray8>(*width, *height, data)
-                .map_err(|e| EncodeError::Internal(e.to_string()))?,
+                .map_err(|err| EncodeError::Internal(err.to_string()))?,
             Raster::Rgb8 {
                 width,
                 height,
                 data,
             } => encoder
                 .write_image::<colortype::RGB8>(*width, *height, data)
-                .map_err(|e| EncodeError::Internal(e.to_string()))?,
+                .map_err(|err| EncodeError::Internal(err.to_string()))?,
             _ => {
                 return Err(EncodeError::Internal(
                     "alpha survived flattening".to_owned(),
@@ -142,10 +142,10 @@ fn encode_gif(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
     let mut out = Vec::new();
     {
         let mut encoder = gif::Encoder::new(&mut out, width, height, &[])
-            .map_err(|e| EncodeError::Internal(e.to_string()))?;
+            .map_err(|err| EncodeError::Internal(err.to_string()))?;
         encoder
             .write_frame(&frame)
-            .map_err(|e| EncodeError::Internal(e.to_string()))?;
+            .map_err(|err| EncodeError::Internal(err.to_string()))?;
     }
     Ok(out)
 }
@@ -167,7 +167,7 @@ fn encode_webp(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
     };
     encoder
         .encode(raster.data(), raster.width(), raster.height(), color)
-        .map_err(|e| EncodeError::Internal(e.to_string()))?;
+        .map_err(|err| EncodeError::Internal(err.to_string()))?;
     Ok(out)
 }
 
@@ -193,9 +193,9 @@ fn encode_jp2(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
     };
     let options = j2k::J2kLosslessEncodeOptions::default();
     let encoded = j2k::encode_j2k_lossless(samples, &options)
-        .map_err(|e| EncodeError::Internal(e.to_string()))?;
+        .map_err(|err| EncodeError::Internal(err.to_string()))?;
     let wrapped = j2k::wrap_j2k_codestream(&encoded.codestream, j2k::J2kFileWrapOptions::jp2())
-        .map_err(|e| EncodeError::Internal(e.to_string()))?;
+        .map_err(|err| EncodeError::Internal(err.to_string()))?;
     Ok(wrapped)
 }
 
@@ -350,7 +350,7 @@ fn encode_jpeg(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
     };
     encoder
         .encode(raster.data(), width, height, color)
-        .map_err(|e| EncodeError::Internal(e.to_string()))?;
+        .map_err(|err| EncodeError::Internal(err.to_string()))?;
     Ok(out)
 }
 
@@ -367,10 +367,10 @@ fn encode_png(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
         encoder.set_depth(png::BitDepth::Eight);
         let mut writer = encoder
             .write_header()
-            .map_err(|e| EncodeError::Internal(e.to_string()))?;
+            .map_err(|err| EncodeError::Internal(err.to_string()))?;
         writer
             .write_image_data(raster.data())
-            .map_err(|e| EncodeError::Internal(e.to_string()))?;
+            .map_err(|err| EncodeError::Internal(err.to_string()))?;
     }
     Ok(out)
 }

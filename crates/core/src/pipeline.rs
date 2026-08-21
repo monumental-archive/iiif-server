@@ -35,9 +35,9 @@ impl fmt::Display for PipelineError {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Codec(e) => write!(f, "{e}"),
-            Self::Encode(e) => write!(f, "{e}"),
-            Self::Raster(e) => write!(f, "{e}"),
+            Self::Codec(err) => write!(f, "{err}"),
+            Self::Encode(err) => write!(f, "{err}"),
+            Self::Raster(err) => write!(f, "{err}"),
             Self::Resize(msg) => write!(f, "resample failure: {msg}"),
         }
     }
@@ -47,22 +47,22 @@ impl core::error::Error for PipelineError {}
 
 impl From<CodecError> for PipelineError {
     #[inline]
-    fn from(e: CodecError) -> Self {
-        Self::Codec(e)
+    fn from(err: CodecError) -> Self {
+        Self::Codec(err)
     }
 }
 
 impl From<EncodeError> for PipelineError {
     #[inline]
-    fn from(e: EncodeError) -> Self {
-        Self::Encode(e)
+    fn from(err: EncodeError) -> Self {
+        Self::Encode(err)
     }
 }
 
 impl From<RasterError> for PipelineError {
     #[inline]
-    fn from(e: RasterError) -> Self {
-        Self::Raster(e)
+    fn from(err: RasterError) -> Self {
+        Self::Raster(err)
     }
 }
 
@@ -141,14 +141,14 @@ fn resize(raster: Raster, out_w: u32, out_h: u32) -> Result<Raster, PipelineErro
         } => (width, height, data),
     };
     let src = fir::images::Image::from_vec_u8(width, height, data, pixel_type)
-        .map_err(|e| PipelineError::Resize(e.to_string()))?;
+        .map_err(|err| PipelineError::Resize(err.to_string()))?;
     let mut dst = fir::images::Image::new(out_w, out_h, pixel_type);
     let mut resizer = fir::Resizer::new();
     let options = fir::ResizeOptions::new()
         .resize_alg(fir::ResizeAlg::Convolution(fir::FilterType::Lanczos3));
     resizer
         .resize(&src, &mut dst, &options)
-        .map_err(|e| PipelineError::Resize(e.to_string()))?;
+        .map_err(|err| PipelineError::Resize(err.to_string()))?;
     let data = dst.into_vec();
     Ok(match channels {
         1 => Raster::Gray8 {

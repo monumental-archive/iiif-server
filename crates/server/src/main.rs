@@ -93,7 +93,7 @@ fn version_line() -> String {
 async fn probe_health(addr: SocketAddr) -> Result<(), String> {
     let mut stream = TcpStream::connect(addr)
         .await
-        .map_err(|e| format!("connect {addr}: {e}"))?;
+        .map_err(|err| format!("connect {addr}: {err}"))?;
     let request = format!(
         "GET /healthz HTTP/1.1\r\nHost: {addr}\r\nUser-Agent: iiif-server-healthcheck\r\n\
         Connection: close\r\n\r\n"
@@ -101,7 +101,7 @@ async fn probe_health(addr: SocketAddr) -> Result<(), String> {
     stream
         .write_all(request.as_bytes())
         .await
-        .map_err(|e| format!("write {addr}: {e}"))?;
+        .map_err(|err| format!("write {addr}: {err}"))?;
     // The status line is all that matters, and it arrives first; read until
     // the end of it rather than draining a body we will not look at.
     let mut buffer = [0_u8; 128];
@@ -110,7 +110,7 @@ async fn probe_health(addr: SocketAddr) -> Result<(), String> {
         let read = stream
             .read(&mut buffer[filled..])
             .await
-            .map_err(|e| format!("read {addr}: {e}"))?;
+            .map_err(|err| format!("read {addr}: {err}"))?;
         if read == 0 {
             break;
         }
@@ -141,8 +141,8 @@ async fn shutdown_signal() {
             Ok(mut signal) => {
                 signal.recv().await;
             }
-            Err(e) => {
-                error!("SIGTERM handler registration failed, falling back to SIGINT only: {e}");
+            Err(err) => {
+                error!("SIGTERM handler registration failed, falling back to SIGINT only: {err}");
                 core::future::pending::<()>().await;
             }
         }
@@ -151,8 +151,8 @@ async fn shutdown_signal() {
     let terminate = std::future::pending::<()>();
 
     let interrupt = async {
-        if let Err(e) = tokio::signal::ctrl_c().await {
-            error!("interrupt handler registration failed: {e}");
+        if let Err(err) = tokio::signal::ctrl_c().await {
+            error!("interrupt handler registration failed: {err}");
             core::future::pending::<()>().await;
         }
     };
@@ -177,8 +177,8 @@ fn run_check(path: &Path) -> ExitCode {
                         walk.push(child.path());
                     }
                 }
-                Err(e) => {
-                    eprintln!("{}: unreadable directory: {e}", entry.display());
+                Err(err) => {
+                    eprintln!("{}: unreadable directory: {err}", entry.display());
                     failures += 1;
                 }
             }
@@ -186,8 +186,8 @@ fn run_check(path: &Path) -> ExitCode {
         }
         checked += 1;
         let opened = std::fs::File::open(&entry)
-            .map_err(|e| format!("unreadable: {e}"))
-            .and_then(|file| iiif_core::codec::open_master(file).map_err(|e| e.to_string()));
+            .map_err(|err| format!("unreadable: {err}"))
+            .and_then(|file| iiif_core::codec::open_master(file).map_err(|err| err.to_string()));
         match opened {
             Ok(master) => {
                 let (w, h) = master.dimensions();
@@ -240,21 +240,25 @@ fn parse_args(args: &[String]) -> Result<Config, String> {
     while let Some(flag) = it.next() {
         let value = it.next().ok_or_else(|| format!("{flag} needs a value"))?;
         match flag.as_str() {
-            "--bind" => config.bind = value.parse().map_err(|e| format!("--bind: {e}"))?,
+            "--bind" => config.bind = value.parse().map_err(|err| format!("--bind: {err}"))?,
             "--max-width" => {
-                config.max_width = value.parse().map_err(|e| format!("--max-width: {e}"))?;
+                config.max_width = value.parse().map_err(|err| format!("--max-width: {err}"))?;
             }
             "--max-height" => {
-                config.max_height = value.parse().map_err(|e| format!("--max-height: {e}"))?;
+                config.max_height = value
+                    .parse()
+                    .map_err(|err| format!("--max-height: {err}"))?;
             }
             "--max-area" => {
-                config.max_area = value.parse().map_err(|e| format!("--max-area: {e}"))?;
+                config.max_area = value.parse().map_err(|err| format!("--max-area: {err}"))?;
             }
             "--workers" => {
-                config.workers = value.parse().map_err(|e| format!("--workers: {e}"))?;
+                config.workers = value.parse().map_err(|err| format!("--workers: {err}"))?;
             }
             "--queue-depth" => {
-                config.queue_depth = value.parse().map_err(|e| format!("--queue-depth: {e}"))?;
+                config.queue_depth = value
+                    .parse()
+                    .map_err(|err| format!("--queue-depth: {err}"))?;
             }
             "--public-base" => config.public_base = Some(value.clone()),
             "--endpoint" => config.endpoint = Some(value.clone()),
@@ -292,8 +296,8 @@ fn main() -> ExitCode {
         let addr = match args.get(1) {
             Some(raw) => match raw.parse::<SocketAddr>() {
                 Ok(addr) => addr,
-                Err(e) => {
-                    eprintln!("healthcheck: {raw}: {e}");
+                Err(err) => {
+                    eprintln!("healthcheck: {raw}: {err}");
                     return ExitCode::FAILURE;
                 }
             },
@@ -305,8 +309,8 @@ fn main() -> ExitCode {
             .build()
         {
             Ok(runtime) => runtime,
-            Err(e) => {
-                eprintln!("healthcheck: runtime startup failed: {e}");
+            Err(err) => {
+                eprintln!("healthcheck: runtime startup failed: {err}");
                 return ExitCode::FAILURE;
             }
         };
@@ -342,8 +346,8 @@ fn main() -> ExitCode {
     };
     let runtime = match tokio::runtime::Runtime::new() {
         Ok(runtime) => runtime,
-        Err(e) => {
-            error!("runtime startup failed: {e}");
+        Err(err) => {
+            error!("runtime startup failed: {err}");
             return ExitCode::FAILURE;
         }
     };
@@ -366,7 +370,7 @@ async fn serve(config: Config) -> Result<(), String> {
     } else {
         SourceRoot::Local(
             LocalRoot::new(Path::new(&config.root))
-                .map_err(|e| format!("source root {}: {e}", config.root))?,
+                .map_err(|err| format!("source root {}: {err}", config.root))?,
         )
     };
     let app = Arc::new(App {
@@ -385,7 +389,7 @@ async fn serve(config: Config) -> Result<(), String> {
     });
     let listener = TcpListener::bind(config.bind)
         .await
-        .map_err(|e| format!("bind {}: {e}", config.bind))?;
+        .map_err(|err| format!("bind {}: {err}", config.bind))?;
     info!(
         "serving {} on http://{} ({} workers, queue {})",
         config.root, config.bind, config.workers, config.queue_depth
@@ -408,8 +412,8 @@ async fn serve(config: Config) -> Result<(), String> {
             },
             accepted = listener.accept() => match accepted {
                 Ok(accepted) => accepted,
-                Err(e) => {
-                    error!("accept: {e}");
+                Err(err) => {
+                    error!("accept: {err}");
                     continue;
                 },
             },
@@ -427,17 +431,17 @@ async fn serve(config: Config) -> Result<(), String> {
             tokio::pin!(connection);
             tokio::select! {
                 result = connection.as_mut() => {
-                    if let Err(e) = result {
+                    if let Err(err) = result {
                         // Client disconnects are routine; log at debug level only.
-                        tracing::debug!("connection ended: {e}");
+                        tracing::debug!("connection ended: {err}");
                     }
                 },
                 _ = connection_shutdown.changed() => {
                     // Finish the request in flight, refuse further ones on this
                     // keep-alive connection, then close.
                     connection.as_mut().graceful_shutdown();
-                    if let Err(e) = connection.await {
-                        tracing::debug!("connection ended during shutdown: {e}");
+                    if let Err(err) = connection.await {
+                        tracing::debug!("connection ended during shutdown: {err}");
                     }
                 },
             }

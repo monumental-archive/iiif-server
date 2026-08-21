@@ -351,7 +351,7 @@ impl App {
         };
         let source = match self.root.resolve(&id).await {
             Ok(source) => source,
-            Err(e) => return source_error(&e),
+            Err(err) => return source_error(&err),
         };
         // ETag first: a revalidation hit never opens the master at all.
         let etag = etag_for(
@@ -365,13 +365,13 @@ impl App {
         let opened = tokio::task::spawn_blocking(move || {
             let reader = source
                 .into_reader()
-                .map_err(|e| CodecError::Corrupt(format!("source handle: {e}")))?;
+                .map_err(|err| CodecError::Corrupt(format!("source handle: {err}")))?;
             open_master(reader).map(|master| master.describe())
         })
         .await;
         let description = match opened {
             Ok(Ok(description)) => description,
-            Ok(Err(e)) => return codec_error(&e),
+            Ok(Err(err)) => return codec_error(&err),
             Err(_) => return error(StatusCode::INTERNAL_SERVER_ERROR, "decode task failed"),
         };
         let base = self.base_uri(req);
@@ -417,16 +417,16 @@ impl App {
         let (request, v2_spelling) = match version {
             Version::V3 => match ImageRequest::parse(rest) {
                 Ok(request) => (request, None),
-                Err(e) => return parse_error(&e),
+                Err(err) => return parse_error(&err),
             },
             Version::V2 => match iiif_core::v2::parse_image_request(rest) {
                 Ok(parsed) => (parsed.request, Some(parsed)),
-                Err(e) => return parse_error(&e),
+                Err(err) => return parse_error(&err),
             },
         };
         let source = match self.root.resolve(&id).await {
             Ok(source) => source,
-            Err(e) => return source_error(&e),
+            Err(err) => return source_error(&err),
         };
         // Backpressure: admission bounds the queue (full → 503),
         // execution bounds concurrent decode work.
@@ -444,8 +444,8 @@ impl App {
         let result = tokio::task::spawn_blocking(move || {
             let _permit = permit; // held for the duration of the decode
             let _admission = admission;
-            let reader = source.into_reader().map_err(|e| {
-                ImageFailure::Codec(CodecError::Corrupt(format!("source handle: {e}")))
+            let reader = source.into_reader().map_err(|err| {
+                ImageFailure::Codec(CodecError::Corrupt(format!("source handle: {err}")))
             })?;
             let mut master = open_master(reader)?;
             master.set_internal_parallelism(pool_idle);
@@ -540,20 +540,20 @@ enum ImageFailure {
 }
 
 impl From<CodecError> for ImageFailure {
-    fn from(e: CodecError) -> Self {
-        Self::Codec(e)
+    fn from(err: CodecError) -> Self {
+        Self::Codec(err)
     }
 }
 
 impl ImageFailure {
     fn into_response(self) -> Response<Full<Bytes>> {
         match self {
-            Self::Eval(e) => error(StatusCode::BAD_REQUEST, &e.to_string()),
-            Self::Codec(e) => codec_error(&e),
+            Self::Eval(err) => error(StatusCode::BAD_REQUEST, &err.to_string()),
+            Self::Codec(err) => codec_error(&err),
             Self::Pipeline(PipelineError::Encode(EncodeError::DimensionsBeyondFormat {
                 ..
             })) => error(StatusCode::BAD_REQUEST, "output too large for this format"),
-            Self::Pipeline(e) => error(StatusCode::INTERNAL_SERVER_ERROR, &e.to_string()),
+            Self::Pipeline(err) => error(StatusCode::INTERNAL_SERVER_ERROR, &err.to_string()),
         }
     }
 }
@@ -653,19 +653,19 @@ fn overloaded() -> Response<Full<Bytes>> {
     response
 }
 
-fn parse_error(e: &ParseError) -> Response<Full<Bytes>> {
-    error(StatusCode::BAD_REQUEST, &e.to_string())
+fn parse_error(err: &ParseError) -> Response<Full<Bytes>> {
+    error(StatusCode::BAD_REQUEST, &err.to_string())
 }
 
-fn source_error(e: &SourceError) -> Response<Full<Bytes>> {
-    match e {
+fn source_error(err: &SourceError) -> Response<Full<Bytes>> {
+    match err {
         SourceError::NotFound => error(StatusCode::NOT_FOUND, "unknown identifier"),
         _ => error(StatusCode::INTERNAL_SERVER_ERROR, "source read failed"),
     }
 }
 
-fn codec_error(e: &CodecError) -> Response<Full<Bytes>> {
-    match e {
+fn codec_error(err: &CodecError) -> Response<Full<Bytes>> {
+    match err {
         // An operator-side master problem: the identifier exists but is
         // outside the supported matrix. 500-class (the client did nothing
         // wrong), message actionable.

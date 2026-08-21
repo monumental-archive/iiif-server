@@ -101,8 +101,8 @@ impl ByteRangeSource for LocalFile {
             .await;
             match join {
                 Ok(Ok(bytes)) => Ok(bytes),
-                Ok(Err(e)) => Err(SourceError::from(e)),
-                Err(e) => Err(SourceError::Io(std::io::Error::other(e))),
+                Ok(Err(err)) => Err(SourceError::from(err)),
+                Err(err) => Err(SourceError::Io(std::io::Error::other(err))),
             }
         })
     }
@@ -221,7 +221,9 @@ impl ObjectRoot {
         if let Some(endpoint) = endpoint {
             builder = builder.with_endpoint(endpoint);
         }
-        let store = builder.build().map_err(|e| format!("object store: {e}"))?;
+        let store = builder
+            .build()
+            .map_err(|err| format!("object store: {err}"))?;
         Ok(Self {
             store: Arc::new(store),
             prefix,
@@ -242,7 +244,7 @@ impl ObjectRoot {
         } else {
             object_store::path::Path::from(format!("{}/{}", self.prefix, id.as_path()))
         };
-        let result = self.store.get(&path).await.map_err(|e| match e {
+        let result = self.store.get(&path).await.map_err(|err| match err {
             object_store::Error::NotFound { .. } => SourceError::NotFound,
             other => SourceError::Io(std::io::Error::other(other)),
         })?;
@@ -250,7 +252,7 @@ impl ObjectRoot {
         let bytes = result
             .bytes()
             .await
-            .map_err(|e| SourceError::Io(std::io::Error::other(e)))?;
+            .map_err(|err| SourceError::Io(std::io::Error::other(err)))?;
         let version_hash = {
             use core::hash::{Hash as _, Hasher as _};
             let mut hasher = std::collections::hash_map::DefaultHasher::new();
