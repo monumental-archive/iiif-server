@@ -12,6 +12,17 @@ over the surface named in [MAINTENANCE.md](MAINTENANCE.md) — the HTTP API, the
 CLI flags and the container contract. Internal Rust APIs are not covered:
 nothing in this workspace is published to a registry.
 
+## [0.2.1](https://github.com/monumental-archive/iiif-server/compare/v0.2.0...v0.2.1) - 2026-08-21
+
+### Fixed
+
+- update http-body-util to 0.1 ([#126](https://github.com/monumental-archive/iiif-server/pull/126))
+- declare the image binary and pin canon v1.58.1 ([#128](https://github.com/monumental-archive/iiif-server/pull/128))
+
+### Dependencies
+
+- update alpine to v3.24 ([#130](https://github.com/monumental-archive/iiif-server/pull/130))
+
 ## [0.2.0](https://github.com/monumental-archive/iiif-server/compare/v0.1.0...v0.2.0) - 2026-08-21
 
 ### Added
