@@ -89,15 +89,28 @@ stopped being true.
 
 The organisation's reproducibility gate measured the in-container cargo
 build nondeterministic while the same crates built bit-for-bit under a
-pinned native toolchain (`.github#295`). So the binary is built by
-`scripts/oci-prepare.sh`, natively per architecture, in the toolchain
-`mise.toml` pins, and the Dockerfile only assembles pinned inputs. One
-toolchain, not two; determinism by construction rather than by audit.
+pinned native toolchain (`.github#295`). So the binary is built outside,
+natively per architecture, in the toolchain `mise.toml` pins, and the
+Dockerfile only assembles pinned inputs. One toolchain, not two;
+determinism by construction rather than by audit.
+
+**It is declared, not scripted** (`.github#775`). `binary-crate:
+crates/server` in the publish stub is this repository's whole statement;
+the class builds that crate through the same definition the rust-binary
+class compiles with and installs the result at `dist/iiif-server`. The
+prepare script this replaced was twenty-five lines that release-lab had
+also written with one binary name changed — and, more to the point, it
+emitted no inventory plan, so v0.2.0 hit the publish guard and never
+released (`.github#773`). A declaration cannot be forgotten the way a
+per-repository copy of a compile can drift.
 
 The build revision the binary reports through `--version` and the
-`iiif_build_info` metric is read at compile time by `option_env!`, so
-`oci-prepare.sh` derives it from the checkout — the release checks out
-the tag, which is what keeps two rebuilds of one tag identical.
+`iiif_build_info` metric is read at compile time by `option_env!`, from
+`GITHUB_SHA` — the full forty-hex commit, which every Actions step
+carries and which is identical on both legs of the reproducibility gate.
+It used to come from `IIIF_BUILD_REVISION`, which the deleted prepare
+script exported; a declaration cannot carry a repository's own
+compile-time variable, and the platform already names this one.
 
 ## Why `cargo auditable` is not optional
 

@@ -5,13 +5,14 @@
 # filesystem — the container-shaped twin of "one static binary".
 #
 # NO COMPILE HAPPENS HERE, by rule (.github#295). The binary is built by
-# scripts/oci-prepare.sh in this repository's mise-pinned toolchain,
-# natively per architecture, and COPYed in: the org's repro gate measured
-# the in-container cargo build nondeterministic while the same crates
-# built bit-for-bit under the pinned native toolchain, so a Dockerfile
-# that compiles IS the failure mode. What is left is pure assembly over
-# pinned inputs, which is why every stage below is digest-pinned and
-# `scratch` is the runtime.
+# the oci-image class from this repository's `binary-crate` declaration
+# (.github#775), natively per architecture in the toolchain `mise.toml`
+# pins, and COPYed in: the org's repro gate measured the in-container
+# cargo build nondeterministic while the same crates built bit-for-bit
+# under the pinned native toolchain, so a Dockerfile that compiles IS
+# the failure mode. What is left is pure assembly over pinned inputs,
+# which is why every stage below is digest-pinned and `scratch` is the
+# runtime.
 
 # The TLS trust store, and the only reason any stage exists above
 # `scratch`. rustls reads the bundle through SSL_CERT_FILE, which is what
@@ -31,9 +32,10 @@ FROM scratch
 
 COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY LICENSE /LICENSE
-# Built outside, per architecture, by scripts/oci-prepare.sh — with
+# Built outside, per architecture, by the class's own build — with
 # cargo-auditable, so the .dep-v0 section keeps this image's Rust
 # dependency surface visible to a scanner reading the published bytes.
+# The path is the class's contract: <context>/dist/<binary name>.
 COPY dist/iiif-server /iiif-server
 
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt

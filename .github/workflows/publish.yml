@@ -27,7 +27,7 @@ concurrency:
 
 jobs:
   publish:
-    uses: monumental-archive/.github/.github/workflows/publish.yml@e482692675136947e7483a638ad59aa0abf9ecbf # v1.57.2
+    uses: monumental-archive/.github/.github/workflows/publish.yml@eb86be6978fea96ca5f7122bcaa61e1507a1737d # v1.58.1
     with:
       # One class. The published artifact is the container image and
       # nothing else: the crates are workspace-internal (`publish =
@@ -35,10 +35,16 @@ jobs:
       # rust-binary would be a class owing evidence for an artifact
       # nobody pulls. Adding one later is additive.
       classes: oci-image
-      # The compile lives OUTSIDE the Dockerfile (.github#295): the
-      # binary is built here, in this repository's mise-pinned
-      # toolchain, and the Dockerfile is pure assembly over it.
-      prepare: scripts/oci-prepare.sh
+      # The compile lives OUTSIDE the Dockerfile (.github#295) — and it
+      # is DECLARED, not scripted (.github#775). The class builds this
+      # crate through the same definition the rust-binary class uses,
+      # in this repository's own mise-pinned toolchain, and installs
+      # the binary at dist/iiif-server for the Dockerfile to COPY. The
+      # prepare script this replaces was twenty-five lines that
+      # release-lab had also written, with one binary name changed —
+      # and it emitted no inventory plan, which is why v0.2.0 could not
+      # publish at all (.github#773).
+      binary-crate: crates/server
       # Run on the loaded image before anything is published, and again
       # on the bytes pulled back from the registry by digest — which is
       # what makes it the right home for the conformance run: the IIIF
