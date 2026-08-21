@@ -101,10 +101,13 @@ changed.
   Every other file type is covered by the blanket entry in `REUSE.toml`
   and needs nothing; `lint:reuse` proves it.
 - **The Dockerfile does not compile anything.** The binary is built by
-  `scripts/oci-prepare.sh` in the mise-pinned toolchain and COPYed in
-  (`.github#295`): the org's repro gate measured the in-container cargo
-  build nondeterministic while the same crates built bit-for-bit
-  natively. Keep the Dockerfile pure assembly over digest-pinned inputs.
+  the oci-image class from the `binary-crate: crates/server`
+  declaration in the publish stub, in the mise-pinned toolchain, and
+  COPYed in from `dist/` (`.github#295`, `.github#775`): the org's repro
+  gate measured the in-container cargo build nondeterministic while the
+  same crates built bit-for-bit natively. Keep the Dockerfile pure
+  assembly over digest-pinned inputs, and do not reintroduce a prepare
+  script — the class refuses `prepare` and `binary-crate` together.
 
 ## Architecture
 

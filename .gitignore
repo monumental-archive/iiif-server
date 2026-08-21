@@ -14,8 +14,9 @@ settings.local.json
 /fuzz/artifacts/
 /fuzz/target/
 
-# The oci-image class's prepare output: the binary scripts/oci-prepare.sh
-# builds for the Dockerfile to COPY. A build artifact, never committed.
+# Where the oci-image class installs the binary it builds from this
+# repository's `binary-crate` declaration, for the Dockerfile to COPY.
+# A build artifact, never committed.
 /dist/
 
 # personal lefthook overrides — never committed

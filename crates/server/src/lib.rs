@@ -13,10 +13,17 @@ pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Commit the binary was built from, or `unknown`.
 ///
-/// Injected at build time by the release pipeline (`IIIF_BUILD_REVISION`).
-/// Absent in ordinary `cargo build`s, where there is no meaningful answer —
-/// a working tree is not a revision.
-pub const REVISION: &str = match option_env!("IIIF_BUILD_REVISION") {
+/// Read at compile time from `GITHUB_SHA` — the full forty-hex commit,
+/// which every Actions step already carries and which is identical on both
+/// legs of the release's reproducibility gate. It used to come from
+/// `IIIF_BUILD_REVISION`, exported by a prepare script this repository no
+/// longer has: the oci-image class builds the binary from a declaration now
+/// (`.github#775`), and a declaration cannot carry a repository's own
+/// compile-time variable. Inventing an organisation-wide name for one would
+/// only help code that opted into the name, where the platform already has
+/// one. Absent in ordinary `cargo build`s, where there is no meaningful
+/// answer — a working tree is not a revision.
+pub const REVISION: &str = match option_env!("GITHUB_SHA") {
     Some(revision) => revision,
     None => "unknown",
 };
