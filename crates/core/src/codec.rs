@@ -15,7 +15,7 @@
 pub mod jp2;
 pub mod simple;
 
-use core::fmt;
+use core::{error::Error, fmt};
 use std::io::{Read, Seek, SeekFrom};
 
 use num_traits::cast::ToPrimitive as _;
@@ -213,7 +213,7 @@ impl fmt::Display for CodecError {
     }
 }
 
-impl core::error::Error for CodecError {}
+impl Error for CodecError {}
 
 impl From<RasterError> for CodecError {
     #[inline]

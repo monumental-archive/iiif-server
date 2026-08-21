@@ -7,7 +7,7 @@
 //! handling (16-bit, planar, subsampled YCbCr) at the decoder layer, which
 //! normalizes to these working rasters.
 
-use core::fmt;
+use core::{error::Error, fmt};
 
 use num_traits::cast::ToPrimitive as _;
 
@@ -70,7 +70,7 @@ impl fmt::Display for RasterError {
     }
 }
 
-impl core::error::Error for RasterError {}
+impl Error for RasterError {}
 
 /// BT.601 luma of one RGB pixel.
 fn luma_of(red: u8, green: u8, blue: u8) -> u8 {

@@ -13,7 +13,7 @@
 //! Canonicalization against a concrete image (region → pixels, size →
 //! `w,h`) is a separate evaluation-layer concern.
 
-use core::fmt;
+use core::{error::Error, fmt};
 
 /// The image region to extract, per §4.1.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -184,7 +184,7 @@ impl fmt::Display for ParseError {
     }
 }
 
-impl core::error::Error for ParseError {}
+impl Error for ParseError {}
 
 /// Strict unsigned decimal integer: one or more ASCII digits, nothing else.
 ///

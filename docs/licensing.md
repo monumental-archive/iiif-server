@@ -63,34 +63,41 @@ convey. If that does not fit how you ship, the next question is for you.
 
 ## Can we get it under different terms?
 
-**No — and this answer changed at the import (2026-08-21).**
+Ask. What follows is the mechanism, which changed at the import
+(2026-08-21), because the answer now depends on whose code is involved.
 
 Until then the project carried an Apache-ICLA-derived contributor
 agreement whose §2 granted the maintainer the right to license
 contributions "under any license terms the Maintainer chooses ...
-including proprietary and commercial license terms". That grant is what
-made alternative terms real rather than hypothetical, and it is gone.
+including proprietary and commercial license terms". That agreement is
+withdrawn: the organisation this project belongs to attests
+contributions with the
+[Developer Certificate of Origin](https://developercertificate.org/) and
+operates no contributor licence agreement.
 
-The organisation this project now belongs to attests contributions with
-the [Developer Certificate of Origin](https://developercertificate.org/)
-and operates no contributor licence agreement. Under a DCO sign-off a
-contributor asserts provenance and grants nothing beyond the project's
-own licence, so nobody holds the right to relicense contributed code.
-Offering the tree under other terms would need the agreement of every
-copyright holder in it.
+What a DCO sign-off does and does not do is the whole of the difference.
+It asserts provenance — that the contributor has the right to submit the
+work under the project's licence — and grants nothing beyond that
+licence. So no one holds a standing right to relicense someone else's
+contribution.
 
-Two things follow, and both are worth stating plainly rather than
-leaving to be discovered:
+Two consequences, and they point in opposite directions:
 
-- If you were counting on a commercial licence being available on
-  request, it is not. Plan against the AGPL as written.
-- The rug-pull commitment that rode in the same clause — "The Project
-  itself will always remain available under its open-source license" —
-  is no longer a contractual promise either. What replaces it is
-  structural, and arguably stronger: with no relicensing grant, nobody
-  *can* take it closed. The licence on the tree is the only offer there
-  is, and for code already published under it that grant is
-  irrevocable.
+- **Existing code.** Measured 2026-08-21: every human commit in this
+  repository is the maintainer's (91 of 97; the remaining 6 are
+  Renovate's dependency bumps). A copyright holder may license their own
+  work on any terms they like, with or without an agreement from anyone,
+  so nothing about the code as it stands today is foreclosed.
+- **Future outside contributions.** Those arrive under the AGPL and
+  nothing else. As the contributor list grows, the part of the tree that
+  could be offered on other terms stops growing with it.
+
+The rug-pull question is worth answering separately, because the old
+agreement carried a promise — "The Project itself will always remain
+available under its open-source license" — that no longer has a
+contract behind it. What replaces it is structural: AGPL grants already
+made are irrevocable, so every version published under it stays
+available under it, whatever happens later.
 
 ## Why AGPL, rather than a permissive licence?
 

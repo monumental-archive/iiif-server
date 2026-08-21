@@ -8,7 +8,7 @@
 //! read/mmap in `iiif-sources`, object stores via ranged GETs later. Decoders
 //! are sync and bridge at the boundary.
 
-use core::{fmt, future::Future, pin::Pin};
+use core::{error::Error, fmt, future::Future, pin::Pin};
 
 use bytes::Bytes;
 
@@ -65,9 +65,9 @@ impl fmt::Display for SourceError {
     }
 }
 
-impl core::error::Error for SourceError {
+impl Error for SourceError {
     #[inline]
-    fn source(&self) -> Option<&(dyn core::error::Error + 'static)> {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             Self::Io(err) => Some(err),
             _ => None,

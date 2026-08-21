@@ -7,7 +7,7 @@
 //!
 //! All the dimension-dependent rules the grammar could not check live here.
 
-use core::fmt;
+use core::{error::Error, fmt};
 
 use num_traits::cast::ToPrimitive as _;
 
@@ -106,7 +106,7 @@ impl fmt::Display for EvalError {
     }
 }
 
-impl core::error::Error for EvalError {}
+impl Error for EvalError {}
 
 /// Evaluate a request against an image's full dimensions and the
 /// deployment limits.

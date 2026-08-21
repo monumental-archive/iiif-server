@@ -8,7 +8,7 @@
 //! documented asterisk: valid `image/webp`, larger files, because lossy webp
 //! would require C libwebp) complete it.
 
-use core::fmt;
+use core::{error::Error, fmt};
 
 use crate::{grammar::Format, image::Raster};
 
@@ -46,7 +46,7 @@ impl fmt::Display for EncodeError {
     }
 }
 
-impl core::error::Error for EncodeError {}
+impl Error for EncodeError {}
 
 /// JPEG quality used for all lossy output. Fixed: capability is baked in,
 /// not toggled, and derivative caching lives at the CDN — a stable byte
