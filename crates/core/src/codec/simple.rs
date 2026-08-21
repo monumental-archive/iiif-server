@@ -53,12 +53,14 @@ impl SimpleMaster {
         let pixels = decoder
             .decode()
             .map_err(|err| CodecError::Corrupt(format!("JPEG decode: {err}")))?;
-        let (width, height) = decoder
+        let (raw_width, raw_height) = decoder
             .dimensions()
             .ok_or_else(|| CodecError::Corrupt("JPEG has no dimensions".to_owned()))?;
         let (width, height) = (
-            u32::try_from(width).map_err(|_| CodecError::Corrupt("width overflow".to_owned()))?,
-            u32::try_from(height).map_err(|_| CodecError::Corrupt("height overflow".to_owned()))?,
+            u32::try_from(raw_width)
+                .map_err(|_| CodecError::Corrupt("width overflow".to_owned()))?,
+            u32::try_from(raw_height)
+                .map_err(|_| CodecError::Corrupt("height overflow".to_owned()))?,
         );
         Ok(Self {
             raster: Raster::Rgb8 {

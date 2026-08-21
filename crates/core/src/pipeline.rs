@@ -78,37 +78,36 @@ pub fn execute(source: &mut dyn Master, plan: &Plan) -> Result<Vec<u8>, Pipeline
     //    its own cheapest path (pyramid level, reduced- resolution wavelet decode,
     //    or resident raster).
     let needed = f64::from(plan.crop.width) / f64::from(plan.out_w.max(1));
-    let raster = source.decode_crop(plan.crop, needed)?;
+    let decoded = source.decode_crop(plan.crop, needed)?;
 
     // 2. Resample to the output size.
-    let raster = resize(raster, plan.out_w, plan.out_h)?;
+    let resized = resize(decoded, plan.out_w, plan.out_h)?;
 
     // 3. Quality.
-    let raster = match plan.quality {
-        Quality::Default | Quality::Color => raster,
-        Quality::Gray => raster.into_gray(),
-        Quality::Bitonal => raster.into_bitonal(),
+    let mut recoloured = match plan.quality {
+        Quality::Default | Quality::Color => resized,
+        Quality::Gray => resized.into_gray(),
+        Quality::Bitonal => resized.into_bitonal(),
     };
 
     // 4. Mirror, then rotate.
-    let mut raster = raster;
     if plan.mirror {
-        raster.mirror();
+        recoloured.mirror();
     }
     let raster = if plan.degrees == 0.0_f64 {
-        raster
+        recoloured
     } else if plan.degrees % 90.0_f64 == 0.0_f64 {
-        raster.rotate_quarters((plan.degrees / 90.0_f64).to_u8().unwrap_or(0))
+        recoloured.rotate_quarters((plan.degrees / 90.0_f64).to_u8().unwrap_or(0))
     } else {
-        raster.rotate_arbitrary(plan.degrees)
+        recoloured.rotate_arbitrary(plan.degrees)
     };
 
     // 5. Encode.
     Ok(encode(&raster, plan.format)?)
 }
 
-/// Lanczos3 resample via `fast_image_resize`; identity sizes short-circuit.
-/// Resample a raster to exactly `out_w` x `out_h`.
+/// Resample a raster to exactly `out_w` x `out_h`, Lanczos3 via
+/// `fast_image_resize`.
 ///
 /// Returns the input untouched when it is already that size, which is
 /// the common `full/max` path.

@@ -60,11 +60,11 @@ pub fn parse_image_request(path: &str) -> Result<V2Request, ParseError> {
         return Err(structure());
     }
     let (quality, format) = last.rsplit_once('.').ok_or_else(structure)?;
-    let (size, aspect_preserved, was_full) = parse_size(size)?;
+    let (parsed_size, aspect_preserved, was_full) = parse_size(size)?;
     Ok(V2Request {
         request: ImageRequest {
             region: Region::parse(region)?,
-            size,
+            size: parsed_size,
             rotation: Rotation::parse(rotation)?,
             quality: Quality::parse(quality)?,
             format: Format::parse(format)?,

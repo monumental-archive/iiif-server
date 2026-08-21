@@ -126,13 +126,13 @@ pub fn open_master<R>(mut reader: R) -> Result<Box<dyn Master>, CodecError>
 where
     R: Read + Seek + Send + 'static,
 {
-    let mut magic = [0_u8; 12];
-    let got = read_up_to(&mut reader, &mut magic)
+    let mut header = [0_u8; 12];
+    let got = read_up_to(&mut reader, &mut header)
         .map_err(|err| CodecError::Corrupt(format!("cannot read file header: {err}")))?;
     reader
         .seek(SeekFrom::Start(0))
         .map_err(|err| CodecError::Corrupt(format!("cannot rewind: {err}")))?;
-    let magic = &magic[..got];
+    let magic = &header[..got];
     if magic.starts_with(b"II*\0") || magic.starts_with(b"MM\0*") {
         return Ok(Box::new(TiffPyramid::open(reader)?));
     }
@@ -503,7 +503,7 @@ fn raster_from_decoded(
     height: u32,
     level: LevelInfo,
 ) -> Result<Raster, CodecError> {
-    let DecodingResult::U8(data) = result else {
+    let DecodingResult::U8(mut data) = result else {
         return Err(CodecError::Unsupported(format!(
             "sample format {colortype:?} not yet in the supported matrix"
         )));
@@ -511,7 +511,6 @@ fn raster_from_decoded(
     let pixels = width as usize * height as usize;
     match colortype {
         ColorType::Gray(8) => {
-            let mut data = data;
             data.truncate(pixels);
             if data.len() < pixels {
                 return Err(CodecError::Corrupt("short tile data".to_owned()));
@@ -523,7 +522,6 @@ fn raster_from_decoded(
             })
         }
         ColorType::RGB(8) => {
-            let mut data = data;
             data.truncate(pixels * 3);
             if data.len() < pixels * 3 {
                 return Err(CodecError::Corrupt("short tile data".to_owned()));
@@ -541,7 +539,6 @@ fn raster_from_decoded(
             // conversion to RGB is ours (JPEG full-range BT.601). SPIKE 1
             // caught exactly this: treating these samples as RGB produced
             // a mean channel error of 89/255 against the libjpeg golden.
-            let mut data = data;
             data.truncate(pixels * 3);
             if data.len() < pixels * 3 {
                 return Err(CodecError::Corrupt("short tile data".to_owned()));

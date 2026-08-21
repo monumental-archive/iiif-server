@@ -87,12 +87,12 @@ pub fn encode(raster: &Raster, format: Format) -> Result<Vec<u8>, EncodeError> {
 fn encode_tiff(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
     use tiff::encoder::{TiffEncoder, colortype};
     // Keep TIFF output opaque: alpha flattens over white.
-    let raster = raster.clone().flatten_over_white();
+    let flattened = raster.clone().flatten_over_white();
     let mut cursor = io::Cursor::new(Vec::new());
     {
         let mut encoder =
             TiffEncoder::new(&mut cursor).map_err(|err| EncodeError::Internal(err.to_string()))?;
-        match &raster {
+        match &flattened {
             Raster::Gray8 {
                 width,
                 height,
@@ -130,18 +130,18 @@ fn encode_tiff(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
 fn encode_gif(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
     // GIF is palettized and opaque here: flatten, then let the encoder
     // quantize (it switches to NeuQuant beyond 256 distinct colors).
-    let raster = raster.clone().flatten_over_white();
-    let width = u16::try_from(raster.width());
-    let height = u16::try_from(raster.height());
-    let (Ok(width), Ok(height)) = (width, height) else {
+    let flattened = raster.clone().flatten_over_white();
+    let narrowed_width = u16::try_from(flattened.width());
+    let narrowed_height = u16::try_from(flattened.height());
+    let (Ok(width), Ok(height)) = (narrowed_width, narrowed_height) else {
         return Err(EncodeError::DimensionsBeyondFormat {
             format: Format::Gif,
-            width: raster.width(),
-            height: raster.height(),
+            width: flattened.width(),
+            height: flattened.height(),
         });
     };
     let rgb;
-    let pixels = match &raster {
+    let pixels = match &flattened {
         Raster::Rgb8 { data, .. } => data,
         Raster::Gray8 { data, .. } => {
             rgb = data
@@ -205,8 +205,8 @@ fn encode_webp(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
 /// codestream writer fails.
 fn encode_jp2(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
     // Reversible 5/3 lossless codestream, wrapped as a JP2 file.
-    let raster = raster.clone().flatten_over_white();
-    let (components, data) = match &raster {
+    let flattened = raster.clone().flatten_over_white();
+    let (components, data) = match &flattened {
         Raster::Gray8 { data, .. } => (1_u16, data),
         Raster::Rgb8 { data, .. } => (3_u16, data),
         _ => {
@@ -217,8 +217,8 @@ fn encode_jp2(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
     };
     let samples = j2k::J2kLosslessSamples {
         data,
-        width: raster.width(),
-        height: raster.height(),
+        width: flattened.width(),
+        height: flattened.height(),
         components,
         bit_depth: 8,
         signed: false,
@@ -247,10 +247,10 @@ fn encode_jp2(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
 /// Whatever [`encode_jpeg`] returns, since the embedded image is produced
 /// by it.
 fn encode_pdf(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
-    let raster = raster.clone().flatten_over_white();
-    let jpeg = encode_jpeg(&raster)?;
-    let (width, height) = (raster.width(), raster.height());
-    let colorspace = match &raster {
+    let flattened = raster.clone().flatten_over_white();
+    let jpeg = encode_jpeg(&flattened)?;
+    let (width, height) = (flattened.width(), flattened.height());
+    let colorspace = match &flattened {
         Raster::Gray8 { .. } => "/DeviceGray",
         _ => "/DeviceRGB",
     };
@@ -375,9 +375,9 @@ fn encode_jpeg(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
         }
         opaque => opaque,
     };
-    let width = u16::try_from(raster.width());
-    let height = u16::try_from(raster.height());
-    let (Ok(width), Ok(height)) = (width, height) else {
+    let narrowed_width = u16::try_from(raster.width());
+    let narrowed_height = u16::try_from(raster.height());
+    let (Ok(width), Ok(height)) = (narrowed_width, narrowed_height) else {
         return Err(EncodeError::DimensionsBeyondFormat {
             format: Format::Jpg,
             width: raster.width(),

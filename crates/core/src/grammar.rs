@@ -398,28 +398,28 @@ impl Size {
             }
             SizeKind::Percent(n)
         } else if let Some(confined) = rest.strip_prefix('!') {
-            let (width, height) = confined.split_once(',').ok_or_else(err)?;
+            let (width_text, height_text) = confined.split_once(',').ok_or_else(err)?;
             let (width, height) = (
-                parse_u32(width).ok_or_else(err)?,
-                parse_u32(height).ok_or_else(err)?,
+                parse_u32(width_text).ok_or_else(err)?,
+                parse_u32(height_text).ok_or_else(err)?,
             );
             if width == 0 || height == 0 {
                 return Err(err());
             }
             SizeKind::Confined(width, height)
         } else {
-            let (width, height) = rest.split_once(',').ok_or_else(err)?;
-            match (width.is_empty(), height.is_empty()) {
+            let (width_text, height_text) = rest.split_once(',').ok_or_else(err)?;
+            match (width_text.is_empty(), height_text.is_empty()) {
                 (true, true) => return Err(err()),
                 (false, true) => {
-                    let width = parse_u32(width).ok_or_else(err)?;
+                    let width = parse_u32(width_text).ok_or_else(err)?;
                     if width == 0 {
                         return Err(err());
                     }
                     SizeKind::Width(width)
                 }
                 (true, false) => {
-                    let height = parse_u32(height).ok_or_else(err)?;
+                    let height = parse_u32(height_text).ok_or_else(err)?;
                     if height == 0 {
                         return Err(err());
                     }
@@ -427,8 +427,8 @@ impl Size {
                 }
                 (false, false) => {
                     let (width, height) = (
-                        parse_u32(width).ok_or_else(err)?,
-                        parse_u32(height).ok_or_else(err)?,
+                        parse_u32(width_text).ok_or_else(err)?,
+                        parse_u32(height_text).ok_or_else(err)?,
                     );
                     if width == 0 || height == 0 {
                         return Err(err());
