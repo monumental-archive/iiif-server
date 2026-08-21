@@ -14,8 +14,9 @@ unexercised.**
 as reversible 5/3 lossless and irreversible 9/7 at 20:1, plus a 4096²
 lossless variant for the HTJ2K leg. Goldens are `opj_decompress` outputs
 (full-res region crossing tile boundaries; whole image at reduction 2).
-`crates/core/tests/spike2_j2k_vs_openjpeg.rs` (`task spike2`) decodes the
-same requests through `j2k` 0.7.5 and compares per-sample.
+`crates/core/tests/spike2_j2k_vs_openjpeg.rs` (fixtures from
+`scripts/gen_spike2.sh`) decodes the same requests through `j2k` 0.7.5
+and compares per-sample.
 
 ## Results (2026-07-26, M2 Max, release build)
 

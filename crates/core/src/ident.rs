@@ -16,7 +16,20 @@
 //!
 //! The result is a relative path safe to join under a source root.
 
-use std::fmt;
+#![expect(
+    clippy::pattern_type_mismatch,
+    reason = "these matches use default binding modes on a `&self` receiver, \
+          which is the edition-2021/2024 idiom. The fix does not \
+          compile as written: `match *self` on these enums gives \
+          `error[E0507]: cannot move out of `self` as enum variant `Io` \
+          which is behind a shared reference`, because the payloads are \
+          not `Copy`. What satisfies the lint is `ref` bindings — the \
+          pre-2018 style default binding modes were introduced to \
+          remove — so this is a case where conforming would move the \
+          code backwards."
+)]
+
+use core::{error::Error, fmt};
 
 /// A decoded, traversal-checked identifier. The inner string is a relative
 /// path (`a/b/c.tif` style) guaranteed free of `.`/`..`/empty segments,
@@ -31,6 +44,7 @@ impl Identifier {
     ///
     /// Returns an [`IdentifierError`] (HTTP 404) for malformed encodings,
     /// non-UTF-8 or control bytes, backslashes, and any traversal shape.
+    #[inline]
     pub fn decode(raw: &str) -> Result<Self, IdentifierError> {
         if raw.is_empty() {
             return Err(IdentifierError::Empty);
@@ -40,8 +54,8 @@ impl Identifier {
         // identifier and only exists to confuse path handling downstream.
         let mut bytes = Vec::with_capacity(raw.len());
         let mut it = raw.bytes();
-        while let Some(b) = it.next() {
-            if b == b'%' {
+        while let Some(byte) = it.next() {
+            if byte == b'%' {
                 let hi = it
                     .next()
                     .and_then(hex_val)
@@ -52,11 +66,20 @@ impl Identifier {
                     .ok_or(IdentifierError::BadEscape)?;
                 bytes.push(hi * 16 + lo);
             } else {
-                bytes.push(b);
+                bytes.push(byte);
             }
         }
+        #[expect(
+            clippy::map_err_ignore,
+            reason = "the `FromUtf8Error` carries a byte offset into an \
+                      ATTACKER-CONTROLLED identifier, and this error is \
+                      rendered into an HTTP response. `NotUtf8` is a unit \
+                      variant on purpose: the client learns that its \
+                      identifier was rejected, not where the server stopped \
+                      parsing it."
+        )]
         let decoded = String::from_utf8(bytes).map_err(|_| IdentifierError::NotUtf8)?;
-        if decoded.bytes().any(|b| b < 0x20 || b == 0x7F) {
+        if decoded.bytes().any(|byte| byte < 0x20 || byte == 0x7F) {
             return Err(IdentifierError::ControlCharacter);
         }
         if decoded.contains('\\') {
@@ -75,6 +98,7 @@ impl Identifier {
 
     /// The decoded identifier as a root-relative path.
     #[must_use]
+    #[inline]
     pub fn as_path(&self) -> &str {
         &self.0
     }
@@ -83,21 +107,22 @@ impl Identifier {
     /// `id`): percent-encode `%`, the spec's to-encode set, and everything
     /// outside printable US-ASCII.
     #[must_use]
+    #[inline]
     pub fn encoded(&self) -> String {
         const HEX: &[u8; 16] = b"0123456789ABCDEF";
         let mut out = String::with_capacity(self.0.len());
-        for b in self.0.bytes() {
-            let escape = match b {
+        for byte in self.0.bytes() {
+            let escape = match byte {
                 b'/' | b'?' | b'#' | b'[' | b']' | b'@' | b'%' => true,
                 0x21..=0x7E => false,
                 _ => true,
             };
             if escape {
                 out.push('%');
-                out.push(char::from(HEX[usize::from(b >> 4)]));
-                out.push(char::from(HEX[usize::from(b & 0xF)]));
+                out.push(char::from(HEX[usize::from(byte >> 4_i32)]));
+                out.push(char::from(HEX[usize::from(byte & 0xF)]));
             } else {
-                out.push(char::from(b));
+                out.push(char::from(byte));
             }
         }
         out
@@ -105,16 +130,18 @@ impl Identifier {
 }
 
 impl fmt::Display for Identifier {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(&self.0)
     }
 }
 
-const fn hex_val(b: u8) -> Option<u8> {
-    match b {
-        b'0'..=b'9' => Some(b - b'0'),
-        b'a'..=b'f' => Some(b - b'a' + 10),
-        b'A'..=b'F' => Some(b - b'A' + 10),
+/// The numeric value of one ASCII hex digit, or `None` if it is not one.
+const fn hex_val(byte: u8) -> Option<u8> {
+    match byte {
+        b'0'..=b'9' => Some(byte - b'0'),
+        b'a'..=b'f' => Some(byte - b'a' + 10),
+        b'A'..=b'F' => Some(byte - b'A' + 10),
         _ => None,
     }
 }
@@ -123,6 +150,7 @@ const fn hex_val(b: u8) -> Option<u8> {
 /// layer (the spec has no finer distinction for bad identifiers, and a 400
 /// here would leak which malformed shapes we distinguish).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum IdentifierError {
     /// Empty after percent-decoding.
     Empty,
@@ -139,6 +167,7 @@ pub enum IdentifierError {
 }
 
 impl fmt::Display for IdentifierError {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let msg = match self {
             Self::Empty => "empty identifier",
@@ -152,4 +181,13 @@ impl fmt::Display for IdentifierError {
     }
 }
 
-impl std::error::Error for IdentifierError {}
+#[expect(
+    clippy::missing_trait_methods,
+    reason = "unsatisfiable on stable, measured with rustc rather than argued: \
+              `provide` is E0658 `error_generic_member_access`, and \
+              `type_id` is E0658 `error_type_id` — \"this is memory-unsafe \
+              to override in user code\". `source` is implemented where \
+              this type has one; `description` and `cause` are deprecated \
+              and are left to the standard library's own implementations."
+)]
+impl Error for IdentifierError {}

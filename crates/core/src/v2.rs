@@ -11,6 +11,16 @@
 //! v2 requests parse into the same [`ImageRequest`] the engine evaluates;
 //! only the size grammar and the document/canonical spellings differ.
 
+#![expect(
+    clippy::single_call_fn,
+    reason = "each of these is a named step called once from the dispatch \
+          above it. Inlining them to satisfy the lint would fold \
+          separate formats, decode paths or parse stages into one long \
+          body — the lint's own documentation calls it \"very \
+          restrictive\", and here the single call site is the point: \
+          one function per format is what makes the dispatch readable."
+)]
+
 use crate::{
     eval::Plan,
     grammar::{
@@ -22,9 +32,10 @@ use crate::{
 /// A parsed v2.1 request plus what the v2 canonical form needs to
 /// remember about the original size spelling.
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct V2Request {
+#[non_exhaustive]
+pub struct Request {
     /// The request mapped onto v3 semantics.
-    pub request: ImageRequest,
+    pub as_v3: ImageRequest,
     /// v2 canonical size is `w,` for aspect-preserving forms, `w,h` for
     /// the distorted form, `full` for the full-size aliases.
     pub aspect_preserved: bool,
@@ -42,7 +53,8 @@ pub struct V2Request {
 /// # Errors
 ///
 /// [`ParseError`] (HTTP 400) exactly like the v3 grammar.
-pub fn parse_image_request(path: &str) -> Result<V2Request, ParseError> {
+#[inline]
+pub fn parse_image_request(path: &str) -> Result<Request, ParseError> {
     let structure = || ParseError {
         component: Component::Structure,
         input: path.to_owned(),
@@ -58,11 +70,11 @@ pub fn parse_image_request(path: &str) -> Result<V2Request, ParseError> {
         return Err(structure());
     }
     let (quality, format) = last.rsplit_once('.').ok_or_else(structure)?;
-    let (size, aspect_preserved, was_full) = parse_size(size)?;
-    Ok(V2Request {
-        request: ImageRequest {
+    let (parsed_size, aspect_preserved, was_full) = parse_size(size)?;
+    Ok(Request {
+        as_v3: ImageRequest {
             region: Region::parse(region)?,
-            size,
+            size: parsed_size,
             rotation: Rotation::parse(rotation)?,
             quality: Quality::parse(quality)?,
             format: Format::parse(format)?,
@@ -73,6 +85,15 @@ pub fn parse_image_request(path: &str) -> Result<V2Request, ParseError> {
 }
 
 /// Returns `(size, aspect_preserved, was_full)`.
+/// Parse a v2.1 size parameter into its v3 equivalent.
+///
+/// Returns `(size, was_full, was_percent)` — the two flags record which
+/// v2 spelling arrived, because canonical v2 output has to reproduce it.
+///
+/// # Errors
+///
+/// [`ParseError`] naming [`Component::Size`] for any form v2.1 does not
+/// define, including the v3-only `^` upscale prefix.
 fn parse_size(input: &str) -> Result<(Size, bool, bool), ParseError> {
     let err = || ParseError {
         component: Component::Size,
@@ -95,6 +116,13 @@ fn parse_size(input: &str) -> Result<(Size, bool, bool), ParseError> {
     // Numeric forms: reuse the v3 component grammar, then lift the
     // upscale restriction (`sizeAboveFull`). `pct:n` above 100 must
     // bypass the v3 parse-time cap the same way.
+    #[expect(
+        clippy::map_err_ignore,
+        reason = "the v3 grammar's ParseError names v3 components and v3 \
+                  spellings; a v2.1 request must fail with a v2-shaped \
+                  error, so the inner one is replaced rather than wrapped \
+                  — `err()` is the closure that builds it."
+    )]
     let parsed = if let Some(pct) = input.strip_prefix("pct:") {
         let spelled = format!("^pct:{pct}");
         Size::parse(&spelled).map_err(|_| err())?
@@ -116,14 +144,15 @@ fn parse_size(input: &str) -> Result<(Size, bool, bool), ParseError> {
 /// pixels; size `full`, `w,` (aspect preserved) or `w,h`; rotation and
 /// quality as literals.
 #[must_use]
-pub fn canonical_path(plan: &Plan, v2: &V2Request) -> String {
+#[inline]
+pub fn canonical_path(plan: &Plan, v2: &Request) -> String {
     let full_region = plan.is_full_region();
     let region = if full_region {
         "full".to_owned()
     } else {
         format!(
             "{},{},{},{}",
-            plan.crop.x, plan.crop.y, plan.crop.w, plan.crop.h
+            plan.crop.x, plan.crop.y, plan.crop.width, plan.crop.height
         )
     };
     let size = if v2.was_full && full_region && !plan.upscales {
@@ -144,9 +173,9 @@ pub fn canonical_path(plan: &Plan, v2: &V2Request) -> String {
 }
 
 /// The v2 `@context` URI.
-pub const CONTEXT_V2: &str = "http://iiif.io/api/image/2/context.json";
+pub const CONTEXT: &str = "http://iiif.io/api/image/2/context.json";
 /// The v2 level-2 profile document URI.
-pub const LEVEL2_V2: &str = "http://iiif.io/api/image/2/level2.json";
+pub const LEVEL2: &str = "http://iiif.io/api/image/2/level2.json";
 
 /// Named v2.1 features this binary supports beyond level 2, from the
 /// official compliance document. Never lies.
@@ -171,6 +200,7 @@ pub const QUALITIES: &[&str] = &["default", "color", "gray", "bitonal"];
 /// Panics only if `serde_json` breaks its own contract: the document is
 /// a static shape with string keys throughout.
 #[must_use]
+#[inline]
 pub fn info_json(id: &str, image: &ImageDescription, limits: Limits) -> String {
     let sizes: Vec<serde_json::Value> = image
         .sizes
@@ -192,13 +222,13 @@ pub fn info_json(id: &str, image: &ImageDescription, limits: Limits) -> String {
         })
         .collect();
     let mut document = serde_json::json!({
-        "@context": CONTEXT_V2,
+        "@context": CONTEXT,
         "@id": id,
         "protocol": "http://iiif.io/api/image",
         "width": image.width,
         "height": image.height,
         "profile": [
-            LEVEL2_V2,
+            LEVEL2,
             {
                 "formats": FORMATS,
                 "qualities": QUALITIES,
@@ -215,7 +245,7 @@ pub fn info_json(id: &str, image: &ImageDescription, limits: Limits) -> String {
     if !tiles.is_empty() {
         document["tiles"] = tiles.into();
     }
-    #[allow(
+    #[expect(
         clippy::expect_used,
         reason = "map-free static shape: to_string cannot fail"
     )]
@@ -224,14 +254,31 @@ pub fn info_json(id: &str, image: &ImageDescription, limits: Limits) -> String {
 
 #[cfg(test)]
 mod tests {
-    #![allow(
+    #![expect(
         clippy::unwrap_used,
-        clippy::expect_used,
-        reason = "test code: a panic here is the failure signal, not a crash path"
+        clippy::missing_panics_doc,
+        reason = "test code: a panic here IS the failure signal, not a crash \
+                  path, so documenting one under `# Panics` would describe the \
+                  mechanism a test works by"
+    )]
+    #![expect(
+        clippy::shadow_unrelated,
+        reason = "test code: rebinding `parsed`/`plan` down a short arrange \
+                  -> act -> assert body keeps each assertion next to the value \
+                  it is about; distinct names would number them instead"
+    )]
+    #![expect(
+        clippy::inline_modules,
+        reason = "a `#[cfg(test)] mod tests` beside its subject is how Rust \
+                  unit tests are written, and moving it to its own file would \
+                  put it outside the privacy boundary it exists to test"
     )]
 
     use super::*;
-    use crate::eval::evaluate;
+    use crate::{
+        eval::evaluate,
+        info::{SizeEntry, TileSet},
+    };
 
     const LIMITS: Limits = Limits {
         width: 4000,
@@ -242,26 +289,26 @@ mod tests {
     #[test]
     fn full_aliases_max() {
         let parsed = parse_image_request("full/full/0/default.jpg").unwrap();
-        assert_eq!(parsed.request.size.kind, SizeKind::Max);
+        assert_eq!(parsed.as_v3.size.kind, SizeKind::Max);
         let parsed = parse_image_request("full/max/0/default.jpg").unwrap();
-        assert_eq!(parsed.request.size.kind, SizeKind::Max);
+        assert_eq!(parsed.as_v3.size.kind, SizeKind::Max);
     }
 
     #[test]
     fn size_above_full_upscales_without_caret() {
         let parsed = parse_image_request("full/1500,/0/default.jpg").unwrap();
-        let plan = evaluate(&parsed.request, 1000, 800, LIMITS).unwrap();
+        let plan = evaluate(&parsed.as_v3, 1000, 800, LIMITS).unwrap();
         assert_eq!((plan.out_w, plan.out_h), (1500, 1200));
         // pct over 100 is legal in v2.
         let parsed = parse_image_request("full/pct:150/0/default.jpg").unwrap();
-        let plan = evaluate(&parsed.request, 1000, 800, LIMITS).unwrap();
+        let plan = evaluate(&parsed.as_v3, 1000, 800, LIMITS).unwrap();
         assert_eq!((plan.out_w, plan.out_h), (1500, 1200));
     }
 
     #[test]
     fn caret_is_not_v2() {
-        assert!(parse_image_request("full/^max/0/default.jpg").is_err());
-        assert!(parse_image_request("full/^150,/0/default.jpg").is_err());
+        parse_image_request("full/^max/0/default.jpg").unwrap_err();
+        parse_image_request("full/^150,/0/default.jpg").unwrap_err();
     }
 
     #[test]
@@ -275,18 +322,18 @@ mod tests {
     #[test]
     fn canonical_uses_v2_spellings() {
         let parsed = parse_image_request("full/400,/0/default.jpg").unwrap();
-        let plan = evaluate(&parsed.request, 1000, 800, LIMITS).unwrap();
+        let plan = evaluate(&parsed.as_v3, 1000, 800, LIMITS).unwrap();
         assert_eq!(canonical_path(&plan, &parsed), "full/400,/0/default.jpg");
 
         let parsed = parse_image_request("100,100,300,300/300,300/90/gray.png").unwrap();
-        let plan = evaluate(&parsed.request, 1000, 800, LIMITS).unwrap();
+        let plan = evaluate(&parsed.as_v3, 1000, 800, LIMITS).unwrap();
         assert_eq!(
             canonical_path(&plan, &parsed),
             "100,100,300,300/300,300/90/gray.png"
         );
 
         let parsed = parse_image_request("full/full/0/default.jpg").unwrap();
-        let plan = evaluate(&parsed.request, 1000, 800, LIMITS).unwrap();
+        let plan = evaluate(&parsed.as_v3, 1000, 800, LIMITS).unwrap();
         assert_eq!(canonical_path(&plan, &parsed), "full/full/0/default.jpg");
     }
 
@@ -295,21 +342,21 @@ mod tests {
         let description = ImageDescription {
             width: 1024,
             height: 768,
-            tiles: vec![crate::info::TileSet {
+            tiles: vec![TileSet {
                 width: 256,
                 height: None,
                 scale_factors: vec![1, 2, 4],
             }],
-            sizes: vec![crate::info::SizeEntry {
+            sizes: vec![SizeEntry {
                 width: 1024,
                 height: 768,
             }],
         };
         let json: serde_json::Value =
             serde_json::from_str(&info_json("https://x/iiif/2/a", &description, LIMITS)).unwrap();
-        assert_eq!(json["@context"], CONTEXT_V2);
+        assert_eq!(json["@context"], CONTEXT);
         assert_eq!(json["@id"], "https://x/iiif/2/a");
-        assert_eq!(json["profile"][0], LEVEL2_V2);
+        assert_eq!(json["profile"][0], LEVEL2);
         assert_eq!(json["profile"][1]["qualities"][2], "gray");
         assert!(
             json["profile"][1]["supports"]
@@ -318,6 +365,6 @@ mod tests {
                 .iter()
                 .any(|feature| feature == "sizeAboveFull")
         );
-        assert_eq!(json["tiles"][0]["width"], 256);
+        assert_eq!(json["tiles"][0]["width"], 256_i32);
     }
 }

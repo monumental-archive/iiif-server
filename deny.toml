@@ -9,7 +9,11 @@
 # hide whole feature-gated subtrees from all four checks.
 all-features = true
 # The platforms we actually build for (mirrors mise lockfile_platforms).
-targets = ["aarch64-apple-darwin", "x86_64-unknown-linux-gnu", "aarch64-unknown-linux-gnu"]
+targets = [
+  "aarch64-apple-darwin",
+  "x86_64-unknown-linux-gnu",
+  "aarch64-unknown-linux-gnu",
+]
 
 [advisories]
 yanked = "deny"

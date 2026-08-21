@@ -4,10 +4,23 @@
 //! Property tests: parse ↔ print round-trips for the whole grammar, plus
 //! parser total-safety (never panics on arbitrary input).
 
-#![allow(
+#![expect(
+    clippy::tests_outside_test_module,
+    clippy::absolute_paths,
+    clippy::default_numeric_fallback,
+    clippy::min_ident_chars,
+    clippy::missing_panics_doc,
+    clippy::shadow_reuse,
+    clippy::single_call_fn,
     clippy::unwrap_used,
-    clippy::expect_used,
-    reason = "test/bench code: a panic here is the failure signal, not a crash path"
+    clippy::wildcard_enum_match_arm,
+    reason = "test and example code. A panic IS the failure signal here, so \
+              `# Panics` sections and assertion messages would describe the \
+              mechanism the harness works by; fixtures are indexed and \
+              scaled with arithmetic over constants in the file above them; \
+              and a `#[test]` at the top level of a `tests/` file is what an \
+              integration test IS. The crate under test is held to every \
+              one of these."
 )]
 
 use iiif_core::grammar::{Format, ImageRequest, Quality, Region, Rotation, Size, SizeKind};
@@ -30,15 +43,26 @@ fn region_strategy() -> impl Strategy<Value = Region> {
     prop_oneof![
         Just(Region::Full),
         Just(Region::Square),
-        (any::<u32>(), any::<u32>(), 1..=u32::MAX, 1..=u32::MAX)
-            .prop_map(|(x, y, w, h)| Region::Pixels { x, y, w, h }),
+        (any::<u32>(), any::<u32>(), 1..=u32::MAX, 1..=u32::MAX).prop_map(
+            |(x, y, width, height)| Region::Pixels {
+                x,
+                y,
+                width,
+                height
+            }
+        ),
         (
             decimal_f64(99),
             decimal_f64(99),
             positive_decimal_f64(100),
             positive_decimal_f64(100),
         )
-            .prop_map(|(x, y, w, h)| Region::Percent { x, y, w, h }),
+            .prop_map(|(x, y, width, height)| Region::Percent {
+                x,
+                y,
+                width,
+                height
+            }),
     ]
 }
 
@@ -48,8 +72,9 @@ fn size_strategy() -> impl Strategy<Value = Size> {
         (1..=u32::MAX).prop_map(SizeKind::Width),
         (1..=u32::MAX).prop_map(SizeKind::Height),
         positive_decimal_f64(200).prop_map(SizeKind::Percent),
-        (1..=u32::MAX, 1..=u32::MAX).prop_map(|(w, h)| SizeKind::WidthHeight(w, h)),
-        (1..=u32::MAX, 1..=u32::MAX).prop_map(|(w, h)| SizeKind::Confined(w, h)),
+        (1..=u32::MAX, 1..=u32::MAX)
+            .prop_map(|(width, height)| SizeKind::WidthHeight(width, height)),
+        (1..=u32::MAX, 1..=u32::MAX).prop_map(|(width, height)| SizeKind::Confined(width, height)),
     ];
     kind.prop_flat_map(|kind| {
         // pct > 100 is only legal with the `^` flag.
@@ -57,7 +82,7 @@ fn size_strategy() -> impl Strategy<Value = Size> {
             SizeKind::Percent(n) if n > 100.0 => Just(true).boxed(),
             _ => any::<bool>().boxed(),
         };
-        upscale.prop_map(move |upscale| Size { upscale, kind })
+        upscale.prop_map(move |upscale| Size::new(upscale, kind))
     })
 }
 
@@ -66,7 +91,7 @@ fn rotation_strategy() -> impl Strategy<Value = Rotation> {
         any::<bool>(),
         decimal_f64(360).prop_filter("0..=360", |v| *v <= 360.0),
     )
-        .prop_map(|(mirror, degrees)| Rotation { mirror, degrees })
+        .prop_map(|(mirror, degrees)| Rotation::new(mirror, degrees))
 }
 
 fn quality_strategy() -> impl Strategy<Value = Quality> {
@@ -98,12 +123,8 @@ fn request_strategy() -> impl Strategy<Value = ImageRequest> {
         quality_strategy(),
         format_strategy(),
     )
-        .prop_map(|(region, size, rotation, quality, format)| ImageRequest {
-            region,
-            size,
-            rotation,
-            quality,
-            format,
+        .prop_map(|(region, size, rotation, quality, format)| {
+            ImageRequest::new(region, size, rotation, quality, format)
         })
 }
 
@@ -129,7 +150,7 @@ proptest! {
         prop_assert_eq!(ImageRequest::parse(&r.to_string()).unwrap(), r);
     }
 
-    /// Printing is idempotent: parse(print(v)) prints identically —
+    /// Printing is idempotent: parse(print(v)) prints identically \u{2014}
     /// i.e. printed forms are already canonical spellings.
     #[test]
     fn print_is_canonical(r in request_strategy()) {
@@ -153,9 +174,9 @@ proptest! {
     /// reparse of the canonical form equals the original parse.
     #[test]
     fn leading_zero_normalization(
-        x in 0u32..1000, y in 0u32..1000, w in 1u32..1000, h in 1u32..1000
+        x in 0_u32..1000, y in 0_u32..1000, width in 1_u32..1000, height in 1_u32..1000
     ) {
-        let padded = format!("{x:07},{y:07},{w:07},{h:07}");
+        let padded = format!("{x:07},{y:07},{width:07},{height:07}");
         let parsed = Region::parse(&padded).unwrap();
         let canonical = parsed.to_string();
         prop_assert_eq!(Region::parse(&canonical).unwrap(), parsed);

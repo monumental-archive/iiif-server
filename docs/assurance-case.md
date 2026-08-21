@@ -5,7 +5,7 @@ trust boundaries, the design argument, and the argument that common
 implementation weaknesses are countered.
 
 The requirements themselves — what a user can and cannot expect — are
-stated in [SECURITY.md](../SECURITY.md). This document is the evidence
+stated in the threat model below. This document is the evidence
 that they hold, and it is deliberately written to be falsifiable: every
 claim below names the mechanism that enforces it and the place it is
 checked, so a reader can go and disagree with the specific thing rather
@@ -145,7 +145,7 @@ fails audit destroys the credibility of the claims that are true.
 | Undetected code-level defects | clippy at all/pedantic/nursery/cargo plus restriction opt-ins, `-D warnings`, and no `#[allow]` exemptions anywhere; CodeQL for `rust` and `actions` | `Cargo.toml` lint table, `codeql.yml` |
 | Workflow-level attacks (injection, cache poisoning, impostor actions) | zizmor at pedantic persona, offline on every commit and online weekly; every action pinned by SHA | `ci.yml`, `scheduled.yml` |
 | Leaked credentials | gitleaks on staged changes and over history in CI | `lefthook.yml`, `ci.yml` |
-| Artifact substitution | cosign keyless signature, SLSA build provenance, pull-back-and-verify before signing, and a documented consumer verification command | `publish.yml`, SECURITY.md |
+| Artifact substitution | org-signer Sigstore attestation, SLSA build provenance, pull-back-and-verify before signing, and a documented consumer verification command | `publish.yml`, `docs/deployment.md` |
 
 ## Why this is believed sufficient, and what remains
 

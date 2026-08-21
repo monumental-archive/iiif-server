@@ -1,174 +1,51 @@
 # Release engineering
 
-How this repository releases, and why it is shaped this way. Every rule below
-was paid for by something that went wrong — here or in a sibling repo — and
-the reasoning is recorded so a future change is a decision rather than a
-rediscovery.
+How this repository releases, and the decisions that are ITS OWN rather
+than the organisation's.
 
-## The deliverables
+**The pipeline is not described here any more.** Since the import
+(`.github#671`) this repository releases through
+[monumental-archive/.github](https://github.com/monumental-archive/.github):
+`docs/release.md` there is the specification, `docs/runbook.md` is the
+operating manual, and this repository's `release.yml` and `publish.yml`
+are stubs that call the shared workflows by pinned SHA. Anything about
+phases, tags, drafts, provenance, signing or recovery is answered
+there, once, for every repository — and answering it a second time here
+would be a copy that can disagree with the machinery.
+
+What follows is only what is true of *this* repository and could not be
+delivered by a shared file.
+
+## The deliverable
 
 | Artifact | Where | Who it is for |
 | --- | --- | --- |
-| Container image, multi-architecture | `ghcr.io/carlallenn/iiif-server` | deployment — the primary artifact |
-| Static Linux binaries (amd64, arm64) | GitHub release | systemd, and institutions with no container platform |
-| macOS binaries (Apple Silicon, Intel) | GitHub release | evaluation, and `iiif-server check` on a workstation |
-| Validator report | GitHub release | conformance as verifiable fact, not a README claim |
-| `install.sh` | GitHub release | `curl \| sh`, with this release's checksums baked in |
+| Container image, multi-architecture | `ghcr.io/monumental-archive/iiif-server` | deployment — and it is the whole distribution |
 
-Nothing is published to crates.io. See "Why not crates.io" below — it is a
-standing decision, not a naming delay.
+**One artifact class, `oci-image`.** Standalone binaries, their
+checksums, `install.sh` and the attached validator report were published
+by the pre-import pipeline and are not published now. An artifact class
+is a standing promise of evidence — provenance, an SBOM, a signature,
+a reproducibility check, per release, forever — and a class whose
+artifacts nobody pulls is evidence owed for nothing. Declaring a second
+class later is additive and costs no history.
 
-## Two phases, split by a tag
-
-**Phase 1** (`release.yml`, on pushes to `main`) decides the version,
-maintains the Release PR, and — when that PR is merged — tags and cuts a
-**draft** GitHub release. It builds nothing and publishes nothing.
-
-**Phase 2** (`publish.yml`, triggered by that tag) builds, publishes, proves,
-signs and finally publishes the release, in a run whose `github.ref` *is* the
-tag.
-
-That split is the whole architecture, and the reason is provenance. An
-attestation records the ref of the run that produced it. A workflow running on
-`main` can only ever record `refs/heads/main` — a moving pointer that tells a
-verifier nothing about which bytes were signed. Publishing from the tag makes
-correct provenance a property of the shape rather than a hope. edtf learned
-this the expensive way: its v1.0.0 attestations permanently name a commit that
-built none of the published bytes, and Sigstore is append-only, so they cannot
-be corrected.
-
-Supporting rules:
-
-- **Merging the Release PR is the commitment point.** Nothing releases on an
-  ordinary push to main; an ordinary push only refreshes the PR.
-- **Releases stay drafts until phase 2 finishes.** Immutability is applied
-  when a release is *published*, not when it is created, so a release made
-  public before its assets exist could never receive them. Drafts are also the
-  better failure mode: a run that dies leaves nothing public.
-- **The tag is pushed with a PAT**, not `GITHUB_TOKEN`. Tags pushed with the
-  default token do not trigger workflows, and a release that silently
-  triggers nothing looks exactly like a success.
-- **The Release PR's commit is created through the GitHub API**, not with
-  `git commit`. This repository requires signed commits and a runner has no
-  signing key, so a locally-made commit is `verified: false` and the Release
-  PR cannot be merged at all — which is how v0.1.0 first failed. Commits
-  made via the API are signed by GitHub with its own key.
-  `createCommitOnBranch` also writes all three files in one commit, which the
-  REST contents endpoint cannot. `open-release-pr.sh` asserts the resulting
-  commit is verified rather than trusting that it is.
-- **Every phase-2 job refuses to run on a non-tag ref**, and refuses a tag
-  whose version disagrees with the manifest.
-
-## The publish invariant
-
-Phase 2's step order is not rearrangeable:
-
-> build → smoke test → push → pull the published bytes back and prove them →
-> attest → verify the attestation names the tag → publish the release
-
-**Attestation happens last, and only on proof.** A run that attests before
-proving produces a signature that verifies green while asserting something
-false — permanently.
-
-Concretely: the image is smoke tested before it is pushed anywhere, because a
-digest that anyone has pulled exists forever. After publication it is pulled
-back *by digest*, smoke tested again, validated against the official IIIF
-validators, and scanned, before cosign signs it. Then the signature is
-verified the way a stranger would verify it — `cosign verify` against this
-workflow's identity at this tag, and `gh attestation verify` with the tag as
-source ref.
-
-## Why phase 1 is git-cliff rather than a release tool
-
-Both maintained options were tried against a scratch clone of this repository,
-and both fail on the same underlying fact: **this workspace inherits its
-version, and its crates are not published.**
-
-**release-plz** determines what changed per crate by running `cargo package`,
-which cannot succeed for interdependent crates absent from a registry:
-
-- with `version = "x"` on the internal dependencies, cargo searches crates.io
-  for `iiif-core` and fails;
-- without it, cargo refuses outright — *"all dependencies must have a version
-  requirement specified when packaging"*.
-
-`release = false` on the library crates does not help, because `iiif-server`
-itself is then unpackageable for the same reason. This is upstream issue
-[#2595](https://github.com/release-plz/release-plz/issues/2595), open since
-January 2026 and unfixed in 0.3.160, with the maintainer concluding the
-compare operation itself has to change. Its shape is the dangerous part: **the
-first release works, and the second one fails.**
-
-**release-please** has no model for Cargo workspace inheritance at all. Its
-`CargoWorkspace` type carries only `members`; its `CargoPackage` type models
-`version` as a literal string; its updater throws on a virtual manifest
-(*"is not a package manifest"*); and its `cargo-workspace` plugin ignores
-`[workspace.dependencies]`
-([#1896](https://github.com/googleapis/release-please/issues/1896), open) —
-the same coupling that broke release-plz. Adopting it would mean restructuring
-the workspace to suit the tool.
-
-So phase 1 is `git-cliff` plus `gh`, in three small scripts. The version is
-derived from conventional commits, never typed.
-
-**Two configuration decisions in `cliff.toml` are load-bearing:**
-
-- `breaking_always_bump_major = false`. git-cliff's default sends a 0.x
-  breaking change straight to 1.0.0. In this project 1.0 is not a number, it
-  is the [MAINTENANCE.md](../MAINTENANCE.md) scope-freeze commitment —
-  feature-complete by design, security and correctness fixes only, forever.
-  Reaching it because someone wrote `feat!:` before launch would publish a
-  promise nobody made. 1.0.0 gets set by hand, once, deliberately.
-- `no_increment_regex` excludes chore/ci/docs/style/test, so a quiet week
-  produces no version and no empty Release PR.
-
-`prepare-release.sh` keeps the **three** places that hold the version in
-lockstep — `[workspace.package].version` and both `[workspace.dependencies]`
-constraints — and fails loudly if any substitution misses, rather than opening
-a PR whose tree cannot resolve.
-
-## Why the installer is hand-written rather than dist
-
-`dist` (cargo-dist) is the obvious tool for a `curl | sh` installer, and it
-cannot be used here for a concrete reason rather than a stylistic one.
-
-To generate installers, dist must own the binary build — the installers
-reference artifact names only it knows. But building `*-unknown-linux-musl`
-on a runner needs a C toolchain targeting musl, because mimalloc is C
-compiled through the `cc` crate (rustup's self-contained musl support covers
-Rust linking, not arbitrary C). That means `musl-tools` via apt, which
-harden-runner's `disable-sudo` forbids — correctly.
-
-It would also cost a property worth keeping: the Linux binaries on the
-release are *extracted from the container image*, so the binary someone
-downloads is byte-identical to the one running in production. dist would
-rebuild them.
-
-The three convention collisions noted earlier — harden-runner cannot precede
-checkout in its generated CI, it self-installs by piping curl to a shell, and
-it brings a second rustup-managed toolchain — were survivable. The musl one
-is not.
-
-What replaced it is `make-installer.sh`, which generates the installer from
-the artifacts that were actually produced, with each checksum baked in. That
-last part matters: an installer that resolves "latest" at run time trusts
-whatever the API returns at that moment, whereas this one can only install
-the exact bytes the release published, and fails loudly otherwise. Verified
-against a local server: happy path, corrupted download, and unsupported
-platform.
+Nothing is published to crates.io. See below — a standing decision, not
+a naming delay.
 
 ## Why not crates.io
 
-Publishing `iiif-core` and `iiif-sources` would make release-plz work. It is
-refused, permanently, and not because of the naming question:
+Publishing `iiif-core` and `iiif-sources` is refused, permanently, and
+not because of the naming question:
 
-- Those crates exist to separate concerns inside one binary. They have no
-  independent consumers, and the workspace split is an architectural choice,
-  not a distribution one.
-- Publishing them creates a **public Rust API with semver obligations**, on a
-  project whose entire thesis is a minimal maintenance surface — and the
-  compatibility promise this project actually makes covers the HTTP surface,
-  the CLI flags and the container contract, explicitly not internal Rust APIs.
+- Those crates exist to separate concerns inside one binary. They have
+  no independent consumers, and the workspace split is an architectural
+  choice, not a distribution one.
+- Publishing them creates a **public Rust API with semver obligations**,
+  on a project whose entire thesis is a minimal maintenance surface —
+  and the compatibility promise this project actually makes covers the
+  HTTP surface, the CLI flags and the container contract, explicitly not
+  internal Rust APIs.
 - crates.io names are permanent and unreclaimable. A GHCR path can be
   abandoned; a crate name cannot.
 
@@ -176,168 +53,87 @@ Revisit only if a real consumer asks — demand, not tooling convenience.
 
 ## Why the image is `FROM scratch`
 
-The design spec called for it, and the obstacle turned out to be removable.
+The design spec called for it, and the obstacle turned out to be
+removable.
 
-Verifying an S3 connection needs a trusted-certificate bundle. The spec chose
-bundled `webpki-roots` precisely so a scratch image could do that — but
-`reqwest` 0.13 removed the option entirely, and every rustls path now resolves
-to `rustls-platform-verifier`, i.e. the operating system's trust store, which
-a scratch image does not have. Rather than dependency surgery, the bundle
-ships as a file with `SSL_CERT_FILE` pointing at it.
+Verifying an S3 connection needs a trusted-certificate bundle. The spec
+chose bundled `webpki-roots` precisely so a scratch image could do that
+— but `reqwest` 0.13 removed the option entirely, and every rustls path
+now resolves to `rustls-platform-verifier`, i.e. the operating system's
+trust store, which a scratch image does not have. Rather than dependency
+surgery, the bundle ships as a file with `SSL_CERT_FILE` pointing at it.
 
-Worth knowing how that failure would have presented: serving local files works
-fine without it. Only `s3://` deployments break.
+Worth knowing how that failure would have presented: serving local files
+works fine without it. Only `s3://` deployments break.
 
-The size that buys — about 6 MB to pull, 16 MB unpacked on arm64 and 18 MB on
-amd64, against the incumbent's 769 MB — is asserted rather than remembered.
-`scripts/check_image_size.sh` runs in the `Container image` CI job and fails
-the pull request if the unpacked image passes 25 MB, about 40% above the
-amd64 build the job measures. It measures with `docker export`, because
-`docker image inspect .Size` means the unpacked total under one image store
-and the compressed total under the other. The ceiling is meant to be raised
-when growth is real; the gate exists so raising it is a decision recorded in a
-diff, alongside the figures in README.md and docs/deployment.md, rather than a
-claim that quietly stopped being true.
+The bundle comes from a digest-pinned `alpine` stage rather than from
+the build runner's own `/etc/ssl`, because the runner image rolls
+between builds and its bundle is not an input anything pins — copying it
+would put an unpinned file inside a signed artifact.
+
+The size that buys — about 6 MB to pull, 16 MB unpacked on arm64 and 18
+MB on amd64, against the incumbent's 769 MB — is asserted rather than
+remembered. `scripts/check_image_size.sh` runs from
+`scripts/image-checks.sh`, the class's smoke test, which the release
+runs twice: on the locally built image before anything is published, and
+again on the bytes pulled back from the registry by digest. It fails
+above 25 MB unpacked, about 40% above the amd64 build. It measures with
+`docker export`, because `docker image inspect .Size` means the unpacked
+total under one image store and the compressed total under the other.
+The ceiling is meant to be raised when growth is real; the gate exists
+so raising it is a decision recorded in a diff, alongside the figures in
+README.md and docs/deployment.md, rather than a claim that quietly
+stopped being true.
+
+## Why nothing is compiled inside the Dockerfile
+
+The organisation's reproducibility gate measured the in-container cargo
+build nondeterministic while the same crates built bit-for-bit under a
+pinned native toolchain (`.github#295`). So the binary is built by
+`scripts/oci-prepare.sh`, natively per architecture, in the toolchain
+`mise.toml` pins, and the Dockerfile only assembles pinned inputs. One
+toolchain, not two; determinism by construction rather than by audit.
+
+The build revision the binary reports through `--version` and the
+`iiif_build_info` metric is read at compile time by `option_env!`, so
+`oci-prepare.sh` derives it from the checkout — the release checks out
+the tag, which is what keeps two rebuilds of one tag identical.
 
 ## Why `cargo auditable` is not optional
 
-Rust discards dependency information at compile time. A scanner pointed at a
-stripped static Rust binary sees **one file and zero packages** — which is
-exactly the zero-crates result monumental-archive hit when scanning an image
-built from this repository's source.
+Rust discards dependency information at compile time. A scanner pointed
+at a stripped static Rust binary sees **one file and zero packages** —
+which is exactly the zero-crates result monumental-archive hit when
+scanning an image built from this repository's source.
 
-`cargo auditable` embeds a compressed dependency list that syft, trivy and
-grype all read. Verified rather than assumed: trivy identifies the binary as
-`rustbinary`, and the SBOM lists 190 packages.
+`cargo auditable` embeds a compressed dependency list that syft, trivy
+and grype all read. Verified rather than assumed: trivy identifies the
+binary as `rustbinary`, and the SBOM lists 190 packages.
 
 Two consequences:
 
-- The build **must not strip** the binary. `strip` discards the non-allocated
-  section the data lives in, silently undoing the SBOM.
-- `sbom: true` on the image push is only meaningful because of this. On its
-  own it would produce a durable, digest-attached, completely useless SBOM
-  that *looks* like diligence.
+- The build **must not strip** the binary. `strip` discards the
+  non-allocated section the data lives in, silently undoing the SBOM.
+  The class sets `CARGO_PROFILE_RELEASE_STRIP: "false"` for exactly
+  this.
+- The image SBOM the release attaches is only meaningful because of
+  this. Without it the SBOM would be durable, digest-attached and
+  completely useless, while *looking* like diligence.
 
 ## Owner-side prerequisites
 
-These cannot be automated and gate the first release:
+The pre-import list — `RELEASE_TOKEN`, a hand-made tag ruleset — is
+gone: tags are minted by the organisation's App under org-level rulesets
+that cover a repository the moment it lands, and the release path holds
+its own credentials. What is left is one thing nobody else can do:
 
-- **`RELEASE_TOKEN`** — a fine-grained PAT with contents and pull-requests
-  write. Needed twice: PRs created with `GITHUB_TOKEN` do not trigger CI, and
-  tags pushed with it do not trigger phase 2.
 - **GHCR package visibility** set to public after the first publish.
-- **Tag immutability ruleset** — forbid tag deletion, non-fast-forward and
-  update, with no bypass actors. Every verification points at the tag; a
-  movable anchor is no anchor.
 
-## What the first release cost, and what it taught
+## History
 
-v0.1.0 took five attempts. Every failure is worth recording, because they
-share one cause and it is not the one that looks obvious.
-
-| # | Failed at | Cause |
-| --- | --- | --- |
-| 1 | image push | `IMAGE_NAME` from `${{ github.repository }}` preserves the owner's capitals; OCI names must be lowercase |
-| 2 | Release PR merge | the PR's commit was made with `git commit` on a runner, so it was unsigned and `require-signed-commits` refused it |
-| 3 | publish, step 7 | `mise-action` with no `install_args` installed the whole toolchain, including one needing an unlisted npm host |
-| 4 | CI image job | `mise` verifies tool provenance against Sigstore's TUF root, which that job's allowlist omitted |
-| 5 | publish, step 16 | the trivy marketplace installer failed; scanning did not belong on the release path at all |
-
-Three of the five were **marketplace actions used where mise was the house
-rule** — trivy, cosign, and the tool set mise itself installs. Every tool in
-this repository is pinned and checksummed through mise, and the CI canon says
-so in comments; reaching for `uses:` instead is what produced the failures.
-
-The other two were things that only exist in the CI environment: how GitHub
-resolves an image reference, and what it will accept as a signed commit.
-Nothing local reproduced either.
-
-The pattern across all five: **everything testable locally worked, and
-everything that depended on how the environment behaves needed a real run.**
-The architecture held throughout — no failure ever published anything, because
-the smoke test precedes the push and the release stays a draft until the end.
-
-Two artifacts also shipped wrong before being caught, both claims not backed
-by their evidence:
-
-- `validator-report.txt` was 130 bytes of section headers, because the
-  validator writes results to stderr and only stdout was captured — while the
-  release notes described it as the conformance evidence. Now captured with
-  `2>&1` and asserted to contain two clean suites, so a stub fails the
-  release.
-- The `v0.1.0` tag was recreated twice under a suspended immutability
-  ruleset. Defensible only because nothing referenced it — no image, no
-  signature, no consumer — and the ruleset is back on. Once anything is
-  published a tag is load bearing, and the answer is a new version.
-
-## v0.1.0's build ran under audit egress
-
-Deliberate, and recorded rather than discovered later. Every job's
-harden-runner policy was set to `audit` for the release that produced v0.1.0,
-because the hand-written allowlists had broken four separate runs on endpoints
-no reading of the workflow could have predicted — Docker Hub's CloudFront blob
-host, npm reached through mise's hierarchical config, the attestation bundle
-host, and mise's own version index. Each discovery cost a full release cycle.
-
-**That exception is now closed.** Every Linux job in `ci.yml`, `release.yml`
-and `publish.yml` is back on `block`, with lists derived from the runs that
-actually happened rather than from reading — the v0.1.0 publish and tag runs
-for the release path, and eight `ci.yml` runs for the gates. What the audit
-produced that no reading would have: `cafe.github.com`, resolved by `gh`
-during the GraphQL `createCommitOnBranch` call that makes the Release PR's
-commit; `check.trivy.dev`, trivy's own version check, distinct from the
-database hosts; and `*.blob.storage.azure.net`, the arm runner's OS disk.
-
-Two things did not move, and both are recorded at the jobs themselves:
-
-- **The macOS jobs stay on `audit`** — `ci.yml`'s test job and `publish.yml`'s
-  darwin binary matrix. harden-runner is monitor-only on macOS runners, so
-  `block` would assert enforcement that does not occur. The audit data shows
-  the second reason: those runners resolve Apple's update, safebrowsing and
-  distribution hosts throughout a run, none of it the job's own traffic.
-- **Three GitHub infrastructure families are wildcarded, not pinned.** The
-  host index rotates between runs — `run-actions-N-azure-REGION` was observed
-  as 1, 2 and 3 in three different jobs, and `productionresultssaNN` from 0 to
-  19 — so a literal entry is a latent failure rather than a tighter policy.
-  The block-mode verification settled it: harden-runner injected
-  `productionresultssa9` into the policy and the same run then resolved
-  `productionresultssa10`.
-
-One correction for whoever derives the next one. The extraction command
-recorded in issue #69 matches nothing against harden-runner v2.20.1, so a job
-that made hundreds of requests looks identical to one that made none. The
-agent changed format: today the resolutions are `[dns-request] ... domain=`
-lines, and the old `domain resolved:` form only appears in logs from the
-v0.1.0 era. Keep `exe=` in the match — attributing each domain to the process
-that resolved it is what separates the job's traffic from the runner's.
-
-What this does and does not weaken: egress policy protects the *build* from a
-compromised dependency exfiltrating or calling home. It has no bearing on
-artifact integrity or the signature chain — v0.1.0 is still built from a
-tagged commit, smoke tested before it is pushed, pulled back by digest and
-re-verified, validated by the official validators, signed by cosign with the
-workflow's own identity at the tag, attested, and that attestation checked as
-a stranger would check it.
-
-`ci.yml` and `release.yml` verify themselves on every push. `publish.yml`
-runs only on a tag, so its restored policy is verified by the next release —
-not by a delete-and-retry cycle. After that, the only legitimate way to
-change an allowlist is another audit run.
-
-## Known gaps
-
-- **Reproducible image builds are not yet asserted.** The inputs are pinned
-  (base images by digest, dependencies by lockfile, `--locked`), but nothing
-  proves two builds of a tag produce the same digest.
-- **No Homebrew tap**, deliberately. A tap needs its own repository
-  (`brew install user/tap/x` resolves only to `github.com/user/homebrew-tap`),
-  and it would add packaging polish to a path `install.sh` already covers.
-  The audience for this is GLAM institutions, where an evaluation runs on
-  Docker and a systems team, not on a developer's Mac — so the tap earns
-  little and costs a repository. Revisit if someone asks for it; the endgame
-  for a tool with real adoption is homebrew-core, which needs no tap at all.
-- **Release secrets are not scoped to a GitHub Environment.** zizmor's
-  auditor persona flags this (`secrets-outside-env`); the repo gate runs at
-  `pedantic`, which does not. Worth revisiting only if you want an approval
-  gate on publishing — though the Release PR merge is already the human
-  commitment point, so the second gate would mostly be ceremony.
+The pre-import pipeline, the four failed release attempts that shaped
+it, the audit-derived egress allowlists and the v0.1.0 post-mortem are
+recorded in this repository's git history and in the issues they cite.
+They are not repeated here, because none of that machinery exists any
+more: the lessons that generalised are written into the organisation's
+release canon, which is where a future change to them belongs.

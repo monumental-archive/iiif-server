@@ -8,13 +8,46 @@
 //! documented asterisk: valid `image/webp`, larger files, because lossy webp
 //! would require C libwebp) complete it.
 
-use std::fmt;
+#![expect(
+    clippy::pattern_type_mismatch,
+    reason = "these matches use default binding modes on a `&self` receiver, \
+          which is the edition-2021/2024 idiom. The fix does not \
+          compile as written: `match *self` on these enums gives \
+          `error[E0507]: cannot move out of `self` as enum variant `Io` \
+          which is behind a shared reference`, because the payloads are \
+          not `Copy`. What satisfies the lint is `ref` bindings — the \
+          pre-2018 style default binding modes were introduced to \
+          remove — so this is a case where conforming would move the \
+          code backwards."
+)]
+#![expect(
+    clippy::single_call_fn,
+    reason = "each of these is a named step called once from the dispatch \
+          above it. Inlining them to satisfy the lint would fold \
+          separate formats, decode paths or parse stages into one long \
+          body — the lint's own documentation calls it \"very \
+          restrictive\", and here the single call site is the point: \
+          one function per format is what makes the dispatch readable."
+)]
+
+use core::{error::Error, fmt};
+use std::io;
 
 use crate::{grammar::Format, image::Raster};
 
 /// Encoder failure. Client-caused cases (dimensions beyond a format's
 /// limits) are 400s; the rest are internal.
 #[derive(Debug)]
+#[non_exhaustive]
+#[expect(
+    clippy::module_name_repetitions,
+    reason = "the `<Module>Error` convention, and the alternative is worse here \
+          rather than merely different: five modules each own an error \
+          type, so renaming them all to `Error` would produce five types \
+          of that name that cannot be imported into one scope without \
+          aliases at every call site. The path already disambiguates; the \
+          name is what appears in a caller's `match`."
+)]
 pub enum EncodeError {
     /// The output dimensions exceed what the format can represent (JPEG
     /// caps at 65535 per side).
@@ -31,6 +64,7 @@ pub enum EncodeError {
 }
 
 impl fmt::Display for EncodeError {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::DimensionsBeyondFormat {
@@ -39,13 +73,22 @@ impl fmt::Display for EncodeError {
                 height,
             } => {
                 write!(f, "{width}×{height} exceeds what {format} can represent")
-            },
+            }
             Self::Internal(msg) => write!(f, "encoder failure: {msg}"),
         }
     }
 }
 
-impl std::error::Error for EncodeError {}
+#[expect(
+    clippy::missing_trait_methods,
+    reason = "unsatisfiable on stable, measured with rustc rather than argued: \
+              `provide` is E0658 `error_generic_member_access`, and \
+              `type_id` is E0658 `error_type_id` — \"this is memory-unsafe \
+              to override in user code\". `source` is implemented where \
+              this type has one; `description` and `cause` are deprecated \
+              and are left to the standard library's own implementations."
+)]
+impl Error for EncodeError {}
 
 /// JPEG quality used for all lossy output. Fixed: capability is baked in,
 /// not toggled, and derivative caching lives at the CDN — a stable byte
@@ -58,6 +101,14 @@ const JPEG_QUALITY: u8 = 85;
 ///
 /// See [`EncodeError`]; every format succeeds for any raster within the
 /// format's own representational limits.
+#[inline]
+#[expect(
+    clippy::module_name_repetitions,
+    reason = "`encode::encode(raster, format)` is how this reads at the \
+          call site, and the module is the noun while the function is \
+          the verb. Renaming the verb to avoid the noun would make both \
+          worse."
+)]
 pub fn encode(raster: &Raster, format: Format) -> Result<Vec<u8>, EncodeError> {
     match format {
         Format::Jpg => encode_jpeg(raster),
@@ -70,54 +121,74 @@ pub fn encode(raster: &Raster, format: Format) -> Result<Vec<u8>, EncodeError> {
     }
 }
 
+/// Encode as an uncompressed TIFF.
+///
+/// Alpha is flattened over white first: this writer emits opaque colour
+/// types only.
+///
+/// # Errors
+///
+/// [`EncodeError::Internal`] if the TIFF writer rejects the buffer or the
+/// dimensions, which for an in-memory cursor means a raster whose length
+/// disagrees with its declared size.
 fn encode_tiff(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
     use tiff::encoder::{TiffEncoder, colortype};
     // Keep TIFF output opaque: alpha flattens over white.
-    let raster = raster.clone().flatten_over_white();
-    let mut cursor = std::io::Cursor::new(Vec::new());
+    let flattened = raster.clone().flatten_over_white();
+    let mut cursor = io::Cursor::new(Vec::new());
     {
         let mut encoder =
-            TiffEncoder::new(&mut cursor).map_err(|e| EncodeError::Internal(e.to_string()))?;
-        match &raster {
+            TiffEncoder::new(&mut cursor).map_err(|err| EncodeError::Internal(err.to_string()))?;
+        match &flattened {
             Raster::Gray8 {
                 width,
                 height,
                 data,
             } => encoder
                 .write_image::<colortype::Gray8>(*width, *height, data)
-                .map_err(|e| EncodeError::Internal(e.to_string()))?,
+                .map_err(|err| EncodeError::Internal(err.to_string()))?,
             Raster::Rgb8 {
                 width,
                 height,
                 data,
             } => encoder
                 .write_image::<colortype::RGB8>(*width, *height, data)
-                .map_err(|e| EncodeError::Internal(e.to_string()))?,
-            _ => {
+                .map_err(|err| EncodeError::Internal(err.to_string()))?,
+            Raster::GrayA8 { .. } | Raster::Rgba8 { .. } => {
                 return Err(EncodeError::Internal(
                     "alpha survived flattening".to_owned(),
                 ));
-            },
+            }
         }
     }
     Ok(cursor.into_inner())
 }
 
+/// Encode as a palettized GIF.
+///
+/// Alpha is flattened over white; the encoder quantizes, switching to
+/// `NeuQuant` beyond 256 distinct colours.
+///
+/// # Errors
+///
+/// [`EncodeError::DimensionsBeyondFormat`] when either axis exceeds
+/// `u16::MAX`, which is the format's own ceiling, and
+/// [`EncodeError::Internal`] if the encoder rejects the frame.
 fn encode_gif(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
     // GIF is palettized and opaque here: flatten, then let the encoder
     // quantize (it switches to NeuQuant beyond 256 distinct colors).
-    let raster = raster.clone().flatten_over_white();
-    let width = u16::try_from(raster.width());
-    let height = u16::try_from(raster.height());
-    let (Ok(width), Ok(height)) = (width, height) else {
+    let flattened = raster.clone().flatten_over_white();
+    let narrowed_width = u16::try_from(flattened.width());
+    let narrowed_height = u16::try_from(flattened.height());
+    let (Ok(width), Ok(height)) = (narrowed_width, narrowed_height) else {
         return Err(EncodeError::DimensionsBeyondFormat {
             format: Format::Gif,
-            width: raster.width(),
-            height: raster.height(),
+            width: flattened.width(),
+            height: flattened.height(),
         });
     };
     let rgb;
-    let pixels = match &raster {
+    let pixels = match &flattened {
         Raster::Rgb8 { data, .. } => data,
         Raster::Gray8 { data, .. } => {
             rgb = data
@@ -125,30 +196,39 @@ fn encode_gif(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
                 .flat_map(|&px| [px, px, px])
                 .collect::<Vec<u8>>();
             &rgb
-        },
-        _ => {
+        }
+        Raster::GrayA8 { .. } | Raster::Rgba8 { .. } => {
             return Err(EncodeError::Internal(
                 "alpha survived flattening".to_owned(),
             ));
-        },
+        }
     };
     let frame = gif::Frame::from_rgb(width, height, pixels);
     let mut out = Vec::new();
     {
         let mut encoder = gif::Encoder::new(&mut out, width, height, &[])
-            .map_err(|e| EncodeError::Internal(e.to_string()))?;
+            .map_err(|err| EncodeError::Internal(err.to_string()))?;
         encoder
             .write_frame(&frame)
-            .map_err(|e| EncodeError::Internal(e.to_string()))?;
+            .map_err(|err| EncodeError::Internal(err.to_string()))?;
     }
     Ok(out)
 }
 
+/// Encode as a lossless WebP.
+///
+/// Lossless only — the single documented asterisk in the compliance
+/// table, because lossy WebP would require C libwebp and this crate
+/// parses and produces no C.
+///
+/// # Errors
+///
+/// [`EncodeError::Internal`] if the encoder rejects the raster.
 fn encode_webp(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
     // Lossless only — the single documented asterisk in the compliance
     // table (lossy webp would require C libwebp).
     let mut out = Vec::new();
-    let encoder = image_webp::WebPEncoder::new(std::io::Cursor::new(&mut out));
+    let encoder = image_webp::WebPEncoder::new(io::Cursor::new(&mut out));
     let color = match raster {
         Raster::Gray8 { .. } => image_webp::ColorType::L8,
         Raster::GrayA8 { .. } => image_webp::ColorType::La8,
@@ -157,52 +237,71 @@ fn encode_webp(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
     };
     encoder
         .encode(raster.data(), raster.width(), raster.height(), color)
-        .map_err(|e| EncodeError::Internal(e.to_string()))?;
+        .map_err(|err| EncodeError::Internal(err.to_string()))?;
     Ok(out)
 }
 
+/// Encode as a JP2 file wrapping a reversible 5/3 lossless codestream.
+///
+/// Alpha is flattened over white; only gray and RGB reach the codestream.
+///
+/// # Errors
+///
+/// [`EncodeError::Internal`] if alpha survives flattening (which would be
+/// a bug in [`Raster::flatten_over_white`], not in the input) or the
+/// codestream writer fails.
 fn encode_jp2(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
     // Reversible 5/3 lossless codestream, wrapped as a JP2 file.
-    let raster = raster.clone().flatten_over_white();
-    let (components, data) = match &raster {
-        Raster::Gray8 { data, .. } => (1u16, data),
-        Raster::Rgb8 { data, .. } => (3u16, data),
-        _ => {
+    let flattened = raster.clone().flatten_over_white();
+    let (components, data) = match &flattened {
+        Raster::Gray8 { data, .. } => (1_u16, data),
+        Raster::Rgb8 { data, .. } => (3_u16, data),
+        Raster::GrayA8 { .. } | Raster::Rgba8 { .. } => {
             return Err(EncodeError::Internal(
                 "alpha survived flattening".to_owned(),
             ));
-        },
+        }
     };
     let samples = j2k::J2kLosslessSamples {
         data,
-        width: raster.width(),
-        height: raster.height(),
+        width: flattened.width(),
+        height: flattened.height(),
         components,
         bit_depth: 8,
         signed: false,
     };
     let options = j2k::J2kLosslessEncodeOptions::default();
     let encoded = j2k::encode_j2k_lossless(samples, &options)
-        .map_err(|e| EncodeError::Internal(e.to_string()))?;
+        .map_err(|err| EncodeError::Internal(err.to_string()))?;
     let wrapped = j2k::wrap_j2k_codestream(&encoded.codestream, j2k::J2kFileWrapOptions::jp2())
-        .map_err(|e| EncodeError::Internal(e.to_string()))?;
+        .map_err(|err| EncodeError::Internal(err.to_string()))?;
     Ok(wrapped)
 }
 
-/// Hand-rolled single-image PDF (design decision: ~150 lines beat a
-/// dependency). The page embeds the pipeline's JPEG output via `DCTDecode`
-/// at 72 dpi, sized 1 pt per pixel.
-#[allow(
+/// Hand-rolled single-image PDF.
+///
+/// A design decision: ~150 lines beat a dependency. The page embeds the
+/// pipeline's JPEG output via `DCTDecode` at 72 dpi, sized 1 pt per
+/// pixel.
+#[expect(
     clippy::too_many_lines,
     reason = "a minimal PDF writer is one linear object list; splitting scatters the xref math"
 )]
+/// Encode as a single-page PDF wrapping a JPEG of the raster.
+///
+/// The page is exactly the image, at 72 dpi, so one pixel is one point.
+///
+/// # Errors
+///
+/// Whatever [`encode_jpeg`] returns, since the embedded image is produced
+/// by it.
 fn encode_pdf(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
-    let raster = raster.clone().flatten_over_white();
-    let jpeg = encode_jpeg(&raster)?;
-    let (width, height) = (raster.width(), raster.height());
-    let colorspace = match &raster {
+    let flattened = raster.clone().flatten_over_white();
+    let jpeg = encode_jpeg(&flattened)?;
+    let (width, height) = (flattened.width(), flattened.height());
+    let colorspace = match &flattened {
         Raster::Gray8 { .. } => "/DeviceGray",
-        _ => "/DeviceRGB",
+        Raster::Rgb8 { .. } | Raster::GrayA8 { .. } | Raster::Rgba8 { .. } => "/DeviceRGB",
     };
     let content = format!(
         "q
@@ -213,7 +312,7 @@ Q
     );
 
     let mut pdf: Vec<u8> = Vec::with_capacity(jpeg.len() + 1024);
-    let mut offsets = [0usize; 6];
+    let mut offsets = [0_usize; 6];
     pdf.extend_from_slice(b"%PDF-1.4\n%\xE2\xE3\xCF\xD3\n");
     let objects: [(usize, Vec<u8>); 5] = [
         (1, b"<< /Type /Catalog /Pages 2 0 R >>".to_vec()),
@@ -307,28 +406,36 @@ startxref
     Ok(pdf)
 }
 
+/// Encode as a baseline JPEG.
+///
+/// JPEG is opaque, so a raster carrying alpha is flattened over white
+/// first; opaque rasters are encoded without the copy.
+///
+/// # Errors
+///
+/// [`EncodeError::Internal`] if the encoder rejects the raster.
 fn encode_jpeg(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
     // JPEG is opaque: flatten any alpha over white first.
-    let flattened;
-    let raster = match raster {
+    let owned;
+    let opaque_raster = match raster {
         Raster::GrayA8 { .. } | Raster::Rgba8 { .. } => {
-            flattened = raster.clone().flatten_over_white();
-            &flattened
-        },
-        opaque => opaque,
+            owned = raster.clone().flatten_over_white();
+            &owned
+        }
+        opaque @ (Raster::Gray8 { .. } | Raster::Rgb8 { .. }) => opaque,
     };
-    let width = u16::try_from(raster.width());
-    let height = u16::try_from(raster.height());
-    let (Ok(width), Ok(height)) = (width, height) else {
+    let narrowed_width = u16::try_from(opaque_raster.width());
+    let narrowed_height = u16::try_from(opaque_raster.height());
+    let (Ok(width), Ok(height)) = (narrowed_width, narrowed_height) else {
         return Err(EncodeError::DimensionsBeyondFormat {
             format: Format::Jpg,
-            width: raster.width(),
-            height: raster.height(),
+            width: opaque_raster.width(),
+            height: opaque_raster.height(),
         });
     };
     let mut out = Vec::new();
     let encoder = jpeg_encoder::Encoder::new(&mut out, JPEG_QUALITY);
-    let color = match raster {
+    let color = match opaque_raster {
         Raster::Gray8 { .. } => jpeg_encoder::ColorType::Luma,
         Raster::Rgb8 { .. } => jpeg_encoder::ColorType::Rgb,
         // Unreachable after flattening; keep the match total.
@@ -336,14 +443,23 @@ fn encode_jpeg(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
             return Err(EncodeError::Internal(
                 "alpha survived flattening".to_owned(),
             ));
-        },
+        }
     };
     encoder
-        .encode(raster.data(), width, height, color)
-        .map_err(|e| EncodeError::Internal(e.to_string()))?;
+        .encode(opaque_raster.data(), width, height, color)
+        .map_err(|err| EncodeError::Internal(err.to_string()))?;
     Ok(out)
 }
 
+/// Encode as a PNG, preserving alpha.
+///
+/// The only output format here that carries an alpha channel through
+/// rather than flattening it.
+///
+/// # Errors
+///
+/// [`EncodeError::Internal`] if the encoder rejects the header or the
+/// image data.
 fn encode_png(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
     let mut out = Vec::new();
     {
@@ -357,10 +473,10 @@ fn encode_png(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
         encoder.set_depth(png::BitDepth::Eight);
         let mut writer = encoder
             .write_header()
-            .map_err(|e| EncodeError::Internal(e.to_string()))?;
+            .map_err(|err| EncodeError::Internal(err.to_string()))?;
         writer
             .write_image_data(raster.data())
-            .map_err(|e| EncodeError::Internal(e.to_string()))?;
+            .map_err(|err| EncodeError::Internal(err.to_string()))?;
     }
     Ok(out)
 }

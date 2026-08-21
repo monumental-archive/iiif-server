@@ -5,6 +5,18 @@
 //! `OpenJPEG`-based incumbent has, validated bit-exact against `OpenJPEG` by
 //! SPIKE 2.
 
+#![expect(
+    clippy::single_call_fn,
+    reason = "each of these is a named step called once from the dispatch \
+          above it. Inlining them to satisfy the lint would fold \
+          separate formats, decode paths or parse stages into one long \
+          body — the lint's own documentation calls it \"very \
+          restrictive\", and here the single call site is the point: \
+          one function per format is what makes the dispatch readable."
+)]
+
+use core::fmt;
+
 use j2k::{CpuDecodeParallelism, J2kDecoder, J2kScratchPool, PixelFormat, Rect};
 
 use super::{CodecError, Master};
@@ -15,6 +27,13 @@ use crate::{
 };
 
 /// Wrap raw interleaved samples in the right raster variant.
+#[expect(
+    clippy::wildcard_enum_match_arm,
+    reason = "matches an upstream `#[non_exhaustive]` enum, so the wildcard \
+              is REQUIRED rather than chosen — measured: deleting it \
+              gives `error[E0004]: non-exhaustive patterns: `_` not \
+              covered`. The lint asks for something the compiler refuses."
+)]
 const fn raster_of(fmt: PixelFormat, width: u32, height: u32, data: Vec<u8>) -> Raster {
     match fmt {
         PixelFormat::Gray8 => Raster::Gray8 {
@@ -40,20 +59,35 @@ const DEFAULT_TILE: u32 = 1024;
 /// Owns the compressed bytes; decoders borrow them per request (parse state is
 /// cheap relative to pixel work, and a fresh decoder per decode keeps the type
 /// `Send` for the worker pool).
+#[expect(
+    clippy::module_name_repetitions,
+    reason = "`jp2::Master` and `simple::Master` would SHADOW `codec::Master`, \
+          the trait they implement, in any scope importing both. The \
+          prefix is what keeps the implementation distinguishable from \
+          the interface."
+)]
 pub struct Jp2Master {
+    /// The whole compressed codestream. The `Debug` impl below skips it
+    /// deliberately — it is megabytes.
     bytes: Vec<u8>,
-    // (Debug impl below skips `bytes` — megabytes of codestream.)
+    /// Full image width in pixels, from the codestream header.
     width: u32,
+    /// Full image height in pixels, from the codestream header.
     height: u32,
+    /// Component count: 1 for gray, 3 for colour.
     components: u16,
+    /// Resolution levels the codestream carries, which bounds how far a
+    /// power-of-two downscale can be served by decoding less.
     resolution_levels: u8,
+    /// Tile dimensions, or the image dimensions when untiled.
     tile: (u32, u32),
     /// Live pool-pressure hint; see `Master::set_internal_parallelism`.
     internal_parallelism: bool,
 }
 
-impl core::fmt::Debug for Jp2Master {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+impl fmt::Debug for Jp2Master {
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Jp2Master")
             .field("width", &self.width)
             .field("height", &self.height)
@@ -72,9 +106,10 @@ impl Jp2Master {
     /// [`CodecError::Corrupt`] when the stream does not parse;
     /// [`CodecError::Unsupported`] for component layouts outside the
     /// current matrix.
+    #[inline]
     pub fn new(bytes: Vec<u8>) -> Result<Self, CodecError> {
-        let decoder =
-            J2kDecoder::new(&bytes).map_err(|e| CodecError::Corrupt(format!("JP2 parse: {e}")))?;
+        let decoder = J2kDecoder::new(&bytes)
+            .map_err(|err| CodecError::Corrupt(format!("JP2 parse: {err}")))?;
         let info = decoder.info();
         let (width, height) = info.dimensions;
         let components = info.components;
@@ -87,8 +122,8 @@ impl Jp2Master {
         let tile = info
             .tile_layout
             .as_ref()
-            .map_or((DEFAULT_TILE, DEFAULT_TILE), |t| {
-                (t.tile_width, t.tile_height)
+            .map_or((DEFAULT_TILE, DEFAULT_TILE), |tile| {
+                (tile.tile_width, tile.tile_height)
             });
         Ok(Self {
             bytes,
@@ -101,6 +136,8 @@ impl Jp2Master {
         })
     }
 
+    /// The decoder's output format for this master: gray for a
+    /// single-component codestream, RGB for anything else.
     const fn pixel_format(&self) -> PixelFormat {
         if self.components == 1 {
             PixelFormat::Gray8
@@ -117,9 +154,9 @@ impl Jp2Master {
     /// 1/16–1/32 instead of decoding 1/8 and resampling.
     fn levels_for(&self, needed: f64) -> u8 {
         let max_level = self.resolution_levels - 1;
-        let mut choice = 0u8;
+        let mut choice = 0_u8;
         for level in 1..=max_level {
-            if f64::from(1u32 << u32::from(level).min(31)) <= needed {
+            if f64::from(1_u32 << u32::from(level).min(31)) <= needed {
                 choice = level;
             }
         }
@@ -127,11 +164,19 @@ impl Jp2Master {
     }
 }
 
-/// The smallest `1/denom`-scaled rectangle covering `rect`: floor the
-/// origin, ceil the far edge. Mirrors the covering contract of
+/// The smallest `1/denom`-scaled rectangle covering `rect`.
+///
+/// Floor the origin, ceil the far edge. Mirrors the covering contract of
 /// `decode_region_scaled_pow2_into`, which sizes its output this way but
 /// only reports the rect after decoding — we need it first to size the
 /// buffer.
+#[expect(
+    clippy::integer_division,
+    clippy::integer_division_remainder_used,
+    reason = "power-of-two downscale: the origin truncates toward the \
+              containing sample and the far edge uses div_ceil, which is \
+              what makes the result COVER the request rather than clip it."
+)]
 const fn scaled_covering_pow2(rect: Rect, denom: u32) -> Rect {
     let x0 = rect.x / denom;
     let y0 = rect.y / denom;
@@ -146,14 +191,16 @@ const fn scaled_covering_pow2(rect: Rect, denom: u32) -> Rect {
 }
 
 impl Master for Jp2Master {
+    #[inline]
     fn dimensions(&self) -> (u32, u32) {
         (self.width, self.height)
     }
 
+    #[inline]
     fn describe(&self) -> ImageDescription {
         // scaleFactors mirror the codestream's real resolution ladder.
         let scale_factors: Vec<u32> = (0..self.resolution_levels)
-            .map(|level| 1u32 << level)
+            .map(|level| 1_u32 << level)
             .collect();
         let mut sizes: Vec<SizeEntry> = scale_factors
             .iter()
@@ -179,10 +226,12 @@ impl Master for Jp2Master {
         }
     }
 
+    #[inline]
     fn set_internal_parallelism(&mut self, allow: bool) {
         self.internal_parallelism = allow;
     }
 
+    #[inline]
     fn advisories(&self) -> Vec<String> {
         let mut notes = Vec::new();
         if self.resolution_levels <= 1 && u64::from(self.width) * u64::from(self.height) > 4_000_000
@@ -196,9 +245,27 @@ impl Master for Jp2Master {
         notes
     }
 
+    #[inline]
+    #[expect(
+        clippy::as_conversions,
+        reason = "widening `u32`/`u8` to `usize` for buffer indexing, lossless on \
+              every target this ships to (musl x86_64 and aarch64). The \
+              alternative is measurably worse and was measured: \
+              `usize::try_from(w).unwrap()` trips `clippy::unwrap_used`, which \
+              this same lint set forbids, so it trades one enabled \
+              restriction for another and adds an error path that cannot \
+              be reached."
+    )]
+    #[expect(
+        clippy::wildcard_enum_match_arm,
+        reason = "matches an upstream `#[non_exhaustive]` enum, so the wildcard \
+              is REQUIRED rather than chosen — measured: deleting it \
+              gives `error[E0004]: non-exhaustive patterns: `_` not \
+              covered`. The lint asks for something the compiler refuses."
+    )]
     fn decode_crop(&mut self, crop: CropRect, needed: f64) -> Result<Raster, CodecError> {
         let mut decoder = J2kDecoder::new(&self.bytes)
-            .map_err(|e| CodecError::Corrupt(format!("JP2 parse: {e}")))?;
+            .map_err(|err| CodecError::Corrupt(format!("JP2 parse: {err}")))?;
         // Pool pressure decides: an idle pool wants the codec's internal
         // parallelism (1.7× lower latency), a saturated one does not
         // (oversubscription costs ~16% throughput). See
@@ -211,22 +278,22 @@ impl Master for Jp2Master {
         let levels = self.levels_for(needed);
         let fmt = self.pixel_format();
         let bpp = match fmt {
-            PixelFormat::Gray8 => 1usize,
-            _ => 3usize,
+            PixelFormat::Gray8 => 1_usize,
+            _ => 3_usize,
         };
         let roi = Rect {
             x: crop.x,
             y: crop.y,
-            w: crop.w,
-            h: crop.h,
+            w: crop.width,
+            h: crop.height,
         };
-        let scaled = scaled_covering_pow2(roi, 1u32 << u32::from(levels).min(31));
+        let scaled = scaled_covering_pow2(roi, 1_u32 << u32::from(levels).min(31));
         let mut pool = J2kScratchPool::new();
         let stride = scaled.w as usize * bpp;
-        let mut out = vec![0u8; stride * scaled.h as usize];
+        let mut out = vec![0_u8; stride * scaled.h as usize];
         decoder
             .decode_region_scaled_pow2_into(&mut pool, &mut out, stride, fmt, roi, levels)
-            .map_err(|e| CodecError::Corrupt(format!("JP2 decode: {e}")))?;
+            .map_err(|err| CodecError::Corrupt(format!("JP2 decode: {err}")))?;
         Ok(raster_of(fmt, scaled.w, scaled.h, out))
     }
 }

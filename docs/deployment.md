@@ -7,14 +7,16 @@ derivative cache. Each of those is one proven layer in front of it.
 
 ### Container
 
-The official image is `ghcr.io/carlallenn/iiif-server` — one static binary and
-a certificate bundle on nothing else. No shell, no package manager, no distro,
-about 6 MB to pull and 16–18 MB unpacked depending on architecture — under a
-ceiling CI enforces, so the figure cannot drift away from the artifact.
+The official image is `ghcr.io/monumental-archive/iiif-server` — one
+static binary and a certificate bundle on nothing else. No shell, no
+package manager, no distro, about 6 MB to pull and 16–18 MB unpacked
+depending on architecture — under a
+ceiling the release enforces on the published bytes, so the figure cannot
+drift away from the artifact.
 
 ```bash
 docker run --rm -p 6363:6363 -v ./masters:/imageroot:ro \
-    ghcr.io/carlallenn/iiif-server
+    ghcr.io/monumental-archive/iiif-server
 ```
 
 Compose, digest-pinned as a deployment should be. Renovate keeps the digest
@@ -23,7 +25,7 @@ current:
 ```yaml
 services:
   images:
-    image: ghcr.io/carlallenn/iiif-server@sha256:...
+    image: ghcr.io/monumental-archive/iiif-server@sha256:...
     command: ["serve", "/imageroot", "--bind", "0.0.0.0:6363"]
     volumes: ["./masters:/imageroot:ro"]
     ports: ["6363:6363"]
@@ -43,7 +45,7 @@ Object storage works the same way, with credentials from the environment:
 
 ```bash
 docker run --rm -p 6363:6363 -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY \
-    ghcr.io/carlallenn/iiif-server \
+    ghcr.io/monumental-archive/iiif-server \
     serve s3://bucket/prefix --endpoint https://objects.example.com
 ```
 
@@ -52,37 +54,34 @@ no config:
 
 ```bash
 docker run --rm -v ./masters:/imageroot:ro \
-    ghcr.io/carlallenn/iiif-server check /imageroot
+    ghcr.io/monumental-archive/iiif-server check /imageroot
 ```
 
 ### Verifying what you pulled
 
-Images and binaries are signed keylessly, so the signing identity is the
-publishing workflow at its tag:
+The image is signed keylessly by the organisation's signer — a repository
+that runs no build code and holds the only signing identity on the
+release path — so the identity you require is the signer's workflow, not
+this repository's:
 
 ```bash
-gh attestation verify oci://ghcr.io/carlallenn/iiif-server@sha256:... \
-    --repo CarlAllenn/iiif-server
+gh attestation verify oci://ghcr.io/monumental-archive/iiif-server:v0.2.0 \
+    --owner monumental-archive \
+    --signer-workflow monumental-archive/signer/.github/workflows/sign.yml \
+    --source-ref refs/tags/v0.2.0 \
+    --deny-self-hosted-runners
 ```
 
-### Binary
+### There is no binary download
 
-Static binaries for Linux (amd64/arm64) and macOS (Apple Silicon/Intel) are
-attached to every [release](https://github.com/CarlAllenn/iiif-server/releases),
-with checksums and build provenance. The Linux binaries are extracted from the
-image itself, so they are byte-identical to what runs in the container.
+From v0.2.0 the image is the only published artifact. Standalone
+binaries, their checksums and the installer script are not published: an
+artifact class is a standing promise of evidence, and a second one whose
+artifacts nobody pulls is evidence owed for nothing. Run the container,
+or build from source with the pinned toolchain (`mise install && cargo
+build --release --locked --bin iiif-server`).
 
-Install it with the release installer, which resolves your platform,
-downloads the matching archive, and verifies its SHA-256 against a value baked
-in at release time — it refuses to install bytes that do not match:
-
-```bash
-curl -LsSf https://github.com/CarlAllenn/iiif-server/releases/latest/download/install.sh | sh
-```
-
-`IIIF_INSTALL_DIR` chooses where it lands (default `~/.local/bin`). Or
-download the archive for your platform straight from the release and check
-the accompanying `.sha256` yourself. Both routes deliver the same binary.
+The invocations are the same either way:
 
 ```bash
 iiif-server serve ./images

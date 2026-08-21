@@ -3,7 +3,7 @@
 **Question:** what does the S3 range-read pattern cost through
 `object_store`, and what should the M4 source-metadata cache amortize?
 
-Run: `task spike:objstore` (Docker MinIO). Pointing the same harness at
+Run: `scripts/spike_objstore.sh` (Docker MinIO). Pointing the same harness at
 Hetzner Object Storage is an env-var swap (`SPIKE_ENDPOINT`,
 `SPIKE_BUCKET`, credentials) — real-network numbers deferred to M4 by
 decision (2026-07-26).

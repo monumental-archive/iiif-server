@@ -22,7 +22,16 @@ http-body-util = "0.1"
 # sync + signal: graceful shutdown — watch fans the stop out to live
 # connections, mpsc counts them down, signal delivers the SIGTERM that a
 # container's PID 1 would otherwise ignore entirely.
-tokio = { workspace = true, features = ["rt-multi-thread", "net", "macros", "signal", "fs", "io-util", "time", "sync"] }
+tokio = { workspace = true, features = [
+  "rt-multi-thread",
+  "net",
+  "macros",
+  "signal",
+  "fs",
+  "io-util",
+  "time",
+  "sync",
+] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 # Optional allocator: C, but trusted-compute C that never parses hostile

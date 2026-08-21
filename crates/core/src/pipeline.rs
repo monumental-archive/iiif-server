@@ -5,10 +5,32 @@
 //! mirror/rotate → encode. Pure compute; the caller owns threading and
 //! backpressure.
 
-use std::fmt;
+#![expect(
+    clippy::pattern_type_mismatch,
+    reason = "these matches use default binding modes on a `&self` receiver, \
+          which is the edition-2021/2024 idiom. The fix does not \
+          compile as written: `match *self` on these enums gives \
+          `error[E0507]: cannot move out of `self` as enum variant `Io` \
+          which is behind a shared reference`, because the payloads are \
+          not `Copy`. What satisfies the lint is `ref` bindings — the \
+          pre-2018 style default binding modes were introduced to \
+          remove — so this is a case where conforming would move the \
+          code backwards."
+)]
+#![expect(
+    clippy::single_call_fn,
+    reason = "each of these is a named step called once from the dispatch \
+          above it. Inlining them to satisfy the lint would fold \
+          separate formats, decode paths or parse stages into one long \
+          body — the lint's own documentation calls it \"very \
+          restrictive\", and here the single call site is the point: \
+          one function per format is what makes the dispatch readable."
+)]
+
+use core::{error::Error, fmt};
 
 use fast_image_resize as fir;
-use num_traits::cast::ToPrimitive;
+use num_traits::cast::ToPrimitive as _;
 
 use crate::{
     codec::{CodecError, Master},
@@ -20,6 +42,16 @@ use crate::{
 
 /// Pipeline failure, split by who caused it.
 #[derive(Debug)]
+#[non_exhaustive]
+#[expect(
+    clippy::module_name_repetitions,
+    reason = "the `<Module>Error` convention, and the alternative is worse here \
+          rather than merely different: five modules each own an error \
+          type, so renaming them all to `Error` would produce five types \
+          of that name that cannot be imported into one scope without \
+          aliases at every call site. The path already disambiguates; the \
+          name is what appears in a caller's `match`."
+)]
 pub enum PipelineError {
     /// Decoding the master failed.
     Codec(CodecError),
@@ -32,33 +64,46 @@ pub enum PipelineError {
 }
 
 impl fmt::Display for PipelineError {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Codec(e) => write!(f, "{e}"),
-            Self::Encode(e) => write!(f, "{e}"),
-            Self::Raster(e) => write!(f, "{e}"),
+            Self::Codec(err) => write!(f, "{err}"),
+            Self::Encode(err) => write!(f, "{err}"),
+            Self::Raster(err) => write!(f, "{err}"),
             Self::Resize(msg) => write!(f, "resample failure: {msg}"),
         }
     }
 }
 
-impl std::error::Error for PipelineError {}
+#[expect(
+    clippy::missing_trait_methods,
+    reason = "unsatisfiable on stable, measured with rustc rather than argued: \
+              `provide` is E0658 `error_generic_member_access`, and \
+              `type_id` is E0658 `error_type_id` — \"this is memory-unsafe \
+              to override in user code\". `source` is implemented where \
+              this type has one; `description` and `cause` are deprecated \
+              and are left to the standard library's own implementations."
+)]
+impl Error for PipelineError {}
 
 impl From<CodecError> for PipelineError {
-    fn from(e: CodecError) -> Self {
-        Self::Codec(e)
+    #[inline]
+    fn from(err: CodecError) -> Self {
+        Self::Codec(err)
     }
 }
 
 impl From<EncodeError> for PipelineError {
-    fn from(e: EncodeError) -> Self {
-        Self::Encode(e)
+    #[inline]
+    fn from(err: EncodeError) -> Self {
+        Self::Encode(err)
     }
 }
 
 impl From<RasterError> for PipelineError {
-    fn from(e: RasterError) -> Self {
-        Self::Raster(e)
+    #[inline]
+    fn from(err: RasterError) -> Self {
+        Self::Raster(err)
     }
 }
 
@@ -67,41 +112,55 @@ impl From<RasterError> for PipelineError {
 /// # Errors
 ///
 /// See [`PipelineError`].
+#[inline]
+#[expect(
+    clippy::modulo_arithmetic,
+    reason = "selects the quarter-turn fast path; degrees are `0..=360` \
+              by the grammar, so the operand cannot be negative."
+)]
 pub fn execute(source: &mut dyn Master, plan: &Plan) -> Result<Vec<u8>, PipelineError> {
     // 1. Decode the crop with enough detail for the output scale; the codec picks
     //    its own cheapest path (pyramid level, reduced- resolution wavelet decode,
     //    or resident raster).
-    let needed = f64::from(plan.crop.w) / f64::from(plan.out_w.max(1));
-    let raster = source.decode_crop(plan.crop, needed)?;
+    let needed = f64::from(plan.crop.width) / f64::from(plan.out_w.max(1));
+    let decoded = source.decode_crop(plan.crop, needed)?;
 
     // 2. Resample to the output size.
-    let raster = resize(raster, plan.out_w, plan.out_h)?;
+    let resized = resize(decoded, plan.out_w, plan.out_h)?;
 
     // 3. Quality.
-    let raster = match plan.quality {
-        Quality::Default | Quality::Color => raster,
-        Quality::Gray => raster.into_gray(),
-        Quality::Bitonal => raster.into_bitonal(),
+    let mut recoloured = match plan.quality {
+        Quality::Default | Quality::Color => resized,
+        Quality::Gray => resized.into_gray(),
+        Quality::Bitonal => resized.into_bitonal(),
     };
 
     // 4. Mirror, then rotate.
-    let mut raster = raster;
     if plan.mirror {
-        raster.mirror();
+        recoloured.mirror();
     }
-    let raster = if plan.degrees == 0.0 {
-        raster
-    } else if plan.degrees % 90.0 == 0.0 {
-        raster.rotate_quarters((plan.degrees / 90.0).to_u8().unwrap_or(0))
+    let raster = if plan.degrees == 0.0_f64 {
+        recoloured
+    } else if plan.degrees % 90.0_f64 == 0.0_f64 {
+        recoloured.rotate_quarters((plan.degrees / 90.0_f64).to_u8().unwrap_or(0))
     } else {
-        raster.rotate_arbitrary(plan.degrees)
+        recoloured.rotate_arbitrary(plan.degrees)
     };
 
     // 5. Encode.
     Ok(encode(&raster, plan.format)?)
 }
 
-/// Lanczos3 resample via `fast_image_resize`; identity sizes short-circuit.
+/// Resample a raster to exactly `out_w` x `out_h`, Lanczos3 via
+/// `fast_image_resize`.
+///
+/// Returns the input untouched when it is already that size, which is
+/// the common `full/max` path.
+///
+/// # Errors
+///
+/// [`PipelineError::Internal`] if the resampler rejects the buffer or
+/// the target dimensions.
 fn resize(raster: Raster, out_w: u32, out_h: u32) -> Result<Raster, PipelineError> {
     if raster.width() == out_w && raster.height() == out_h {
         return Ok(raster);
@@ -136,35 +195,35 @@ fn resize(raster: Raster, out_w: u32, out_h: u32) -> Result<Raster, PipelineErro
         } => (width, height, data),
     };
     let src = fir::images::Image::from_vec_u8(width, height, data, pixel_type)
-        .map_err(|e| PipelineError::Resize(e.to_string()))?;
+        .map_err(|err| PipelineError::Resize(err.to_string()))?;
     let mut dst = fir::images::Image::new(out_w, out_h, pixel_type);
     let mut resizer = fir::Resizer::new();
     let options = fir::ResizeOptions::new()
         .resize_alg(fir::ResizeAlg::Convolution(fir::FilterType::Lanczos3));
     resizer
         .resize(&src, &mut dst, &options)
-        .map_err(|e| PipelineError::Resize(e.to_string()))?;
-    let data = dst.into_vec();
+        .map_err(|err| PipelineError::Resize(err.to_string()))?;
+    let resampled = dst.into_vec();
     Ok(match channels {
         1 => Raster::Gray8 {
             width: out_w,
             height: out_h,
-            data,
+            data: resampled,
         },
         2 => Raster::GrayA8 {
             width: out_w,
             height: out_h,
-            data,
+            data: resampled,
         },
         3 => Raster::Rgb8 {
             width: out_w,
             height: out_h,
-            data,
+            data: resampled,
         },
         _ => Raster::Rgba8 {
             width: out_w,
             height: out_h,
-            data,
+            data: resampled,
         },
     })
 }

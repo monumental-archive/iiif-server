@@ -12,17 +12,19 @@
 #
 # The licence text lives in LICENSES/AGPL-3.0-only.txt, which is a byte-exact
 # copy of the root LICENSE. Both are kept: LICENSES/ is what REUSE tooling
-# reads, the root LICENSE is what GitHub and OpenSSF Scorecard read. No
-# contact address on SPDX-PackageSupplier — the project publishes none, and
-# SECURITY.md routes reports through GitHub's advisory form instead.
+# reads, the root LICENSE is what GitHub and OpenSSF Scorecard read.
 #
-# `reuse lint` runs as its own CI job (ci.yml), not from the local lint set:
-# the fsfe action is one docker pull with no toolchain to pin, which is the
-# house canon (renovate-config templates/badges/README.md).
+# Supplier and download location are the ORG's, matching every other
+# repository in monumental-archive; the copyright holder is unchanged,
+# because a transfer moves custody and not authorship.
+#
+# `reuse lint` is not a CI job any more: the belt runs the same tool over
+# tracked files as `lint:reuse`, inside the org gate, before anything is
+# registered with api.reuse.software.
 version = 1
 SPDX-PackageName = "iiif-server"
-SPDX-PackageSupplier = "Carl Allen"
-SPDX-PackageDownloadLocation = "https://github.com/CarlAllenn/iiif-server"
+SPDX-PackageSupplier = "Carl Allen <carl.allen313@gmail.com>"
+SPDX-PackageDownloadLocation = "https://github.com/monumental-archive/iiif-server"
 
 # precedence = "closest" is the spec default, stated explicitly because it is
 # the point of this entry: a file's own header always wins, and this blanket

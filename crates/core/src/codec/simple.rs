@@ -7,18 +7,39 @@
 //! `check` advises converting large ones to pyramids; small images are fine
 //! here.
 
-use std::io::Cursor;
+#![expect(
+    clippy::single_call_fn,
+    reason = "each of these is a named step called once from the dispatch \
+          above it. Inlining them to satisfy the lint would fold \
+          separate formats, decode paths or parse stages into one long \
+          body — the lint's own documentation calls it \"very \
+          restrictive\", and here the single call site is the point: \
+          one function per format is what makes the dispatch readable."
+)]
+
+use std::io;
 
 use super::{CodecError, Master, guard_resident_pixels};
+use zune_jpeg::zune_core::bytestream::ZCursor;
+
 use crate::{
     eval::CropRect,
     image::{CopyRect, Raster},
-    info::ImageDescription,
+    info::{ImageDescription, SizeEntry},
 };
 
 /// A fully decoded single-resolution master.
 #[derive(Debug)]
+#[expect(
+    clippy::module_name_repetitions,
+    reason = "`jp2::Master` and `simple::Master` would SHADOW `codec::Master`, \
+          the trait they implement, in any scope importing both. The \
+          prefix is what keeps the implementation distinguishable from \
+          the interface."
+)]
 pub struct SimpleMaster {
+    /// The whole image, decoded once at open time — these formats carry
+    /// no pyramid to decode a region from.
     raster: Raster,
 }
 
@@ -30,18 +51,16 @@ impl SimpleMaster {
     ///
     /// [`CodecError::Corrupt`] when the stream does not decode;
     /// [`CodecError::Unsupported`] for sample layouts outside the matrix.
+    #[inline]
     pub fn from_jpeg(bytes: &[u8]) -> Result<Self, CodecError> {
         use zune_jpeg::zune_core::{colorspace::ColorSpace, options::DecoderOptions};
         let options = DecoderOptions::default().jpeg_set_out_colorspace(ColorSpace::RGB);
-        let mut decoder = zune_jpeg::JpegDecoder::new_with_options(
-            zune_jpeg::zune_core::bytestream::ZCursor::new(bytes),
-            options,
-        );
+        let mut decoder = zune_jpeg::JpegDecoder::new_with_options(ZCursor::new(bytes), options);
         // Headers first: dimensions must clear the bomb ceiling before
         // any pixel buffer is allocated.
         decoder
             .decode_headers()
-            .map_err(|e| CodecError::Corrupt(format!("JPEG headers: {e}")))?;
+            .map_err(|err| CodecError::Corrupt(format!("JPEG headers: {err}")))?;
         if let Some((width, height)) = decoder.dimensions() {
             guard_resident_pixels(
                 u32::try_from(width).unwrap_or(u32::MAX),
@@ -50,13 +69,15 @@ impl SimpleMaster {
         }
         let pixels = decoder
             .decode()
-            .map_err(|e| CodecError::Corrupt(format!("JPEG decode: {e}")))?;
-        let (width, height) = decoder
+            .map_err(|err| CodecError::Corrupt(format!("JPEG decode: {err}")))?;
+        let (raw_width, raw_height) = decoder
             .dimensions()
             .ok_or_else(|| CodecError::Corrupt("JPEG has no dimensions".to_owned()))?;
         let (width, height) = (
-            u32::try_from(width).map_err(|_| CodecError::Corrupt("width overflow".to_owned()))?,
-            u32::try_from(height).map_err(|_| CodecError::Corrupt("height overflow".to_owned()))?,
+            u32::try_from(raw_width)
+                .map_err(|err| CodecError::Corrupt(format!("width overflow: {err}")))?,
+            u32::try_from(raw_height)
+                .map_err(|err| CodecError::Corrupt(format!("height overflow: {err}")))?,
         );
         Ok(Self {
             raster: Raster::Rgb8 {
@@ -73,11 +94,19 @@ impl SimpleMaster {
     /// # Errors
     ///
     /// [`CodecError::Corrupt`] / [`CodecError::Unsupported`] as above.
+    #[inline]
+    #[expect(
+        clippy::integer_division,
+        clippy::integer_division_remainder_used,
+        reason = "alpha compositing over white: `(v*a + 255*(255-a) + 127) \
+                  / 255` is the standard rounded 8-bit divide — the +127 \
+                  is the rounding and the truncation completes it."
+    )]
     pub fn from_png(bytes: &[u8]) -> Result<Self, CodecError> {
-        let decoder = png::Decoder::new(Cursor::new(bytes));
+        let decoder = png::Decoder::new(io::Cursor::new(bytes));
         let mut reader = decoder
             .read_info()
-            .map_err(|e| CodecError::Corrupt(format!("PNG decode: {e}")))?;
+            .map_err(|err| CodecError::Corrupt(format!("PNG decode: {err}")))?;
         // Header dimensions are known here; the frame buffer is not yet
         // allocated. Guard before it is.
         {
@@ -85,14 +114,14 @@ impl SimpleMaster {
             guard_resident_pixels(info.width, info.height)?;
         }
         let mut buf = vec![
-            0u8;
+            0_u8;
             reader
                 .output_buffer_size()
                 .ok_or_else(|| CodecError::Corrupt("PNG size overflow".to_owned()))?
         ];
         let info = reader
             .next_frame(&mut buf)
-            .map_err(|e| CodecError::Corrupt(format!("PNG decode: {e}")))?;
+            .map_err(|err| CodecError::Corrupt(format!("PNG decode: {err}")))?;
         buf.truncate(info.buffer_size());
         let (width, height) = (info.width, info.height);
         let raster = match (info.color_type, info.bit_depth) {
@@ -125,28 +154,36 @@ impl SimpleMaster {
                     height,
                     data,
                 }
-            },
+            }
             (color, depth) => {
                 return Err(CodecError::Unsupported(format!(
                     "PNG {color:?}/{depth:?} is not yet in the supported matrix"
                 )));
-            },
+            }
         };
         Ok(Self { raster })
     }
 
     /// Wrap an already-decoded raster (used by tests).
     #[must_use]
+    #[inline]
     pub const fn from_raster(raster: Raster) -> Self {
         Self { raster }
     }
 }
 
 impl Master for SimpleMaster {
+    /// No-op: these formats decode whole at open time and run no
+    /// internal thread pool.
+    #[inline]
+    fn set_internal_parallelism(&mut self, _allow: bool) {}
+
+    #[inline]
     fn dimensions(&self) -> (u32, u32) {
         (self.raster.width(), self.raster.height())
     }
 
+    #[inline]
     fn describe(&self) -> ImageDescription {
         // No pyramid, no tiles: sizes lists the one complete size. Honest
         // structure — viewers fall back to whole-image requests.
@@ -154,13 +191,14 @@ impl Master for SimpleMaster {
             width: self.raster.width(),
             height: self.raster.height(),
             tiles: Vec::new(),
-            sizes: vec![crate::info::SizeEntry {
+            sizes: vec![SizeEntry {
                 width: self.raster.width(),
                 height: self.raster.height(),
             }],
         }
     }
 
+    #[inline]
     fn advisories(&self) -> Vec<String> {
         let pixels = u64::from(self.raster.width()) * u64::from(self.raster.height());
         if pixels > 4_000_000 {
@@ -176,15 +214,16 @@ impl Master for SimpleMaster {
         }
     }
 
+    #[inline]
     fn decode_crop(&mut self, crop: CropRect, _needed: f64) -> Result<Raster, CodecError> {
-        let mut out = self.raster.zeroed_like(crop.w, crop.h)?;
+        let mut out = self.raster.zeroed_like(crop.width, crop.height)?;
         out.blit(
             &self.raster,
             CopyRect {
                 src_x: crop.x,
                 src_y: crop.y,
-                width: crop.w,
-                height: crop.h,
+                width: crop.width,
+                height: crop.height,
             },
             0,
             0,

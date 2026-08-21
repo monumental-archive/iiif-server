@@ -17,6 +17,7 @@ pub const PROTOCOL: &str = "http://iiif.io/api/image";
 
 /// One entry in `sizes`: a complete scaled version of the full image.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[non_exhaustive]
 pub struct SizeEntry {
     /// Scaled full-image width in pixels.
     pub width: u32,
@@ -27,6 +28,7 @@ pub struct SizeEntry {
 /// One entry in `tiles`: a tile size plus the scale factors at which that
 /// tiling is natively cheap.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[non_exhaustive]
 pub struct TileSet {
     /// Tile width in pixels.
     pub width: u32,
@@ -41,6 +43,7 @@ pub struct TileSet {
 /// Deployment-level size limits — the denial-of-service posture. Always
 /// published.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct Limits {
     /// Maximum output width in pixels.
     pub width: u32,
@@ -50,12 +53,30 @@ pub struct Limits {
     pub area: u64,
 }
 
+impl Limits {
+    /// The published ceilings a deployment enforces.
+    ///
+    /// A constructor rather than a struct literal because the type is
+    /// `#[non_exhaustive]`: a future ceiling can be added here without
+    /// breaking every caller, which is the whole point of the attribute.
+    #[inline]
+    #[must_use]
+    pub const fn new(width: u32, height: u32, area: u64) -> Self {
+        Self {
+            width,
+            height,
+            area,
+        }
+    }
+}
+
 /// Everything the info.json needs about one image.
 ///
 /// Its dimensions and the pyramid structure actually present in the master
 /// (used to derive `tiles` and `sizes` so viewers request only
 /// natively-cheap tiles).
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct ImageDescription {
     /// Full-resolution image width in pixels.
     pub width: u32,
@@ -70,6 +91,13 @@ pub struct ImageDescription {
 
 /// The serialized info.json document.
 #[derive(Debug, Clone, Serialize)]
+#[non_exhaustive]
+#[expect(
+    clippy::module_name_repetitions,
+    reason = "the info.json document, and `info::Info` is what the IIIF \
+          specification calls it. A synonym here would be this crate \
+          inventing a name the spec does not use."
+)]
 pub struct Info {
     /// The Image API 3.0 context URI.
     #[serde(rename = "@context")]
@@ -139,6 +167,7 @@ impl Info {
     /// Assemble the document for one image. `id` is the full base URI of
     /// the image (scheme, server, prefix, identifier — no trailing slash).
     #[must_use]
+    #[inline]
     pub fn new(id: String, image: &ImageDescription, limits: Limits) -> Self {
         Self {
             context: CONTEXT,
@@ -167,8 +196,9 @@ impl Info {
     /// of this struct is structurally infallible (no maps, no non-string
     /// keys, no fallible `Serialize` impls).
     #[must_use]
+    #[inline]
     pub fn to_json(&self) -> String {
-        #[allow(
+        #[expect(
             clippy::expect_used,
             reason = "map-free static shape: to_string cannot fail"
         )]

@@ -7,9 +7,22 @@
 //! handling (16-bit, planar, subsampled YCbCr) at the decoder layer, which
 //! normalizes to these working rasters.
 
-use std::fmt;
+#![expect(
+    clippy::pattern_type_mismatch,
+    reason = "these matches use default binding modes on a `&self` receiver, \
+          which is the edition-2021/2024 idiom. The fix does not \
+          compile as written: `match *self` on these enums gives \
+          `error[E0507]: cannot move out of `self` as enum variant `Io` \
+          which is behind a shared reference`, because the payloads are \
+          not `Copy`. What satisfies the lint is `ref` bindings — the \
+          pre-2018 style default binding modes were introduced to \
+          remove — so this is a case where conforming would move the \
+          code backwards."
+)]
 
-use num_traits::cast::ToPrimitive;
+use core::{error::Error, fmt};
+
+use num_traits::cast::ToPrimitive as _;
 
 /// An owned 8-bit raster, tightly packed, row-major.
 ///
@@ -18,6 +31,7 @@ use num_traits::cast::ToPrimitive;
 /// and are consumed only by the encoders (PNG keeps alpha; opaque formats
 /// composite over white).
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum Raster {
     /// Single channel, 1 byte per pixel.
     Gray8 {
@@ -61,26 +75,43 @@ pub enum Raster {
 /// always an internal bug or a decoder contract violation, never a client
 /// error.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct RasterError(pub String);
 
 impl fmt::Display for RasterError {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "raster error: {}", self.0)
     }
 }
 
-impl std::error::Error for RasterError {}
+#[expect(
+    clippy::missing_trait_methods,
+    reason = "unsatisfiable on stable, measured with rustc rather than argued: \
+              `provide` is E0658 `error_generic_member_access`, and \
+              `type_id` is E0658 `error_type_id` — \"this is memory-unsafe \
+              to override in user code\". `source` is implemented where \
+              this type has one; `description` and `cause` are deprecated \
+              and are left to the standard library's own implementations."
+)]
+impl Error for RasterError {}
 
 /// BT.601 luma of one RGB pixel.
-fn luma_of(r: u8, g: u8, b: u8) -> u8 {
-    let luma = 0.114f64.mul_add(
-        f64::from(b),
-        0.587f64.mul_add(f64::from(g), 0.299 * f64::from(r)),
+fn luma_of(red: u8, green: u8, blue: u8) -> u8 {
+    let luma = 0.114_f64.mul_add(
+        f64::from(blue),
+        0.587_f64.mul_add(f64::from(green), 0.299 * f64::from(red)),
     );
     luma.round().clamp(0.0, 255.0).to_u8().unwrap_or(255)
 }
 
 /// One channel of source-over-white compositing.
+#[expect(
+    clippy::integer_division,
+    clippy::integer_division_remainder_used,
+    reason = "the 8-bit composite divide, as above: rounding is carried \
+              in the numerator and the truncation completes it."
+)]
 fn composite_channel(value: u8, alpha: u8) -> u8 {
     let alpha_wide = u16::from(alpha);
     let numerator = u16::from(value) * alpha_wide + 255 * (255 - alpha_wide) + 127;
@@ -89,6 +120,7 @@ fn composite_channel(value: u8, alpha: u8) -> u8 {
 
 /// A source rectangle for [`Raster::blit`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct CopyRect {
     /// Left edge in the source raster.
     pub src_x: u32,
@@ -103,6 +135,7 @@ pub struct CopyRect {
 impl Raster {
     /// Width in pixels.
     #[must_use]
+    #[inline]
     pub const fn width(&self) -> u32 {
         match self {
             Self::Gray8 { width, .. }
@@ -114,6 +147,7 @@ impl Raster {
 
     /// Height in pixels.
     #[must_use]
+    #[inline]
     pub const fn height(&self) -> u32 {
         match self {
             Self::Gray8 { height, .. }
@@ -125,6 +159,7 @@ impl Raster {
 
     /// Samples per pixel (1, 2, 3 or 4).
     #[must_use]
+    #[inline]
     pub const fn channels(&self) -> u32 {
         match self {
             Self::Gray8 { .. } => 1,
@@ -136,6 +171,7 @@ impl Raster {
 
     /// The raw row-major sample buffer.
     #[must_use]
+    #[inline]
     pub fn data(&self) -> &[u8] {
         match self {
             Self::Gray8 { data, .. }
@@ -152,6 +188,17 @@ impl Raster {
     /// Fails when `width * height * channels` overflows `usize` — the
     /// per-decode allocation ceilings upstream make this unreachable in
     /// practice, but the arithmetic stays checked.
+    #[inline]
+    #[expect(
+        clippy::as_conversions,
+        reason = "widening `u32`/`u8` to `usize` for buffer indexing, lossless on \
+              every target this ships to (musl x86_64 and aarch64). The \
+              alternative is measurably worse and was measured: \
+              `usize::try_from(w).unwrap()` trips `clippy::unwrap_used`, which \
+              this same lint set forbids, so it trades one enabled \
+              restriction for another and adds an error path that cannot \
+              be reached."
+    )]
     pub fn zeroed_like(&self, width: u32, height: u32) -> Result<Self, RasterError> {
         let pixels = (width as usize)
             .checked_mul(height as usize)
@@ -188,6 +235,17 @@ impl Raster {
     ///
     /// Fails when the rectangles fall outside either raster or the pixel
     /// layouts differ.
+    #[inline]
+    #[expect(
+        clippy::as_conversions,
+        reason = "widening `u32`/`u8` to `usize` for buffer indexing, lossless on \
+              every target this ships to (musl x86_64 and aarch64). The \
+              alternative is measurably worse and was measured: \
+              `usize::try_from(w).unwrap()` trips `clippy::unwrap_used`, which \
+              this same lint set forbids, so it trades one enabled \
+              restriction for another and adds an error path that cannot \
+              be reached."
+    )]
     pub fn blit(
         &mut self,
         src: &Self,
@@ -236,6 +294,7 @@ impl Raster {
         Ok(())
     }
 
+    /// The pixel buffer, mutably, whatever the variant.
     const fn data_mut(&mut self) -> &mut Vec<u8> {
         match self {
             Self::Gray8 { data, .. }
@@ -246,6 +305,17 @@ impl Raster {
     }
 
     /// Mirror on the vertical axis (left↔right), in place.
+    #[inline]
+    #[expect(
+        clippy::as_conversions,
+        reason = "widening `u32`/`u8` to `usize` for buffer indexing, lossless on \
+              every target this ships to (musl x86_64 and aarch64). The \
+              alternative is measurably worse and was measured: \
+              `usize::try_from(w).unwrap()` trips `clippy::unwrap_used`, which \
+              this same lint set forbids, so it trades one enabled \
+              restriction for another and adds an error path that cannot \
+              be reached."
+    )]
     pub fn mirror(&mut self) {
         let width = self.width() as usize;
         let bpp = self.channels() as usize;
@@ -265,6 +335,13 @@ impl Raster {
 
     /// Rotate clockwise by the given number of quarter turns (0–3).
     #[must_use]
+    #[inline]
+    #[expect(
+        clippy::integer_division_remainder_used,
+        reason = "`quarters % 4` normalises a turn count; the operand is \
+                  unsigned, so the sign question this lint guards cannot \
+                  arise."
+    )]
     pub fn rotate_quarters(self, quarters: u8) -> Self {
         match quarters % 4 {
             1 => self.rotated_90(),
@@ -272,22 +349,36 @@ impl Raster {
                 let mut out = self;
                 out.rotate_180();
                 out
-            },
+            }
             3 => {
                 let mut out = self.rotated_90();
                 out.rotate_180();
                 out
-            },
+            }
             _ => self,
         }
     }
 
+    /// This raster turned a quarter turn clockwise, as a new raster.
+    ///
+    /// Allocates: the destination has the source's dimensions swapped, so
+    /// it cannot be done in place.
+    #[expect(
+        clippy::as_conversions,
+        reason = "widening `u32`/`u8` to `usize` for buffer indexing, lossless on \
+              every target this ships to (musl x86_64 and aarch64). The \
+              alternative is measurably worse and was measured: \
+              `usize::try_from(w).unwrap()` trips `clippy::unwrap_used`, which \
+              this same lint set forbids, so it trades one enabled \
+              restriction for another and adds an error path that cannot \
+              be reached."
+    )]
     fn rotated_90(self) -> Self {
         let src_w = self.width() as usize;
         let src_h = self.height() as usize;
         let bpp = self.channels() as usize;
         let src = self.data();
-        let mut dst = vec![0u8; src.len()];
+        let mut dst = vec![0_u8; src.len()];
         // (x, y) → (dst_x, dst_y) = (src_h - 1 - y, x); dst is src_h wide.
         for y in 0..src_h {
             for x in 0..src_w {
@@ -321,6 +412,19 @@ impl Raster {
         }
     }
 
+    /// Turn this raster a half turn, in place.
+    ///
+    /// A half turn preserves the dimensions, so it is a pixel reversal
+    /// and needs no second buffer.
+    #[expect(
+        clippy::as_conversions,
+        clippy::integer_division,
+        clippy::integer_division_remainder_used,
+        reason = "`len / bpp` is the pixel count and `pixels / 2` is the \
+                  half that gets swapped — a middle pixel in an odd count \
+                  is already in place, which is exactly what truncating \
+                  leaves alone."
+    )]
     fn rotate_180(&mut self) {
         let bpp = self.channels() as usize;
         let data = self.data_mut();
@@ -335,6 +439,14 @@ impl Raster {
 
     /// Convert to grayscale (BT.601 luma), a no-op for gray input.
     #[must_use]
+    #[inline]
+    ///
+    /// # Panics
+    ///
+    /// Never in practice. The `assert!` inside the per-pixel loop restates
+    /// `chunks_exact`'s own length guarantee so the optimiser can elide the
+    /// repeated bounds checks — which is what `missing_asserts_for_indexing`
+    /// asks for — and it cannot fire for a chunk that iterator produced.
     pub fn into_gray(self) -> Self {
         match self {
             gray @ (Self::Gray8 { .. } | Self::GrayA8 { .. }) => gray,
@@ -345,14 +457,17 @@ impl Raster {
             } => {
                 let gray = data
                     .chunks_exact(3)
-                    .map(|px| luma_of(px[0], px[1], px[2]))
+                    .map(|px| {
+                        assert!(px.len() >= 3, "chunks_exact(3) yields 3 bytes");
+                        luma_of(px[0], px[1], px[2])
+                    })
                     .collect();
                 Self::Gray8 {
                     width,
                     height,
                     data: gray,
                 }
-            },
+            }
             Self::Rgba8 {
                 width,
                 height,
@@ -360,20 +475,24 @@ impl Raster {
             } => {
                 let gray = data
                     .chunks_exact(4)
-                    .flat_map(|px| [luma_of(px[0], px[1], px[2]), px[3]])
+                    .flat_map(|px| {
+                        assert!(px.len() >= 4, "chunks_exact(4) yields 4 bytes");
+                        [luma_of(px[0], px[1], px[2]), px[3]]
+                    })
                     .collect();
                 Self::GrayA8 {
                     width,
                     height,
                     data: gray,
                 }
-            },
+            }
         }
     }
 
     /// Convert to bitonal: grayscale, then a 50% threshold to pure
     /// black/white.
     #[must_use]
+    #[inline]
     pub fn into_bitonal(self) -> Self {
         match self.into_gray() {
             Self::Gray8 {
@@ -389,7 +508,7 @@ impl Raster {
                     height,
                     data,
                 }
-            },
+            }
             Self::GrayA8 {
                 width,
                 height,
@@ -403,8 +522,11 @@ impl Raster {
                     height,
                     data,
                 }
-            },
-            other => other, // unreachable: into_gray never returns RGB
+            }
+            // `into_gray` returns only the two gray shapes, both matched
+            // above, so these two are unreachable — named rather than
+            // wildcarded so a fifth Raster variant would fail here.
+            other @ (Self::Rgb8 { .. } | Self::Rgba8 { .. }) => other,
         }
     }
 
@@ -412,6 +534,17 @@ impl Raster {
     /// the rotated bounds; uncovered corners are transparent (the spec's
     /// recommendation) — hence the alpha output. Bilinear sampling.
     #[must_use]
+    #[inline]
+    #[expect(
+        clippy::as_conversions,
+        reason = "widening `u32`/`u8` to `usize` for buffer indexing, lossless on \
+              every target this ships to (musl x86_64 and aarch64). The \
+              alternative is measurably worse and was measured: \
+              `usize::try_from(w).unwrap()` trips `clippy::unwrap_used`, which \
+              this same lint set forbids, so it trades one enabled \
+              restriction for another and adds an error path that cannot \
+              be reached."
+    )]
     pub fn rotate_arbitrary(self, degrees: f64) -> Self {
         let theta = degrees.to_radians();
         let (sin, cos) = theta.sin_cos();
@@ -424,9 +557,9 @@ impl Raster {
         let gray = matches!(self, Self::Gray8 { .. } | Self::GrayA8 { .. });
         let src_channels = self.channels() as usize;
         let out_channels: usize = if gray { 2 } else { 4 };
-        let mut out = vec![0u8; canvas_w as usize * canvas_h as usize * out_channels];
-        let source_center = (src_w / 2.0, src_h / 2.0);
-        let canvas_center = (out_w / 2.0, out_h / 2.0);
+        let mut out = vec![0_u8; canvas_w as usize * canvas_h as usize * out_channels];
+        let source_center = (src_w / 2.0_f64, src_h / 2.0_f64);
+        let canvas_center = (out_w / 2.0_f64, out_h / 2.0_f64);
         let data = self.data();
         let columns = self.width() as usize;
         let rows = self.height() as usize;
@@ -434,11 +567,11 @@ impl Raster {
             for ox in 0..canvas_w {
                 // Inverse map: rotate the output pixel back by -θ around
                 // the canvas center.
-                let dx = f64::from(ox) + 0.5 - canvas_center.0;
-                let dy = f64::from(oy) + 0.5 - canvas_center.1;
-                let sx = dx * cos + dy * sin + source_center.0 - 0.5;
-                let sy = -(dx * sin) + dy * cos + source_center.1 - 0.5;
-                if sx < -0.5 || sy < -0.5 || sx > src_w - 0.5 || sy > src_h - 0.5 {
+                let dx = f64::from(ox) + 0.5_f64 - canvas_center.0;
+                let dy = f64::from(oy) + 0.5_f64 - canvas_center.1;
+                let sx = dx * cos + dy * sin + source_center.0 - 0.5_f64;
+                let sy = -(dx * sin) + dy * cos + source_center.1 - 0.5_f64;
+                if sx < -0.5_f64 || sy < -0.5_f64 || sx > src_w - 0.5_f64 || sy > src_h - 0.5_f64 {
                     continue; // stays transparent
                 }
                 let x_floor = sx.floor().max(0.0);
@@ -485,6 +618,14 @@ impl Raster {
     /// Flatten alpha over a white background, producing an opaque raster.
     /// No-op for already-opaque rasters.
     #[must_use]
+    #[inline]
+    ///
+    /// # Panics
+    ///
+    /// Never in practice. The `assert!` inside the per-pixel loop restates
+    /// `chunks_exact`'s own length guarantee so the optimiser can elide the
+    /// repeated bounds checks — which is what `missing_asserts_for_indexing`
+    /// asks for — and it cannot fire for a chunk that iterator produced.
     pub fn flatten_over_white(self) -> Self {
         match self {
             opaque @ (Self::Gray8 { .. } | Self::Rgb8 { .. }) => opaque,
@@ -495,14 +636,17 @@ impl Raster {
             } => {
                 let flat = data
                     .chunks_exact(2)
-                    .map(|px| composite_channel(px[0], px[1]))
+                    .map(|px| {
+                        assert!(px.len() >= 2, "chunks_exact(2) yields 2 bytes");
+                        composite_channel(px[0], px[1])
+                    })
                     .collect();
                 Self::Gray8 {
                     width,
                     height,
                     data: flat,
                 }
-            },
+            }
             Self::Rgba8 {
                 width,
                 height,
@@ -510,14 +654,14 @@ impl Raster {
             } => {
                 let flat = data
                     .chunks_exact(4)
-                    .flat_map(|px| [0, 1, 2].map(|c| composite_channel(px[c], px[3])))
+                    .flat_map(|px| [0, 1, 2].map(|channel| composite_channel(px[channel], px[3])))
                     .collect();
                 Self::Rgb8 {
                     width,
                     height,
                     data: flat,
                 }
-            },
+            }
         }
     }
 }

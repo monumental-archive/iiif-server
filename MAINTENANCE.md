@@ -65,11 +65,8 @@ tells adoption committees the stillness is intentional.
 
 ## Licensing
 
-AGPL-3.0-only, and permanently available as such: the [CLA](CLA.md)'s
-relicensing grant lets the maintainer offer additional terms, and the same
-clause commits that "the Project itself will always remain available under
-its open-source license". Alternative terms are offered alongside the AGPL,
-never in place of it.
+AGPL-3.0-only, and permanently available as such. Alternative terms are
+offered alongside the AGPL, never in place of it.
 
 The three questions an adoption committee asks — does running it oblige us
 to publish anything, does it reach our viewer, can we get other terms — are

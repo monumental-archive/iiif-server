@@ -4,10 +4,24 @@
 //! HTTP-layer conformance semantics, tested against the real handler with
 //! the committed fixture — no sockets, exact header assertions.
 
-#![allow(
-    clippy::unwrap_used,
+#![expect(
+    clippy::absolute_paths,
+    clippy::decimal_literal_representation,
     clippy::expect_used,
-    reason = "test/bench code: a panic here is the failure signal, not a crash path"
+    clippy::indexing_slicing,
+    clippy::missing_panics_doc,
+    clippy::panic,
+    clippy::shadow_reuse,
+    clippy::shadow_unrelated,
+    clippy::single_char_lifetime_names,
+    clippy::std_instead_of_alloc,
+    clippy::tests_outside_test_module,
+    clippy::unwrap_used,
+    reason = "test and example code. A panic IS the failure signal, so \
+              `# Panics` sections and assertion messages would describe \
+              the mechanism the harness works by; fixtures are indexed and \
+              scaled with arithmetic over constants in the file above them. \
+              The crate under test is held to every one of these."
 )]
 
 use std::{path::Path, sync::Arc};
@@ -26,11 +40,7 @@ fn fixture_root() -> SourceRoot {
 fn app() -> Arc<App> {
     Arc::new(App {
         root: fixture_root(),
-        limits: Limits {
-            width: 8192,
-            height: 8192,
-            area: 67_108_864,
-        },
+        limits: Limits::new(8192, 8192, 67_108_864),
         public_base: Some("https://images.example.org".to_owned()),
         admission: Arc::new(Semaphore::new(8)),
         decode_permits: Arc::new(Semaphore::new(4)),
@@ -89,7 +99,7 @@ async fn info_json_semantics() {
 
 #[tokio::test]
 async fn info_json_uses_public_base() {
-    use http_body_util::BodyExt;
+    use http_body_util::BodyExt as _;
     let app = app();
     let response = get(&app, "/iiif/3/rgb_pyramid.tif/info.json").await;
     let body = response.into_body().collect().await.unwrap().to_bytes();
@@ -124,7 +134,7 @@ async fn image_carries_canonical_link() {
 
 #[tokio::test]
 async fn head_returns_headers_without_body() {
-    use http_body_util::BodyExt;
+    use http_body_util::BodyExt as _;
     let app = app();
     let req = Request::head("/iiif/3/rgb_pyramid.tif/info.json")
         .body(())
@@ -182,7 +192,7 @@ async fn resident_pixel_ceiling_refusal_is_a_403_not_a_500() {
     // (403, the Image API's refused-operation status) rather than
     // "corrupt master" 500, and the body must carry the conversion
     // advice.
-    use http_body_util::BodyExt;
+    use http_body_util::BodyExt as _;
     let app = app();
     let response = get(
         &app,
@@ -202,11 +212,7 @@ async fn resident_pixel_ceiling_refusal_is_a_403_not_a_500() {
 async fn saturated_queue_returns_503_with_retry_after() {
     let app = Arc::new(App {
         root: fixture_root(),
-        limits: Limits {
-            width: 8192,
-            height: 8192,
-            area: 67_108_864,
-        },
+        limits: Limits::new(8192, 8192, 67_108_864),
         public_base: None,
         // Zero admission permits: every image request is over capacity.
         admission: Arc::new(Semaphore::new(0)),
@@ -222,7 +228,7 @@ async fn saturated_queue_returns_503_with_retry_after() {
 
 #[tokio::test]
 async fn v2_endpoint_semantics() {
-    use http_body_util::BodyExt;
+    use http_body_util::BodyExt as _;
     let app = app();
     // v2 info.json: @id + profile array.
     let response = get(&app, "/iiif/2/rgb_pyramid.tif/info.json").await;
@@ -271,7 +277,7 @@ async fn v2_endpoint_semantics() {
 
 #[tokio::test]
 async fn etag_and_conditional_requests() {
-    use http_body_util::BodyExt;
+    use http_body_util::BodyExt as _;
     let app = app();
     // info.json carries a strong ETag + Cache-Control.
     let response = get(&app, "/iiif/3/rgb_pyramid.tif/info.json").await;
@@ -320,7 +326,7 @@ async fn etag_and_conditional_requests() {
 
 #[tokio::test]
 async fn metrics_render_the_frozen_set() {
-    use http_body_util::BodyExt;
+    use http_body_util::BodyExt as _;
     let app = app();
     // Generate one of each family.
     drop(get(&app, "/iiif/3/rgb_pyramid.tif/info.json").await);
@@ -328,7 +334,7 @@ async fn metrics_render_the_frozen_set() {
     let response = get(&app, "/metrics").await;
     assert_eq!(response.status(), StatusCode::OK);
     let body = response.into_body().collect().await.unwrap().to_bytes();
-    let text = std::str::from_utf8(&body).unwrap();
+    let text = core::str::from_utf8(&body).unwrap();
     assert!(
         text.contains("iiif_requests_total{family=\"info\"} 1"),
         "{text}"

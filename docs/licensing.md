@@ -1,7 +1,6 @@
 # Licensing
 
-The server is licensed [AGPL-3.0-only](../LICENSE). External contributions
-carry a [CLA](../CLA.md) whose relicensing grant makes other terms possible.
+The server is licensed [AGPL-3.0-only](../LICENSE).
 
 This page answers the questions an adoption committee actually asks, in
 plain English, before they have to be asked somewhere we cannot reply. It
@@ -64,24 +63,12 @@ convey. If that does not fit how you ship, the next question is for you.
 
 Yes. Ask.
 
-This is not an exception being carved out on request; it is what the
-contributor agreement was built for. [CLA.md](../CLA.md) §2 already says
-so, in the repository, publicly:
-
-> this grant includes the right to license Your Contributions, and
-> derivative works thereof, under any license terms the Maintainer chooses,
-> including licenses other than the Project's current license
-> (AGPL-3.0-only), including proprietary and commercial license terms.
-
-That clause is meaningless under a permissive licence and is precisely what
-makes alternative terms possible rather than hypothetical. Every external
-contribution is gated on it, so the position does not decay as the
-contributor list grows.
-
-The same clause commits in the other direction, and that commitment is
-load-bearing for anyone worried about a rug-pull: "The Project itself will
-always remain available under its open-source license." Alternative terms
-are offered *in addition to* the AGPL, never instead of it.
+The commitment that matters in the other direction is that the project
+itself always remains available under its open-source licence:
+alternative terms are offered *in addition to* the AGPL, never instead
+of it. That rests on something firmer than a promise — an AGPL grant
+already made is irrevocable, so every version published under it stays
+available under it, whatever happens later.
 
 Open an issue to start the conversation. Specifics move off the tracker
 from there.
@@ -120,7 +107,7 @@ The repository is [REUSE 3.3](https://reuse.software/spec-3.3/) compliant
 and CI enforces it on every push, so every single file carries its
 copyright and licence information. A scanner in your procurement pipeline
 can answer the per-file question without a human reading anything, and the
-[REUSE API](https://api.reuse.software/info/github.com/CarlAllenn/iiif-server)
+[REUSE API](https://api.reuse.software/info/github.com/monumental-archive/iiif-server)
 reports the current state independently of any claim made here.
 
 ## Not legal advice

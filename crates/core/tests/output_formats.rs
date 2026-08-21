@@ -5,10 +5,30 @@
 //! decodable ones round-trip with correct pixels against the committed
 //! deterministic fixture.
 
-#![allow(
-    clippy::unwrap_used,
+#![expect(
+    clippy::absolute_paths,
+    clippy::arithmetic_side_effects,
+    clippy::as_conversions,
+    clippy::decimal_literal_representation,
+    clippy::default_numeric_fallback,
     clippy::expect_used,
-    reason = "test/bench code: a panic here is the failure signal, not a crash path"
+    clippy::indexing_slicing,
+    clippy::integer_division,
+    clippy::integer_division_remainder_used,
+    clippy::min_ident_chars,
+    clippy::missing_panics_doc,
+    clippy::panic,
+    clippy::shadow_unrelated,
+    clippy::std_instead_of_core,
+    clippy::tests_outside_test_module,
+    clippy::unwrap_used,
+    reason = "integration-test code. A panic IS the failure signal, so \
+              `# Panics` sections and assertion messages would describe the \
+              mechanism a test works by; fixtures are indexed and scaled \
+              with arithmetic whose operands are constants in the file above \
+              it; and a `#[test]` at the top level of a `tests/` file is what \
+              an integration test IS. The crate under test is held to all of \
+              these — this is the harness that proves it."
 )]
 
 use std::{fs::File, io::Cursor, path::PathBuf};
@@ -17,11 +37,7 @@ use iiif_core::{
     codec::open_master, eval::evaluate, grammar::ImageRequest, info::Limits, pipeline,
 };
 
-const LIMITS: Limits = Limits {
-    width: 8192,
-    height: 8192,
-    area: 67_108_864,
-};
+const LIMITS: Limits = Limits::new(8192, 8192, 67_108_864);
 
 fn serve(path: &str) -> Vec<u8> {
     let fixture =
@@ -48,8 +64,8 @@ const REGION: &str = "300,200,256,256/max/0/default";
 fn tif_output_roundtrips_exactly() {
     let bytes = serve(&format!("{REGION}.tif"));
     let mut decoder = tiff::decoder::Decoder::new(Cursor::new(&bytes)).unwrap();
-    let (w, h) = decoder.dimensions().unwrap();
-    assert_eq!((w, h), (256, 256));
+    let (width, height) = decoder.dimensions().unwrap();
+    assert_eq!((width, height), (256, 256));
     let tiff::decoder::DecodingResult::U8(data) = decoder.read_image().unwrap() else {
         panic!("expected 8-bit output");
     };
@@ -64,7 +80,7 @@ fn webp_output_is_lossless() {
     assert_eq!(&bytes[8..12], b"WEBP");
     let mut decoder = image_webp::WebPDecoder::new(Cursor::new(&bytes)).unwrap();
     assert_eq!(decoder.dimensions(), (256, 256));
-    let mut data = vec![0u8; decoder.output_buffer_size().unwrap()];
+    let mut data = vec![0_u8; decoder.output_buffer_size().unwrap()];
     decoder.read_image(&mut data).unwrap();
     let off = ((100 * 256 + 100) * 3) as usize;
     // Lossless: exact.
@@ -76,7 +92,7 @@ fn jp2_output_decodes_exactly() {
     let bytes = serve(&format!("{REGION}.jp2"));
     let mut decoder = j2k::J2kDecoder::new(&bytes).unwrap();
     assert_eq!(decoder.info().dimensions, (256, 256));
-    let mut out = vec![0u8; 256 * 256 * 3];
+    let mut out = vec![0_u8; 256 * 256 * 3];
     decoder
         .decode_into(&mut out, 256 * 3, j2k::PixelFormat::Rgb8)
         .unwrap();
@@ -114,7 +130,7 @@ fn pdf_output_embeds_the_jpeg() {
     assert!(body.contains("/Filter /DCTDecode"));
     assert!(body.contains("/MediaBox [0 0 256 256]"));
     // The DCTDecode stream is a real JPEG (SOI marker present).
-    let soi = bytes.windows(2).position(|w| w == [0xFF, 0xD8]);
+    let soi = bytes.windows(2).position(|width| width == [0xFF, 0xD8]);
     assert!(soi.is_some(), "no JPEG SOI in PDF");
 }
 

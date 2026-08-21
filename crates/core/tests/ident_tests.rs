@@ -3,10 +3,18 @@
 
 //! Identifier decoding: the security component gets its own test file.
 
-#![allow(
+#![expect(
+    clippy::min_ident_chars,
+    clippy::missing_panics_doc,
+    clippy::tests_outside_test_module,
     clippy::unwrap_used,
-    clippy::expect_used,
-    reason = "test/bench code: a panic here is the failure signal, not a crash path"
+    reason = "test and example code. A panic IS the failure signal here, so \
+              `# Panics` sections and assertion messages would describe the \
+              mechanism the harness works by; fixtures are indexed and \
+              scaled with arithmetic over constants in the file above them; \
+              and a `#[test]` at the top level of a `tests/` file is what an \
+              integration test IS. The crate under test is held to every \
+              one of these."
 )]
 
 use iiif_core::ident::{Identifier, IdentifierError};
@@ -30,7 +38,7 @@ fn plain_identifiers() {
     assert_eq!(ok("dir%2Fimage.tif").as_path(), "dir/image.tif");
     assert_eq!(ok("a%2Fb%2Fc").as_path(), "a/b/c");
     // Unencoded non-special characters survive.
-    assert_eq!(ok("M%C3%BCnchen.jp2").as_path(), "München.jp2");
+    assert_eq!(ok("M%C3%BCnchen.jp2").as_path(), "M\u{fc}nchen.jp2");
 }
 
 #[test]

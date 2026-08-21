@@ -1,3 +1,12 @@
+# The org's one written indentation rule (#403). Until this file, 2-space
+# was practice plus two tool settings (shfmt -i 2, biome indentStyle) and
+# no convention — docs/tooling-verdicts.md recorded the gap. This is the
+# single source; editorconfig-checker enforces it in the gate
+# (lint:editorconfig), and editors pick it up natively.
+#
+# Per-type sections defer to the formatter that owns the language: a cap
+# or width stated here never fights a belt formatter, it states the same
+# fact where every editor can read it.
 root = true
 
 [*]
@@ -6,28 +15,63 @@ end_of_line = lf
 insert_final_newline = true
 trim_trailing_whitespace = true
 indent_style = space
-# The one sanctioned variance point: 4 in the Rust repos, 2 elsewhere.
+indent_size = 2
+
+# The formatters that own these languages indent 4 (ruff, rustfmt).
+[*.{py,pyi}]
 indent_size = 4
 
-# Config formats are 2-space everywhere regardless of the [*] default; the
-# glob must cover jsonc and the extensionless .yamllint (edtf diverged on
-# exactly this once).
-[{*.{yml,yaml,toml,json,jsonc},.yamllint}]
-indent_size = 2
+[*.rs]
+indent_size = 4
 
-# Matches the canonical shfmt flags in the universal lefthook job
-# (renovate-config lefthook/universal.yml) so ec, flagless `shfmt -d`, and
-# the hook's shfmt never disagree.
-[*.sh]
-indent_size = 2
-switch_case_indent = true
-binary_next_line = true
-space_redirects = true
+# Go's indentation is owned wholesale by gofumpt (lint:go), which
+# enforces tab-indented code the way ruff owns Python's layout. ec's
+# indent_style check is line-based and cannot distinguish code
+# indentation from bytes inside raw string literals, so under
+# `tab` it reds every space-indented fixture a Go test carries —
+# content gofumpt itself is required to leave verbatim. The reason is
+# about the check, not its reach: the same measured class as the
+# task-wide -disable-indent-size. Style stays enforced by the
+# language's owner; ec keeps charset, EOL, final-newline and
+# trailing-whitespace for Go files. Measured on stele, the org's
+# first Go consumer — the canon tracks no Go and could not see it.
+[*.go]
+indent_style = unset
 
-[*.md]
-indent_size = unset
-
-[Makefile]
+[{Makefile,*.mk,makefile}]
 indent_style = tab
 
-# Repo-local blocks (e.g. [*.sql] indent_size = 4) go below this line.
+# git itself writes config files tab-indented; the source-attest test
+# fixture mirrors real `git config` output byte-for-byte, and a fixture
+# reformatted away from what the tool emits stops being evidence.
+[{gitconfig,.gitconfig,.gitmodules}]
+indent_style = tab
+
+# The per-language column caps yamllint's single global knob could not
+# express (its 130 is the mandatory-pin-format ceiling, derived in
+# .yamllint.yaml). Here the caps are per-type, so each format gets the
+# tightest cap its content admits.
+[*.{yml,yaml}]
+max_line_length = 130
+
+# Standalone shell matches the embedded cap: run: blocks are already
+# held to 130 through yamllint, and a standalone script held to a
+# LOOSER bar than the same code pasted into a workflow would be
+# incoherent — the lint:shell reasoning, other direction. Markdown and
+# Python need no row here: rumdl and ruff already cap them.
+[*.sh]
+max_line_length = 130
+
+# A fuzzing corpus is machine-generated binary input, not source: the
+# files have no encoding, no line endings and no final newline by
+# construction, and libFuzzer rewrites them on every run. Checking them
+# as text fails a repo for the shape of its own evidence — the Go
+# raw-string lesson (#403, #421) in a second costume. Scoped to the one
+# path cargo-fuzz owns, so nothing else loses the rules (#445).
+[fuzz/corpus/**]
+charset = unset
+end_of_line = unset
+insert_final_newline = unset
+trim_trailing_whitespace = unset
+indent_style = unset
+indent_size = unset

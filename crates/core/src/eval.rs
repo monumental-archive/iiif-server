@@ -7,44 +7,75 @@
 //!
 //! All the dimension-dependent rules the grammar could not check live here.
 
-use std::fmt;
+#![expect(
+    clippy::pattern_type_mismatch,
+    reason = "these matches use default binding modes on a `&self` receiver, \
+          which is the edition-2021/2024 idiom. The fix does not \
+          compile as written: `match *self` on these enums gives \
+          `error[E0507]: cannot move out of `self` as enum variant `Io` \
+          which is behind a shared reference`, because the payloads are \
+          not `Copy`. What satisfies the lint is `ref` bindings — the \
+          pre-2018 style default binding modes were introduced to \
+          remove — so this is a case where conforming would move the \
+          code backwards."
+)]
+#![expect(
+    clippy::single_call_fn,
+    reason = "each of these is a named step called once from the dispatch \
+          above it. Inlining them to satisfy the lint would fold \
+          separate formats, decode paths or parse stages into one long \
+          body — the lint's own documentation calls it \"very \
+          restrictive\", and here the single call site is the point: \
+          one function per format is what makes the dispatch readable."
+)]
 
-use num_traits::cast::ToPrimitive;
+use core::{error::Error, fmt};
+
+use num_traits::cast::ToPrimitive as _;
 
 use crate::{
-    grammar::{ImageRequest, Quality, Region, Rotation, Size, SizeKind},
+    grammar::{Format, ImageRequest, Quality, Region, Rotation, Size, SizeKind},
     info::Limits,
 };
 
 /// Round a non-negative float to `u32`, saturating at the type's ceiling.
+///
 /// Saturated values are always caught by the bounds/limits checks that
 /// follow every call site — saturation just keeps the arithmetic total.
-fn round_u32(v: f64) -> u32 {
-    v.round().to_u32().unwrap_or(u32::MAX)
+fn round_u32(value: f64) -> u32 {
+    value.round().to_u32().unwrap_or(u32::MAX)
 }
 
 /// Floor variant of [`round_u32`].
-fn floor_u32(v: f64) -> u32 {
-    v.floor().to_u32().unwrap_or(u32::MAX)
+fn floor_u32(value: f64) -> u32 {
+    value.floor().to_u32().unwrap_or(u32::MAX)
 }
 
 /// The extracted region in full-resolution pixel coordinates, already
 /// clipped to the image edges.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct CropRect {
     /// Left edge in full-resolution pixels.
     pub x: u32,
     /// Top edge in full-resolution pixels.
     pub y: u32,
     /// Width in full-resolution pixels.
-    pub w: u32,
+    pub width: u32,
     /// Height in full-resolution pixels.
-    pub h: u32,
+    pub height: u32,
 }
 
 /// A fully evaluated request: everything the pipeline needs, nothing the
 /// client sent left uninterpreted.
 #[derive(Debug, Clone, PartialEq)]
+#[expect(
+    clippy::partial_pub_fields,
+    reason = "the public fields are the plan a caller acts on; the three \
+              private ones are canonical-form bookkeeping that only \
+              `canonical_path` reads. Making those public would invite a \
+              caller to depend on how the spelling is reproduced."
+)]
 pub struct Plan {
     /// Region to extract, clipped, in full-resolution pixels.
     pub crop: CropRect,
@@ -59,20 +90,36 @@ pub struct Plan {
     /// Requested quality, passed through to the raster stage.
     pub quality: Quality,
     /// Requested output format, passed through to the encode stage.
-    pub format: crate::grammar::Format,
+    pub format: Format,
     /// Whether the scale step upscales beyond the extracted region — used
     /// for the canonical `^` spelling.
     pub upscales: bool,
     /// Whether the size parameter was a `max` form — canonical spelling
     /// keeps `max` rather than `w,h`.
+    ///
+    /// This and the two below are deliberately private: they are the
+    /// canonical-form bookkeeping `canonical_path` reads, not part of the
+    /// plan a caller acts on. `partial_pub_fields` is expected on the
+    /// struct for that reason.
     size_was_max: bool,
-    /// Full image dimensions, kept for canonical-form decisions.
+    /// Full image width, kept for canonical-form decisions.
     full_w: u32,
+    /// Full image height, kept for canonical-form decisions.
     full_h: u32,
 }
 
 /// Spec-mandated evaluation failures and their HTTP statuses.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+#[expect(
+    clippy::module_name_repetitions,
+    reason = "the `<Module>Error` convention, and the alternative is worse here \
+          rather than merely different: five modules each own an error \
+          type, so renaming them all to `Error` would produce five types \
+          of that name that cannot be imported into one scope without \
+          aliases at every call site. The path already disambiguates; the \
+          name is what appears in a caller's `match`."
+)]
 pub enum EvalError {
     /// Region entirely outside the image, or zero-pixel after clipping —
     /// 400.
@@ -91,12 +138,13 @@ impl EvalError {
 }
 
 impl fmt::Display for EvalError {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let msg = match self {
             Self::RegionOutOfBounds => "region is outside the image bounds",
             Self::UpscaleWithoutFlag => {
                 "requested size exceeds the extracted region (use the ^ prefix)"
-            },
+            }
             Self::BelowOnePixel => "scaled size is below one pixel",
             Self::ExceedsLimits => "scaled size exceeds the published limits",
         };
@@ -104,7 +152,16 @@ impl fmt::Display for EvalError {
     }
 }
 
-impl std::error::Error for EvalError {}
+#[expect(
+    clippy::missing_trait_methods,
+    reason = "unsatisfiable on stable, measured with rustc rather than argued: \
+              `provide` is E0658 `error_generic_member_access`, and \
+              `type_id` is E0658 `error_type_id` — \"this is memory-unsafe \
+              to override in user code\". `source` is implemented where \
+              this type has one; `description` and `cause` are deprecated \
+              and are left to the standard library's own implementations."
+)]
+impl Error for EvalError {}
 
 /// Evaluate a request against an image's full dimensions and the
 /// deployment limits.
@@ -112,6 +169,13 @@ impl std::error::Error for EvalError {}
 /// # Errors
 ///
 /// Every [`EvalError`] maps to HTTP 400 per the spec's region/size rules.
+#[inline]
+#[expect(
+    clippy::modulo_arithmetic,
+    reason = "rotation normalisation: degrees are `0..=360` by the \
+              grammar, so `% 360.0` folds the single wrap-around value \
+              and cannot see a negative operand."
+)]
 pub fn evaluate(
     request: &ImageRequest,
     full_w: u32,
@@ -119,7 +183,7 @@ pub fn evaluate(
     limits: Limits,
 ) -> Result<Plan, EvalError> {
     let crop = resolve_region(request.region, full_w, full_h)?;
-    let (out_w, out_h, upscales) = resolve_size(request.size, crop.w, crop.h, limits)?;
+    let (out_w, out_h, upscales) = resolve_size(request.size, crop.width, crop.height, limits)?;
     if out_w == 0 || out_h == 0 {
         return Err(EvalError::BelowOnePixel);
     }
@@ -144,56 +208,89 @@ pub fn evaluate(
     })
 }
 
+/// Turn a parsed region into pixel coordinates against the full image,
+/// clipping to the image bounds as the spec requires.
+///
+/// # Errors
+///
+/// [`EvalError::RegionOutOfBounds`] when the region lies entirely
+/// outside the image, which is a 400 rather than an empty result.
+#[expect(
+    clippy::integer_division,
+    clippy::integer_division_remainder_used,
+    reason = "`square` centres the crop: an odd leftover pixel has to go \
+              to one side, and the spec does not say which, so truncation \
+              picks and stays consistent."
+)]
 fn resolve_region(region: Region, full_w: u32, full_h: u32) -> Result<CropRect, EvalError> {
     match region {
         Region::Full => Ok(CropRect {
             x: 0,
             y: 0,
-            w: full_w,
-            h: full_h,
+            width: full_w,
+            height: full_h,
         }),
         Region::Square => {
             let side = full_w.min(full_h);
             Ok(CropRect {
                 x: (full_w - side) / 2,
                 y: (full_h - side) / 2,
-                w: side,
-                h: side,
+                width: side,
+                height: side,
             })
-        },
-        Region::Pixels { x, y, w, h } => {
+        }
+        Region::Pixels {
+            x,
+            y,
+            width,
+            height,
+        } => {
             if x >= full_w || y >= full_h {
                 return Err(EvalError::RegionOutOfBounds);
             }
             Ok(CropRect {
                 x,
                 y,
-                w: w.min(full_w - x),
-                h: h.min(full_h - y),
+                width: width.min(full_w - x),
+                height: height.min(full_h - y),
             })
-        },
-        Region::Percent { x, y, w, h } => {
+        }
+        Region::Percent {
+            x,
+            y,
+            width,
+            height,
+        } => {
             let px = round_u32(x / 100.0 * f64::from(full_w));
             let py = round_u32(y / 100.0 * f64::from(full_h));
             if px >= full_w || py >= full_h {
                 return Err(EvalError::RegionOutOfBounds);
             }
-            let pw = round_u32(w / 100.0 * f64::from(full_w));
-            let ph = round_u32(h / 100.0 * f64::from(full_h));
+            let pw = round_u32(width / 100.0 * f64::from(full_w));
+            let ph = round_u32(height / 100.0 * f64::from(full_h));
             if pw == 0 || ph == 0 {
                 return Err(EvalError::RegionOutOfBounds);
             }
             Ok(CropRect {
                 x: px,
                 y: py,
-                w: pw.min(full_w - px),
-                h: ph.min(full_h - py),
+                width: pw.min(full_w - px),
+                height: ph.min(full_h - py),
             })
-        },
+        }
     }
 }
 
-/// Returns `(out_w, out_h, upscales)`.
+/// Resolve the size parameter against the cropped region.
+///
+/// Returns `(out_w, out_h, upscales)`, where `upscales` reports whether
+/// the result is larger than the region it came from.
+///
+/// # Errors
+///
+/// [`EvalError::UpscalingNotAllowed`] when the request would enlarge
+/// without the `^` flag, and [`EvalError::SizeOutOfRange`] when the
+/// result would be below one pixel or beyond the published limits.
 fn resolve_size(
     size: Size,
     region_w: u32,
@@ -211,41 +308,41 @@ fn resolve_size(
                 floor_u32((rw * scale).max(1.0)),
                 floor_u32((rh * scale).max(1.0)),
             )
-        },
-        SizeKind::Width(w) => {
-            if !size.upscale && w > region_w {
+        }
+        SizeKind::Width(width) => {
+            if !size.upscale && width > region_w {
                 return Err(EvalError::UpscaleWithoutFlag);
             }
-            let scale = f64::from(w) / rw;
-            (w, round_u32(rh * scale))
-        },
-        SizeKind::Height(h) => {
-            if !size.upscale && h > region_h {
+            let scale = f64::from(width) / rw;
+            (width, round_u32(rh * scale))
+        }
+        SizeKind::Height(height) => {
+            if !size.upscale && height > region_h {
                 return Err(EvalError::UpscaleWithoutFlag);
             }
-            let scale = f64::from(h) / rh;
-            (round_u32(rw * scale), h)
-        },
+            let scale = f64::from(height) / rh;
+            (round_u32(rw * scale), height)
+        }
         SizeKind::Percent(pct) => {
-            let scale = pct / 100.0;
+            let scale = pct / 100.0_f64;
             (round_u32(rw * scale), round_u32(rh * scale))
-        },
-        SizeKind::WidthHeight(w, h) => {
-            if !size.upscale && (w > region_w || h > region_h) {
+        }
+        SizeKind::WidthHeight(width, height) => {
+            if !size.upscale && (width > region_w || height > region_h) {
                 return Err(EvalError::UpscaleWithoutFlag);
             }
-            (w, h)
-        },
-        SizeKind::Confined(w, h) => {
-            let fit = (f64::from(w) / rw).min(f64::from(h) / rh);
+            (width, height)
+        }
+        SizeKind::Confined(width, height) => {
+            let fit = (f64::from(width) / rw).min(f64::from(height) / rh);
             // A confining box strictly larger than the region can only be
             // satisfied "as large as possible" by upscaling; without the
             // `^` flag the official validator requires a 400 here.
-            if !size.upscale && fit > 1.0 {
+            if !size.upscale && fit > 1.0_f64 {
                 return Err(EvalError::UpscaleWithoutFlag);
             }
             (round_u32(rw * fit), round_u32(rh * fit))
-        },
+        }
     };
     let upscales = out_w > region_w || out_h > region_h;
     if upscales && !size.upscale {
@@ -269,24 +366,26 @@ fn limit_fit_scale(rw: f64, rh: f64, limits: Limits) -> f64 {
 impl Plan {
     /// Whether the extracted region is the entire image.
     #[must_use]
+    #[inline]
     pub const fn is_full_region(&self) -> bool {
         self.crop.x == 0
             && self.crop.y == 0
-            && self.crop.w == self.full_w
-            && self.crop.h == self.full_h
+            && self.crop.width == self.full_w
+            && self.crop.height == self.full_h
     }
 
     /// The canonical request path (region/size/rotation/quality.format)
     /// per the spec's canonical-form rules, used for the `Link
     /// rel="canonical"` header.
     #[must_use]
+    #[inline]
     pub fn canonical_path(&self) -> String {
         let region = if self.is_full_region() {
             "full".to_owned()
         } else {
             format!(
                 "{},{},{},{}",
-                self.crop.x, self.crop.y, self.crop.w, self.crop.h
+                self.crop.x, self.crop.y, self.crop.width, self.crop.height
             )
         };
         let size = match (self.size_was_max, self.upscales) {
@@ -308,10 +407,25 @@ impl Plan {
 
 #[cfg(test)]
 mod tests {
-    #![allow(
+    #![expect(
         clippy::unwrap_used,
-        clippy::expect_used,
-        reason = "test code: a panic here is the failure signal, not a crash path"
+        clippy::missing_panics_doc,
+        clippy::missing_errors_doc,
+        reason = "test code: a panic here IS the failure signal, not a crash \
+                  path, so documenting one under `# Panics` would describe the \
+                  mechanism a test works by"
+    )]
+    #![expect(
+        clippy::shadow_unrelated,
+        reason = "test code: rebinding `parsed`/`plan` down a short arrange \
+                  -> act -> assert body keeps each assertion next to the value \
+                  it is about; distinct names would number them instead"
+    )]
+    #![expect(
+        clippy::inline_modules,
+        reason = "a `#[cfg(test)] mod tests` beside its subject is how Rust \
+                  unit tests are written, and moving it to its own file would \
+                  put it outside the privacy boundary it exists to test"
     )]
 
     use super::*;
@@ -327,8 +441,8 @@ mod tests {
         ImageRequest::parse(path).unwrap()
     }
 
-    fn eval(path: &str, w: u32, h: u32) -> Result<Plan, EvalError> {
-        evaluate(&req(path), w, h, LIMITS)
+    fn eval(path: &str, width: u32, height: u32) -> Result<Plan, EvalError> {
+        evaluate(&req(path), width, height, LIMITS)
     }
 
     #[test]
@@ -339,8 +453,8 @@ mod tests {
             CropRect {
                 x: 0,
                 y: 0,
-                w: 6000,
-                h: 4000
+                width: 6000,
+                height: 4000
             }
         );
         assert_eq!((plan.out_w, plan.out_h), (6000, 4000));
@@ -368,8 +482,8 @@ mod tests {
             CropRect {
                 x: 1000,
                 y: 0,
-                w: 4000,
-                h: 4000
+                width: 4000,
+                height: 4000
             }
         );
     }
@@ -382,8 +496,8 @@ mod tests {
             CropRect {
                 x: 5000,
                 y: 3000,
-                w: 1000,
-                h: 1000
+                width: 1000,
+                height: 1000
             }
         );
         // Canonical region is the clipped rectangle.
@@ -417,8 +531,8 @@ mod tests {
             CropRect {
                 x: 1500,
                 y: 1000,
-                w: 3000,
-                h: 2000
+                width: 3000,
+                height: 2000
             }
         );
     }

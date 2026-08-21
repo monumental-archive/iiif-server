@@ -12,22 +12,44 @@
 //! Formats: pyramidal/tiled TIFF (this file), JP2/HTJ2K ([`jp2`]), plain
 //! JPEG and PNG ([`simple`]).
 
+#![expect(
+    clippy::pattern_type_mismatch,
+    reason = "these matches use default binding modes on a `&self` receiver, \
+          which is the edition-2021/2024 idiom. The fix does not \
+          compile as written: `match *self` on these enums gives \
+          `error[E0507]: cannot move out of `self` as enum variant `Io` \
+          which is behind a shared reference`, because the payloads are \
+          not `Copy`. What satisfies the lint is `ref` bindings — the \
+          pre-2018 style default binding modes were introduced to \
+          remove — so this is a case where conforming would move the \
+          code backwards."
+)]
+#![expect(
+    clippy::single_call_fn,
+    reason = "each of these is a named step called once from the dispatch \
+          above it. Inlining them to satisfy the lint would fold \
+          separate formats, decode paths or parse stages into one long \
+          body — the lint's own documentation calls it \"very \
+          restrictive\", and here the single call site is the point: \
+          one function per format is what makes the dispatch readable."
+)]
+
 pub mod jp2;
 pub mod simple;
 
-use std::{
-    fmt,
-    io::{Read, Seek, SeekFrom},
-};
+use core::{error::Error, fmt};
+use std::io::{self, Read, Seek, SeekFrom};
 
-use num_traits::cast::ToPrimitive;
+use num_traits::cast::ToPrimitive as _;
 use tiff::{
     ColorType,
+    decoder::ChunkType,
     decoder::{Decoder, DecodingResult},
 };
 
 use crate::{
     eval::CropRect,
+    image::CopyRect,
     image::{Raster, RasterError},
     info::{ImageDescription, SizeEntry, TileSet},
 };
@@ -40,6 +62,15 @@ use crate::{
 ///
 /// Found by fuzzing: a 12-byte PNG header claiming 512×16777335 drove a
 /// 25 GB allocation before any pixel arrived.
+#[expect(
+    clippy::decimal_literal_representation,
+    reason = "clippy suggests 0x1000_0000. The doc comment two lines up \
+              says \"268 million pixels\" and the fuzzing record says \
+              512x16777335 — this constant is read against decimal pixel \
+              counts, and hex would hide the one property a reader checks \
+              it for. Being a round power of two is a coincidence of the \
+              ceiling, not its meaning."
+)]
 pub const MAX_RESIDENT_PIXELS: u64 = 268_435_456;
 
 /// Reject declared dimensions that would exceed [`MAX_RESIDENT_PIXELS`],
@@ -48,6 +79,7 @@ pub const MAX_RESIDENT_PIXELS: u64 = 268_435_456;
 /// # Errors
 ///
 /// [`CodecError::LimitExceeded`] with the conversion advice.
+#[inline]
 pub fn guard_resident_pixels(width: u32, height: u32) -> Result<(), CodecError> {
     let pixels = u64::from(width) * u64::from(height);
     if pixels > MAX_RESIDENT_PIXELS {
@@ -84,6 +116,7 @@ pub trait Master: Send {
 
     /// `check`-subcommand advice: serving-performance caveats this master
     /// carries, each with the one-line fix. Empty means "serves well".
+    #[inline]
     fn advisories(&self) -> Vec<String> {
         Vec::new()
     }
@@ -95,6 +128,7 @@ pub trait Master: Send {
     /// throughput). Measured crossover on JP2 region decode, M1 Pro:
     /// idle 39 ms vs 66 ms serial; saturated 68 ops/s parallel vs 81 ops/s
     /// serial. Default no-op — most codecs have no internal pool.
+    #[inline]
     fn set_internal_parallelism(&mut self, _allow: bool) {}
 }
 
@@ -109,23 +143,25 @@ pub trait Master: Send {
 ///
 /// [`CodecError::Unsupported`] with an actionable message for anything
 /// outside the supported matrix.
-pub fn open_master<R: Read + Seek + Send + 'static>(
-    mut reader: R,
-) -> Result<Box<dyn Master>, CodecError> {
-    let mut magic = [0u8; 12];
-    let got = read_up_to(&mut reader, &mut magic)
-        .map_err(|e| CodecError::Corrupt(format!("cannot read file header: {e}")))?;
+#[inline]
+pub fn open_master<R>(mut reader: R) -> Result<Box<dyn Master>, CodecError>
+where
+    R: Read + Seek + Send + 'static,
+{
+    let mut header = [0_u8; 12];
+    let got = read_up_to(&mut reader, &mut header)
+        .map_err(|err| CodecError::Corrupt(format!("cannot read file header: {err}")))?;
     reader
         .seek(SeekFrom::Start(0))
-        .map_err(|e| CodecError::Corrupt(format!("cannot rewind: {e}")))?;
-    let magic = &magic[..got];
+        .map_err(|err| CodecError::Corrupt(format!("cannot rewind: {err}")))?;
+    let magic = &header[..got];
     if magic.starts_with(b"II*\0") || magic.starts_with(b"MM\0*") {
         return Ok(Box::new(TiffPyramid::open(reader)?));
     }
     let mut bytes = Vec::new();
     reader
         .read_to_end(&mut bytes)
-        .map_err(|e| CodecError::Corrupt(format!("cannot read master: {e}")))?;
+        .map_err(|err| CodecError::Corrupt(format!("cannot read master: {err}")))?;
     if (magic.len() >= 12 && &magic[4..12] == b"jP  \r\n\x87\n")
         || magic.starts_with(b"\xFF\x4F\xFF\x51")
     {
@@ -143,14 +179,25 @@ pub fn open_master<R: Read + Seek + Send + 'static>(
 }
 
 /// Read as many of `buf` as the reader will give without erroring on EOF.
-fn read_up_to<R: Read>(reader: &mut R, buf: &mut [u8]) -> std::io::Result<usize> {
+/// Fill `buf` from `reader`, returning how many bytes arrived.
+///
+/// Short reads are normal and are retried; `Interrupted` is retried too.
+/// A return below `buf.len()` means end of input, not failure.
+///
+/// # Errors
+///
+/// Any [`io::Error`] the reader produces other than `Interrupted`.
+fn read_up_to<R>(reader: &mut R, buf: &mut [u8]) -> io::Result<usize>
+where
+    R: Read,
+{
     let mut filled = 0;
     while filled < buf.len() {
         match reader.read(&mut buf[filled..]) {
             Ok(0) => break,
             Ok(n) => filled += n,
-            Err(e) if e.kind() == std::io::ErrorKind::Interrupted => {},
-            Err(e) => return Err(e),
+            Err(err) if err.kind() == io::ErrorKind::Interrupted => {}
+            Err(err) => return Err(err),
         }
     }
     Ok(filled)
@@ -158,6 +205,7 @@ fn read_up_to<R: Read>(reader: &mut R, buf: &mut [u8]) -> std::io::Result<usize>
 
 /// One resolution level of a pyramid, in its own pixel coordinates.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct LevelInfo {
     /// IFD index inside the TIFF.
     pub ifd: usize,
@@ -175,6 +223,16 @@ pub struct LevelInfo {
 
 /// Codec-layer failure.
 #[derive(Debug)]
+#[non_exhaustive]
+#[expect(
+    clippy::module_name_repetitions,
+    reason = "the `<Module>Error` convention, and the alternative is worse here \
+          rather than merely different: five modules each own an error \
+          type, so renaming them all to `Error` would produce five types \
+          of that name that cannot be imported into one scope without \
+          aliases at every call site. The path already disambiguates; the \
+          name is what appears in a caller's `match`."
+)]
 pub enum CodecError {
     /// The master is outside the supported matrix — one actionable
     /// message, never a wrong image.
@@ -192,27 +250,46 @@ pub enum CodecError {
 }
 
 impl fmt::Display for CodecError {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Unsupported(msg) => write!(f, "unsupported master: {msg}"),
             Self::Corrupt(msg) => write!(f, "corrupt master: {msg}"),
             Self::LimitExceeded(msg) => write!(f, "limit exceeded: {msg}"),
-            Self::Raster(e) => write!(f, "pixel bookkeeping: {e}"),
+            Self::Raster(err) => write!(f, "pixel bookkeeping: {err}"),
         }
     }
 }
 
-impl std::error::Error for CodecError {}
+#[expect(
+    clippy::missing_trait_methods,
+    reason = "unsatisfiable on stable, measured with rustc rather than argued: \
+              `provide` is E0658 `error_generic_member_access`, and \
+              `type_id` is E0658 `error_type_id` — \"this is memory-unsafe \
+              to override in user code\". `source` is implemented where \
+              this type has one; `description` and `cause` are deprecated \
+              and are left to the standard library's own implementations."
+)]
+impl Error for CodecError {}
 
 impl From<RasterError> for CodecError {
-    fn from(e: RasterError) -> Self {
-        Self::Raster(e)
+    #[inline]
+    fn from(err: RasterError) -> Self {
+        Self::Raster(err)
     }
 }
 
 impl From<tiff::TiffError> for CodecError {
-    fn from(e: tiff::TiffError) -> Self {
-        match e {
+    #[inline]
+    #[expect(
+        clippy::wildcard_enum_match_arm,
+        reason = "matches an upstream `#[non_exhaustive]` enum, so the wildcard \
+              is REQUIRED rather than chosen — measured: deleting it \
+              gives `error[E0004]: non-exhaustive patterns: `_` not \
+              covered`. The lint asks for something the compiler refuses."
+    )]
+    fn from(err: tiff::TiffError) -> Self {
+        match err {
             tiff::TiffError::UnsupportedError(inner) => Self::Unsupported(inner.to_string()),
             other => Self::Corrupt(other.to_string()),
         }
@@ -221,13 +298,17 @@ impl From<tiff::TiffError> for CodecError {
 
 /// An opened pyramidal/tiled TIFF master.
 pub struct TiffPyramid<R: Read + Seek> {
+    /// The open TIFF reader, positioned at `current_ifd`.
     decoder: Decoder<R>,
+    /// One entry per pyramid level, largest first, as the IFD chain
+    /// presents them.
     levels: Vec<LevelInfo>,
     /// IFD index the decoder currently points at, to avoid useless seeks.
     current_ifd: usize,
 }
 
 impl<R: Read + Seek> fmt::Debug for TiffPyramid<R> {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("TiffPyramid")
             .field("levels", &self.levels)
@@ -244,14 +325,15 @@ impl<R: Read + Seek> TiffPyramid<R> {
     /// [`CodecError::Unsupported`] for masters outside the supported
     /// matrix (untiled, mixed layouts); [`CodecError::Corrupt`] for
     /// malformed files.
+    #[inline]
     pub fn open(reader: R) -> Result<Self, CodecError> {
         let mut decoder = Decoder::new(reader)?;
         let mut levels = Vec::new();
-        let mut ifd = 0usize;
+        let mut ifd = 0_usize;
         let (full_w, full_h) = decoder.dimensions()?;
         loop {
             let (width, height) = decoder.dimensions()?;
-            if decoder.get_chunk_type() != tiff::decoder::ChunkType::Tile {
+            if decoder.get_chunk_type() != ChunkType::Tile {
                 return Err(CodecError::Unsupported(format!(
                     "IFD {ifd} is not tiled; this master will serve slowly — \
                     convert with: vips tiffsave in.tif out.tif --tile --pyramid"
@@ -286,7 +368,10 @@ impl<R: Read + Seek> TiffPyramid<R> {
                 ));
             }
         }
-        let _ = full_h;
+        // full_h is read only by the pyramid-shape checks above; binding
+        // it here keeps the `full_w`/`full_h` pair symmetrical at the call
+        // site rather than passing one and computing the other.
+        let _: u32 = full_h;
         Ok(Self {
             decoder,
             levels,
@@ -296,57 +381,20 @@ impl<R: Read + Seek> TiffPyramid<R> {
 
     /// Pyramid levels, largest first.
     #[must_use]
+    #[inline]
     pub fn levels(&self) -> &[LevelInfo] {
         &self.levels
-    }
-
-    /// Full-resolution dimensions.
-    #[must_use]
-    pub fn dimensions(&self) -> (u32, u32) {
-        (self.levels[0].width, self.levels[0].height)
-    }
-
-    /// The info.json ingredients derived from the actual pyramid: tile
-    /// size with the real scale factors, and one `sizes` entry per level
-    /// (ascending), so viewers request only natively-cheap tiles.
-    #[must_use]
-    pub fn describe(&self) -> ImageDescription {
-        let base = &self.levels[0];
-        let scale_factors: Vec<u32> = self.levels.iter().map(|l| l.scale_factor).collect();
-        let tiles = vec![TileSet {
-            width: base.tile_width,
-            height: if base.tile_height == base.tile_width {
-                None
-            } else {
-                Some(base.tile_height)
-            },
-            scale_factors,
-        }];
-        let mut sizes: Vec<SizeEntry> = self
-            .levels
-            .iter()
-            .map(|l| SizeEntry {
-                width: l.width,
-                height: l.height,
-            })
-            .collect();
-        sizes.reverse(); // ascending by width, per spec recommendation
-        ImageDescription {
-            width: base.width,
-            height: base.height,
-            tiles,
-            sizes,
-        }
     }
 
     /// Pick the smallest level that still has enough detail for a
     /// downscale factor of `needed` (full-res pixels per output pixel).
     #[must_use]
+    #[inline]
     pub fn level_for_scale(&self, needed: f64) -> &LevelInfo {
         self.levels
             .iter()
-            .filter(|l| f64::from(l.scale_factor) <= needed.max(1.0))
-            .max_by_key(|l| l.scale_factor)
+            .filter(|level| f64::from(level.scale_factor) <= needed.max(1.0))
+            .max_by_key(|level| level.scale_factor)
             .unwrap_or(&self.levels[0])
     }
 
@@ -358,23 +406,32 @@ impl<R: Read + Seek> TiffPyramid<R> {
     /// Propagates decode failures; rejects out-of-bounds requests as
     /// [`CodecError::Corrupt`] (they indicate a caller bug, not a client
     /// error — the evaluation layer already clipped).
+    #[inline]
+    #[expect(
+        clippy::integer_division,
+        clippy::integer_division_remainder_used,
+        reason = "tile-grid arithmetic: `x / tile_width` IS which column \
+                  the pixel falls in, and the truncation is the answer. A \
+                  checked or exact division here would be asking a \
+                  question the tile grid does not have."
+    )]
     pub fn decode_region(
         &mut self,
         level_ifd: usize,
         x: u32,
         y: u32,
-        w: u32,
-        h: u32,
+        width: u32,
+        height: u32,
     ) -> Result<Raster, CodecError> {
         let level = *self
             .levels
             .iter()
-            .find(|l| l.ifd == level_ifd)
+            .find(|level| level.ifd == level_ifd)
             .ok_or_else(|| CodecError::Corrupt(format!("no level with IFD {level_ifd}")))?;
-        if x.checked_add(w).is_none_or(|edge| edge > level.width)
-            || y.checked_add(h).is_none_or(|edge| edge > level.height)
-            || w == 0
-            || h == 0
+        if x.checked_add(width).is_none_or(|edge| edge > level.width)
+            || y.checked_add(height).is_none_or(|edge| edge > level.height)
+            || width == 0
+            || height == 0
         {
             return Err(CodecError::Corrupt(
                 "region outside level bounds".to_owned(),
@@ -386,9 +443,9 @@ impl<R: Read + Seek> TiffPyramid<R> {
         }
         let tiles_across = level.width.div_ceil(level.tile_width);
         let first_col = x / level.tile_width;
-        let last_col = (x + w - 1) / level.tile_width;
+        let last_col = (x + width - 1) / level.tile_width;
         let first_row = y / level.tile_height;
-        let last_row = (y + h - 1) / level.tile_height;
+        let last_row = (y + height - 1) / level.tile_height;
 
         let mut out: Option<Raster> = None;
         for tile_row in first_row..=last_row {
@@ -397,21 +454,21 @@ impl<R: Read + Seek> TiffPyramid<R> {
                 let tile = self.decode_tile(level, index)?;
                 let out_buf = match &mut out {
                     Some(buf) => buf,
-                    None => out.insert(tile.zeroed_like(w, h)?),
+                    None => out.insert(tile.zeroed_like(width, height)?),
                 };
                 // Intersect this tile's footprint with the request.
                 let tile_left = tile_col * level.tile_width;
                 let tile_top = tile_row * level.tile_height;
                 let left = x.max(tile_left);
                 let top = y.max(tile_top);
-                let right = (x + w).min(tile_left + tile.width());
-                let bottom = (y + h).min(tile_top + tile.height());
+                let right = (x + width).min(tile_left + tile.width());
+                let bottom = (y + height).min(tile_top + tile.height());
                 if right <= left || bottom <= top {
                     continue;
                 }
                 out_buf.blit(
                     &tile,
-                    crate::image::CopyRect {
+                    CopyRect {
                         src_x: left - tile_left,
                         src_y: top - tile_top,
                         width: right - left,
@@ -427,6 +484,13 @@ impl<R: Read + Seek> TiffPyramid<R> {
 
     /// Decode one tile to a raster. The tiff crate hands back
     /// edge-clipped dimensions for boundary tiles.
+    /// Decode one tile of one pyramid level into a raster.
+    ///
+    /// # Errors
+    ///
+    /// [`CodecError::Corrupt`] if the TIFF reader rejects the chunk, and
+    /// [`CodecError::Unsupported`] for a colour type this crate does not
+    /// carry.
     fn decode_tile(&mut self, level: LevelInfo, index: u32) -> Result<Raster, CodecError> {
         let (data_w, data_h) = self.decoder.chunk_data_dimensions(index);
         let colortype = self.decoder.colortype()?;
@@ -435,8 +499,49 @@ impl<R: Read + Seek> TiffPyramid<R> {
     }
 }
 
-/// Convert the tiff crate's decode output into our raster model. M0
-/// supports 8-bit gray and RGB; the M2 matrix widens this.
+/// Convert the tiff crate's decode output into our raster model.
+///
+/// M0 supports 8-bit gray and RGB; the M2 matrix widens this.
+/// Turn one decoded TIFF chunk into a [`Raster`], converting colour
+/// where the format allows it.
+///
+/// # Errors
+///
+/// [`CodecError::Unsupported`] for a bit depth or colour type outside
+/// the supported matrix, and [`CodecError::Corrupt`] when the decoded
+/// buffer is shorter than the declared dimensions require.
+#[expect(
+    clippy::as_conversions,
+    reason = "widening `u32`/`u8` to `usize` for buffer indexing, lossless on \
+              every target this ships to (musl x86_64 and aarch64). The \
+              alternative is measurably worse and was measured: \
+              `usize::try_from(w).unwrap()` trips `clippy::unwrap_used`, which \
+              this same lint set forbids, so it trades one enabled \
+              restriction for another and adds an error path that cannot \
+              be reached."
+)]
+///
+/// # Panics
+///
+/// Never in practice. The `assert!` inside the per-pixel loop restates
+/// `chunks_exact`'s own length guarantee so the optimiser can elide the
+/// repeated bounds checks — which is what `missing_asserts_for_indexing`
+/// asks for — and it cannot fire for a chunk that iterator produced.
+#[expect(
+    clippy::wildcard_enum_match_arm,
+    reason = "matches an upstream `#[non_exhaustive]` enum, so the wildcard \
+              is REQUIRED rather than chosen — measured: deleting it \
+              gives `error[E0004]: non-exhaustive patterns: `_` not \
+              covered`. The lint asks for something the compiler refuses."
+)]
+#[expect(
+    clippy::panic_in_result_fn,
+    reason = "the only panic is the `assert!` restating `chunks_exact_mut`'s \
+              own length guarantee, added so the optimiser can elide the \
+              per-pixel bounds checks (`missing_asserts_for_indexing`). It \
+              cannot fire, and routing it through the `Result` would put an \
+              unreachable branch on the decode path."
+)]
 fn raster_from_decoded(
     result: DecodingResult,
     colortype: ColorType,
@@ -444,7 +549,7 @@ fn raster_from_decoded(
     height: u32,
     level: LevelInfo,
 ) -> Result<Raster, CodecError> {
-    let DecodingResult::U8(data) = result else {
+    let DecodingResult::U8(mut data) = result else {
         return Err(CodecError::Unsupported(format!(
             "sample format {colortype:?} not yet in the supported matrix"
         )));
@@ -452,7 +557,6 @@ fn raster_from_decoded(
     let pixels = width as usize * height as usize;
     match colortype {
         ColorType::Gray(8) => {
-            let mut data = data;
             data.truncate(pixels);
             if data.len() < pixels {
                 return Err(CodecError::Corrupt("short tile data".to_owned()));
@@ -462,9 +566,8 @@ fn raster_from_decoded(
                 height,
                 data,
             })
-        },
+        }
         ColorType::RGB(8) => {
-            let mut data = data;
             data.truncate(pixels * 3);
             if data.len() < pixels * 3 {
                 return Err(CodecError::Corrupt("short tile data".to_owned()));
@@ -474,7 +577,7 @@ fn raster_from_decoded(
                 height,
                 data,
             })
-        },
+        }
         ColorType::YCbCr(8) => {
             // For JPEG-compressed tiles the tiff crate keeps the JPEG
             // decoder's *input* colorspace, so the buffer holds
@@ -482,26 +585,27 @@ fn raster_from_decoded(
             // conversion to RGB is ours (JPEG full-range BT.601). SPIKE 1
             // caught exactly this: treating these samples as RGB produced
             // a mean channel error of 89/255 against the libjpeg golden.
-            let mut data = data;
             data.truncate(pixels * 3);
             if data.len() < pixels * 3 {
                 return Err(CodecError::Corrupt("short tile data".to_owned()));
             }
             for px in data.chunks_exact_mut(3) {
+                assert!(px.len() >= 3, "chunks_exact_mut(3) yields 3 bytes");
                 let [y, cb, cr] = [f64::from(px[0]), f64::from(px[1]), f64::from(px[2])];
-                let r = 1.402f64.mul_add(cr - 128.0, y);
-                let g = 0.714_136f64.mul_add(-(cr - 128.0), 0.344_136f64.mul_add(-(cb - 128.0), y));
-                let b = 1.772f64.mul_add(cb - 128.0, y);
-                px[0] = r.round().clamp(0.0, 255.0).to_u8().unwrap_or(0);
-                px[1] = g.round().clamp(0.0, 255.0).to_u8().unwrap_or(0);
-                px[2] = b.round().clamp(0.0, 255.0).to_u8().unwrap_or(0);
+                let red = 1.402_f64.mul_add(cr - 128.0, y);
+                let green =
+                    0.714_136_f64.mul_add(-(cr - 128.0), 0.344_136_f64.mul_add(-(cb - 128.0), y));
+                let blue = 1.772_f64.mul_add(cb - 128.0, y);
+                px[0] = red.round().clamp(0.0, 255.0).to_u8().unwrap_or(0);
+                px[1] = green.round().clamp(0.0, 255.0).to_u8().unwrap_or(0);
+                px[2] = blue.round().clamp(0.0, 255.0).to_u8().unwrap_or(0);
             }
             Ok(Raster::Rgb8 {
                 width,
                 height,
                 data,
             })
-        },
+        }
         other => Err(CodecError::Unsupported(format!(
             "color type {other:?} not yet in the supported matrix \
             (level {}×{})",
@@ -511,14 +615,57 @@ fn raster_from_decoded(
 }
 
 impl<R: Read + Seek + Send> Master for TiffPyramid<R> {
+    /// A pyramidal TIFF carries no advisory: the pyramid is what makes
+    /// region decoding cheap, so there is nothing to warn an operator
+    /// about.
+    #[inline]
+    fn advisories(&self) -> Vec<String> {
+        Vec::new()
+    }
+
+    /// No-op: the TIFF decoder has no internal thread pool to gate.
+    #[inline]
+    fn set_internal_parallelism(&mut self, _allow: bool) {}
+
+    #[inline]
     fn dimensions(&self) -> (u32, u32) {
-        Self::dimensions(self)
+        (self.levels[0].width, self.levels[0].height)
     }
 
+    /// The info.json ingredients derived from the actual pyramid: tile
+    /// size with the real scale factors, and one `sizes` entry per level
+    /// (ascending), so viewers request only natively-cheap tiles.
+    #[inline]
     fn describe(&self) -> ImageDescription {
-        Self::describe(self)
+        let base = &self.levels[0];
+        let scale_factors: Vec<u32> = self.levels.iter().map(|level| level.scale_factor).collect();
+        let tiles = vec![TileSet {
+            width: base.tile_width,
+            height: if base.tile_height == base.tile_width {
+                None
+            } else {
+                Some(base.tile_height)
+            },
+            scale_factors,
+        }];
+        let mut sizes: Vec<SizeEntry> = self
+            .levels
+            .iter()
+            .map(|level| SizeEntry {
+                width: level.width,
+                height: level.height,
+            })
+            .collect();
+        sizes.reverse(); // ascending by width, per spec recommendation
+        ImageDescription {
+            width: base.width,
+            height: base.height,
+            tiles,
+            sizes,
+        }
     }
 
+    #[inline]
     fn decode_crop(&mut self, crop: CropRect, needed: f64) -> Result<Raster, CodecError> {
         // Pick the pyramid level with just enough detail, then map the
         // full-resolution crop into that level's coordinates.
@@ -532,12 +679,12 @@ impl<R: Read + Seek + Send> Master for TiffPyramid<R> {
             .to_u32()
             .unwrap_or(u32::MAX)
             .min(level.height.saturating_sub(1));
-        let right = ((f64::from(crop.x) + f64::from(crop.w)) / factor)
+        let right = ((f64::from(crop.x) + f64::from(crop.width)) / factor)
             .ceil()
             .to_u32()
             .unwrap_or(u32::MAX)
             .min(level.width);
-        let bottom = ((f64::from(crop.y) + f64::from(crop.h)) / factor)
+        let bottom = ((f64::from(crop.y) + f64::from(crop.height)) / factor)
             .ceil()
             .to_u32()
             .unwrap_or(u32::MAX)

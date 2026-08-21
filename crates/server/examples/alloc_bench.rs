@@ -11,12 +11,25 @@
 //! (defaults to available parallelism), `ALLOC_BENCH_ITERS` (per
 //! thread, defaults to 40).
 
-#![allow(
-    clippy::unwrap_used,
+#![expect(
+    clippy::absolute_paths,
+    clippy::arithmetic_side_effects,
+    clippy::decimal_literal_representation,
     clippy::expect_used,
+    clippy::float_arithmetic,
+    clippy::integer_division_remainder_used,
+    clippy::min_ident_chars,
+    clippy::missing_assert_message,
+    clippy::missing_docs_in_private_items,
+    clippy::missing_panics_doc,
     clippy::print_stdout,
-    clippy::print_stderr,
-    reason = "diagnostic spike harness: prints findings, panics are failures"
+    clippy::shadow_same,
+    clippy::single_call_fn,
+    reason = "test and example code. A panic IS the failure signal, so \
+              `# Panics` sections and assertion messages would describe \
+              the mechanism the harness works by; fixtures are indexed and \
+              scaled with arithmetic over constants in the file above them. \
+              The crate under test is held to every one of these."
 )]
 
 #[cfg(feature = "mimalloc")]
@@ -26,14 +39,14 @@ static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 use std::{fs::File, time::Instant};
 
 use iiif_core::{
-    codec::TiffPyramid, eval::evaluate, grammar::ImageRequest, info::Limits, pipeline,
+    codec::{Master as _, TiffPyramid},
+    eval::evaluate,
+    grammar::ImageRequest,
+    info::Limits,
+    pipeline,
 };
 
-const LIMITS: Limits = Limits {
-    width: 8192,
-    height: 8192,
-    area: 67_108_864,
-};
+const LIMITS: Limits = Limits::new(8192, 8192, 67_108_864);
 
 /// Deterministic per-iteration request mix: different regions and output
 /// sizes so allocation patterns vary like real traffic.
@@ -58,7 +71,7 @@ fn main() {
     let threads: usize = std::env::var("ALLOC_BENCH_THREADS")
         .ok()
         .and_then(|v| v.parse().ok())
-        .unwrap_or_else(|| std::thread::available_parallelism().map_or(4, std::num::NonZero::get));
+        .unwrap_or_else(|| std::thread::available_parallelism().map_or(4, core::num::NonZero::get));
     let iters: usize = std::env::var("ALLOC_BENCH_ITERS")
         .ok()
         .and_then(|v| v.parse().ok())
@@ -84,9 +97,9 @@ fn main() {
                     // pattern, and the allocation-heavy path.
                     let file = File::open(fixture).expect("open");
                     let mut tiff = TiffPyramid::open(file).expect("parse");
-                    let (w, h) = TiffPyramid::dimensions(&tiff);
+                    let (width, height) = tiff.dimensions();
                     let request = request_for(thread * iters + i);
-                    let plan = evaluate(&request, w, h, LIMITS).expect("evaluate");
+                    let plan = evaluate(&request, width, height, LIMITS).expect("evaluate");
                     let encoded = pipeline::execute(&mut tiff, &plan).expect("pipeline");
                     assert!(!encoded.is_empty());
                 }

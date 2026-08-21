@@ -4,10 +4,23 @@
 //! Arbitrary rotation semantics: canvas growth, transparent corners for
 //! PNG, white corners for JPEG, and interior pixel preservation.
 
-#![allow(
+#![expect(
+    clippy::as_conversions,
+    clippy::decimal_literal_representation,
+    clippy::indexing_slicing,
+    clippy::integer_division,
+    clippy::integer_division_remainder_used,
+    clippy::missing_panics_doc,
+    clippy::std_instead_of_core,
+    clippy::tests_outside_test_module,
     clippy::unwrap_used,
-    clippy::expect_used,
-    reason = "test/bench code: a panic here is the failure signal, not a crash path"
+    reason = "test and example code. A panic IS the failure signal here, so \
+              `# Panics` sections and assertion messages would describe the \
+              mechanism the harness works by; fixtures are indexed and \
+              scaled with arithmetic over constants in the file above them; \
+              and a `#[test]` at the top level of a `tests/` file is what an \
+              integration test IS. The crate under test is held to every \
+              one of these."
 )]
 
 use std::{fs::File, io::Cursor, path::PathBuf};
@@ -16,11 +29,7 @@ use iiif_core::{
     codec::open_master, eval::evaluate, grammar::ImageRequest, info::Limits, pipeline,
 };
 
-const LIMITS: Limits = Limits {
-    width: 8192,
-    height: 8192,
-    area: 67_108_864,
-};
+const LIMITS: Limits = Limits::new(8192, 8192, 67_108_864);
 
 fn serve(path: &str) -> Vec<u8> {
     let fixture =
@@ -56,8 +65,8 @@ fn rotation_45_jpeg_has_white_corners() {
     let bytes = serve("0,0,256,256/max/45/default.jpg");
     let mut decoder = zune_jpeg::JpegDecoder::new(Cursor::new(&bytes));
     let pixels = decoder.decode().unwrap();
-    let (w, _) = decoder.dimensions().unwrap();
-    assert!((362..=364).contains(&w), "width {w}");
+    let (width, _) = decoder.dimensions().unwrap();
+    assert!((362..=364).contains(&width), "width {width}");
     // Top-left corner is outside the rotated frame → white-ish (JPEG
     // ringing allowed).
     assert!(pixels[0] > 230, "corner should be white, got {}", pixels[0]);

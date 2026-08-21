@@ -12,6 +12,30 @@
 //!
 //! Run: `cargo run --release -p iiif-sources --example objstore_spike`
 
+#![expect(
+    clippy::absolute_paths,
+    clippy::arithmetic_side_effects,
+    clippy::as_conversions,
+    clippy::decimal_literal_representation,
+    clippy::default_numeric_fallback,
+    clippy::doc_paragraphs_missing_punctuation,
+    clippy::float_arithmetic,
+    clippy::indexing_slicing,
+    clippy::integer_division,
+    clippy::integer_division_remainder_used,
+    clippy::missing_assert_message,
+    clippy::missing_docs_in_private_items,
+    clippy::missing_panics_doc,
+    clippy::shadow_unrelated,
+    clippy::single_call_fn,
+    reason = "test and example code. A panic IS the failure signal here, so \
+              `# Panics` sections and assertion messages would describe the \
+              mechanism the harness works by; fixtures are indexed and \
+              scaled with arithmetic over constants in the file above them; \
+              and a `#[test]` at the top level of a `tests/` file is what an \
+              integration test IS. The crate under test is held to every \
+              one of these."
+)]
 #![allow(
     clippy::unwrap_used,
     clippy::expect_used,
@@ -23,7 +47,7 @@
 use std::time::Instant;
 
 use object_store::{
-    GetOptions, GetRange, ObjectStore, ObjectStoreExt, PutPayload, aws::AmazonS3Builder,
+    GetOptions, GetRange, ObjectStore, ObjectStoreExt as _, PutPayload, aws::AmazonS3Builder,
     path::Path as ObjectPath,
 };
 
@@ -107,7 +131,7 @@ async fn main() {
     // Ranged GETs at the sizes the engine actually issues: header sniffs
     // (4 KiB), IFD/tile-index reads (64 KiB), tile payloads (1 MiB).
     for (label, size) in [
-        ("4 KiB", 4_096u64),
+        ("4 KiB", 4_096_u64),
         ("64 KiB", 65_536),
         ("1 MiB", 1_048_576),
     ] {
@@ -122,7 +146,7 @@ async fn main() {
     let mut opens = Vec::new();
     for _ in 0..20 {
         let started = Instant::now();
-        for (offset, len) in [(0u64, 4_096u64), (65_536, 65_536), (1_048_576, 1_048_576)] {
+        for (offset, len) in [(0_u64, 4_096_u64), (65_536, 65_536), (1_048_576, 1_048_576)] {
             let options = GetOptions {
                 range: Some(GetRange::Bounded(offset..offset + len)),
                 ..GetOptions::default()
@@ -140,7 +164,7 @@ async fn main() {
     );
 
     // Coalescing: many scattered small ranges in one get_ranges call.
-    let ranges: Vec<std::ops::Range<u64>> = (0..16)
+    let ranges: Vec<core::ops::Range<u64>> = (0..16)
         .map(|i| {
             let offset = (i * 524_288) % object_len.saturating_sub(8_192);
             offset..offset + 8_192
@@ -150,8 +174,7 @@ async fn main() {
     let chunks = store.get_ranges(&path, &ranges).await.expect("get_ranges");
     let elapsed = started.elapsed().as_secs_f64() * 1000.0;
     println!(
-        "get_ranges: 16×8 KiB scattered in {:.2} ms ({} chunks returned)",
-        elapsed,
+        "get_ranges: 16×8 KiB scattered in {elapsed:.2} ms ({} chunks returned)",
         chunks.len()
     );
 }
