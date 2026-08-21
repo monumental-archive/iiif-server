@@ -154,12 +154,11 @@ this server over HTTP as separate processes, so they keep whatever licences
 they already have, proprietary included. That is the question most AGPL
 hesitancy turns out to be about.
 
-The AGPL is the whole of the offer. Alternative terms are **not**
-available: contributions are signed off under the DCO, contributors keep
-their copyright, and nobody holds a relicensing grant over the tree.
-Until the import this project carried a contributor agreement that made
-other terms possible; the organisation operates no such agreement, and
-[docs/licensing.md](docs/licensing.md) records what that changes.
+Alternative terms: ask. The contributor agreement that used to carry a
+blanket relicensing grant is withdrawn — contributions are signed off
+under the DCO now, and a sign-off grants nothing beyond the AGPL — so
+what can be offered depends on whose code is involved.
+[docs/licensing.md](docs/licensing.md) sets out both directions.
 
 The full FAQ, including why AGPL rather than a permissive licence, is
 [docs/licensing.md](docs/licensing.md).
