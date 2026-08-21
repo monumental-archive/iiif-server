@@ -129,7 +129,7 @@ impl Metrics {
             "# HELP iiif_request_duration_seconds Request latency.\n\
             # TYPE iiif_request_duration_seconds histogram"
         );
-        let mut cumulative = 0u64;
+        let mut cumulative = 0_u64;
         for (bound, bucket) in BUCKETS.iter().zip(&self.latency_buckets) {
             cumulative += bucket.load(Ordering::Relaxed);
             let _ = writeln!(

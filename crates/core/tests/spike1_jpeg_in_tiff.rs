@@ -8,10 +8,29 @@
 //! Ignored by default so `cargo test` stays hermetic; the spike runner
 //! executes with `--ignored`.
 
-#![allow(
-    clippy::unwrap_used,
+#![expect(
+    clippy::absolute_paths,
+    clippy::arithmetic_side_effects,
+    clippy::default_numeric_fallback,
     clippy::expect_used,
-    reason = "test/bench code: a panic here is the failure signal, not a crash path"
+    clippy::float_arithmetic,
+    clippy::indexing_slicing,
+    clippy::min_ident_chars,
+    clippy::missing_assert_message,
+    clippy::missing_panics_doc,
+    clippy::panic,
+    clippy::shadow_reuse,
+    clippy::single_call_fn,
+    clippy::tests_outside_test_module,
+    clippy::unwrap_used,
+    clippy::use_debug,
+    reason = "integration-test code. A panic IS the failure signal, so \
+              `# Panics` sections and assertion messages would describe the \
+              mechanism a test works by; fixtures are indexed and scaled \
+              with arithmetic whose operands are constants in the file above \
+              it; and a `#[test]` at the top level of a `tests/` file is what \
+              an integration test IS. The crate under test is held to all of \
+              these — this is the harness that proves it."
 )]
 #![allow(
     clippy::print_stdout,

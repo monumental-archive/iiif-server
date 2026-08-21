@@ -7,10 +7,17 @@
 //!
 //! Pure request→response logic; `main.rs` owns sockets and runtime.
 
-use std::{
+extern crate alloc;
+
+use alloc::sync::Arc;
+use core::{
     fmt,
-    hash::{Hash, Hasher},
-    sync::Arc,
+    hash::{Hash as _, Hasher as _},
+};
+use std::{
+    collections::hash_map::DefaultHasher,
+    fs,
+    io::{self, Cursor, Read, Seek, SeekFrom},
     time::Instant,
 };
 
@@ -18,23 +25,26 @@ use bytes::Bytes;
 use http_body_util::Full;
 use hyper::{
     Method, Request, Response, StatusCode,
+    header::HOST,
     header::{
         ACCEPT, ALLOW, CACHE_CONTROL, CONTENT_TYPE, ETAG, HeaderValue, IF_NONE_MATCH, LINK,
         LOCATION, RETRY_AFTER, VARY,
     },
+    http::Result as HttpResult,
 };
 use iiif_core::{
     codec::{CodecError, open_master},
     encode::EncodeError,
-    eval::{EvalError, evaluate},
+    eval::{EvalError, Plan, evaluate},
     grammar::{ImageRequest, ParseError},
     ident::Identifier,
     info::{Info, Limits},
     pipeline::{self, PipelineError},
     source::SourceError,
+    v2,
 };
 use iiif_sources::{LocalFile, LocalRoot, ObjectRoot};
-use tokio::sync::Semaphore;
+use tokio::{sync::Semaphore, task};
 
 use crate::metrics::{Family, Metrics};
 
@@ -54,9 +64,9 @@ const CACHE_CONTROL_VALUE: &str = "public, max-age=3600";
 /// deterministic across runs of the same binary, and the binary version
 /// is part of the input.
 fn etag_for(identifier: &str, source_version: (u64, u64), canonical: &str) -> String {
-    let mut halves = [0u64; 2];
+    let mut halves = [0_u64; 2];
     for (domain, half) in halves.iter_mut().enumerate() {
-        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        let mut hasher = DefaultHasher::new();
         domain.hash(&mut hasher);
         identifier.hash(&mut hasher);
         source_version.hash(&mut hasher);
@@ -84,7 +94,7 @@ fn if_none_match_hits<B>(req: &Request<B>, etag: &str) -> bool {
 /// only errors on malformed status codes or header values; every call site
 /// passes constants or already-validated strings, so the fallback exists
 /// purely to keep the server panic-free if that invariant ever breaks.
-fn built(res: hyper::http::Result<Response<Full<Bytes>>>) -> Response<Full<Bytes>> {
+fn built(res: HttpResult<Response<Full<Bytes>>>) -> Response<Full<Bytes>> {
     res.unwrap_or_else(|_| {
         let mut fallback = Response::new(Full::new(Bytes::new()));
         *fallback.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
@@ -174,34 +184,34 @@ impl Resolved {
         }
     }
 
-    fn into_reader(self) -> std::io::Result<SourceReader> {
+    fn into_reader(self) -> io::Result<SourceReader> {
         Ok(match self {
             Self::Local(file) => SourceReader::File(file.into_std_file()?),
-            Self::Object(bytes, _) => SourceReader::Memory(std::io::Cursor::new(bytes)),
+            Self::Object(bytes, _) => SourceReader::Memory(Cursor::new(bytes)),
         })
     }
 }
 
 /// The sync `Read + Seek` bridge the codecs consume.
 enum SourceReader {
-    File(std::fs::File),
-    Memory(std::io::Cursor<Bytes>),
+    File(fs::File),
+    Memory(Cursor<Bytes>),
 }
 
-impl std::io::Read for SourceReader {
-    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+impl Read for SourceReader {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         match self {
-            Self::File(file) => std::io::Read::read(file, buf),
-            Self::Memory(cursor) => std::io::Read::read(cursor, buf),
+            Self::File(file) => Read::read(file, buf),
+            Self::Memory(cursor) => Read::read(cursor, buf),
         }
     }
 }
 
-impl std::io::Seek for SourceReader {
-    fn seek(&mut self, pos: std::io::SeekFrom) -> std::io::Result<u64> {
+impl Seek for SourceReader {
+    fn seek(&mut self, pos: SeekFrom) -> io::Result<u64> {
         match self {
-            Self::File(file) => std::io::Seek::seek(file, pos),
-            Self::Memory(cursor) => std::io::Seek::seek(cursor, pos),
+            Self::File(file) => Seek::seek(file, pos),
+            Self::Memory(cursor) => Seek::seek(cursor, pos),
         }
     }
 }
@@ -249,7 +259,10 @@ impl App {
     ///
     /// Only if `hyper`'s response builder rejects statically valid
     /// header/status combinations — structurally impossible.
-    pub async fn handle<B: Send + Sync>(self: Arc<Self>, req: Request<B>) -> Response<Full<Bytes>> {
+    pub async fn handle<B>(self: Arc<Self>, req: Request<B>) -> Response<Full<Bytes>>
+    where
+        B: Send + Sync,
+    {
         let started = Instant::now();
         let family = match Route::of(req.uri().path()) {
             Route::InfoJson { .. } => Family::Info,
@@ -262,10 +275,10 @@ impl App {
         response
     }
 
-    async fn handle_inner<B: Send + Sync>(
-        self: &Arc<Self>,
-        req: Request<B>,
-    ) -> Response<Full<Bytes>> {
+    async fn handle_inner<B>(self: &Arc<Self>, req: Request<B>) -> Response<Full<Bytes>>
+    where
+        B: Send + Sync,
+    {
         let method = req.method().clone();
         if method == Method::OPTIONS {
             return preflight();
@@ -340,12 +353,15 @@ impl App {
         response
     }
 
-    async fn info_json<B: Sync>(
+    async fn info_json<B>(
         &self,
         version: Version,
         raw_id: &str,
         req: &Request<B>,
-    ) -> Response<Full<Bytes>> {
+    ) -> Response<Full<Bytes>>
+    where
+        B: Sync,
+    {
         let Ok(id) = Identifier::decode(raw_id) else {
             return error(StatusCode::NOT_FOUND, "unknown identifier");
         };
@@ -362,7 +378,7 @@ impl App {
         if if_none_match_hits(req, &etag) {
             return not_modified(&etag);
         }
-        let opened = tokio::task::spawn_blocking(move || {
+        let opened = task::spawn_blocking(move || {
             let reader = source
                 .into_reader()
                 .map_err(|err| CodecError::Corrupt(format!("source handle: {err}")))?;
@@ -378,7 +394,7 @@ impl App {
         let document_id = format!("{base}/{}/{}", version.prefix(), id.encoded());
         let body = match version {
             Version::V3 => Info::new(document_id, &description, self.limits).to_json(),
-            Version::V2 => iiif_core::v2::info_json(&document_id, &description, self.limits),
+            Version::V2 => v2::info_json(&document_id, &description, self.limits),
         };
         // Content negotiation (§5.2): ld+json when asked for, with Vary.
         let accept = req
@@ -419,7 +435,7 @@ impl App {
                 Ok(request) => (request, None),
                 Err(err) => return parse_error(&err),
             },
-            Version::V2 => match iiif_core::v2::parse_image_request(rest) {
+            Version::V2 => match v2::parse_image_request(rest) {
                 Ok(parsed) => (parsed.as_v3, Some(parsed)),
                 Err(err) => return parse_error(&err),
             },
@@ -441,7 +457,7 @@ impl App {
         let pool_idle = self.decode_permits.available_permits() > 0;
         let source_version = source.source_version();
         let identifier_path = id.as_path().to_owned();
-        let result = tokio::task::spawn_blocking(move || {
+        let result = task::spawn_blocking(move || {
             let _permit = permit; // held for the duration of the decode
             let _admission = admission;
             let reader = source.into_reader().map_err(|err| {
@@ -451,10 +467,9 @@ impl App {
             master.set_internal_parallelism(pool_idle);
             let (full_w, full_h) = master.dimensions();
             let plan = evaluate(&request, full_w, full_h, limits).map_err(ImageFailure::Eval)?;
-            let canonical_path = v2_spelling.as_ref().map_or_else(
-                || plan.canonical_path(),
-                |v2| iiif_core::v2::canonical_path(&plan, v2),
-            );
+            let canonical_path = v2_spelling
+                .as_ref()
+                .map_or_else(|| plan.canonical_path(), |v2| v2::canonical_path(&plan, v2));
             // ETag is derived from the canonical URI, so every spelling of
             // the same request revalidates against the same tag — and a
             // hit skips all pixel work.
@@ -513,7 +528,7 @@ impl App {
         }
         let host = req
             .headers()
-            .get(hyper::header::HOST)
+            .get(HOST)
             .and_then(|v| v.to_str().ok())
             .unwrap_or("localhost");
         format!("http://{host}")
@@ -526,7 +541,7 @@ enum ImageOutcome {
     NotModified { etag: String },
     Fresh {
         bytes: Vec<u8>,
-        plan: iiif_core::eval::Plan,
+        plan: Plan,
         canonical_path: String,
         etag: String,
     },
