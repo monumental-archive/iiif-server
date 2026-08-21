@@ -510,7 +510,10 @@ impl Raster {
                     data,
                 }
             }
-            other => other, // unreachable: into_gray never returns RGB
+            // `into_gray` returns only the two gray shapes, both matched
+            // above, so these two are unreachable — named rather than
+            // wildcarded so a fifth Raster variant would fail here.
+            other @ (Self::Rgb8 { .. } | Self::Rgba8 { .. }) => other,
         }
     }
 

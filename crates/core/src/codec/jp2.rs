@@ -27,6 +27,13 @@ use crate::{
 };
 
 /// Wrap raw interleaved samples in the right raster variant.
+#[expect(
+    clippy::wildcard_enum_match_arm,
+    reason = "matches an upstream `#[non_exhaustive]` enum, so the wildcard \
+              is REQUIRED rather than chosen — measured: deleting it \
+              gives `error[E0004]: non-exhaustive patterns: `_` not \
+              covered`. The lint asks for something the compiler refuses."
+)]
 const fn raster_of(fmt: PixelFormat, width: u32, height: u32, data: Vec<u8>) -> Raster {
     match fmt {
         PixelFormat::Gray8 => Raster::Gray8 {
@@ -241,6 +248,13 @@ impl Master for Jp2Master {
               this same lint set forbids, so it trades one enabled \
               restriction for another and adds an error path that cannot \
               be reached."
+    )]
+    #[expect(
+        clippy::wildcard_enum_match_arm,
+        reason = "matches an upstream `#[non_exhaustive]` enum, so the wildcard \
+              is REQUIRED rather than chosen — measured: deleting it \
+              gives `error[E0004]: non-exhaustive patterns: `_` not \
+              covered`. The lint asks for something the compiler refuses."
     )]
     fn decode_crop(&mut self, crop: CropRect, needed: f64) -> Result<Raster, CodecError> {
         let mut decoder = J2kDecoder::new(&self.bytes)

@@ -260,6 +260,13 @@ impl From<RasterError> for CodecError {
 
 impl From<tiff::TiffError> for CodecError {
     #[inline]
+    #[expect(
+        clippy::wildcard_enum_match_arm,
+        reason = "matches an upstream `#[non_exhaustive]` enum, so the wildcard \
+              is REQUIRED rather than chosen — measured: deleting it \
+              gives `error[E0004]: non-exhaustive patterns: `_` not \
+              covered`. The lint asks for something the compiler refuses."
+    )]
     fn from(err: tiff::TiffError) -> Self {
         match err {
             tiff::TiffError::UnsupportedError(inner) => Self::Unsupported(inner.to_string()),
@@ -537,6 +544,13 @@ impl<R: Read + Seek> TiffPyramid<R> {
 /// `chunks_exact`'s own length guarantee so the optimiser can elide the
 /// repeated bounds checks — which is what `missing_asserts_for_indexing`
 /// asks for — and it cannot fire for a chunk that iterator produced.
+#[expect(
+    clippy::wildcard_enum_match_arm,
+    reason = "matches an upstream `#[non_exhaustive]` enum, so the wildcard \
+              is REQUIRED rather than chosen — measured: deleting it \
+              gives `error[E0004]: non-exhaustive patterns: `_` not \
+              covered`. The lint asks for something the compiler refuses."
+)]
 fn raster_from_decoded(
     result: DecodingResult,
     colortype: ColorType,

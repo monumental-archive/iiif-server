@@ -126,7 +126,7 @@ fn encode_tiff(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
             } => encoder
                 .write_image::<colortype::RGB8>(*width, *height, data)
                 .map_err(|err| EncodeError::Internal(err.to_string()))?,
-            _ => {
+            Raster::GrayA8 { .. } | Raster::Rgba8 { .. } => {
                 return Err(EncodeError::Internal(
                     "alpha survived flattening".to_owned(),
                 ));
@@ -169,7 +169,7 @@ fn encode_gif(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
                 .collect::<Vec<u8>>();
             &rgb
         }
-        _ => {
+        Raster::GrayA8 { .. } | Raster::Rgba8 { .. } => {
             return Err(EncodeError::Internal(
                 "alpha survived flattening".to_owned(),
             ));
@@ -228,7 +228,7 @@ fn encode_jp2(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
     let (components, data) = match &flattened {
         Raster::Gray8 { data, .. } => (1_u16, data),
         Raster::Rgb8 { data, .. } => (3_u16, data),
-        _ => {
+        Raster::GrayA8 { .. } | Raster::Rgba8 { .. } => {
             return Err(EncodeError::Internal(
                 "alpha survived flattening".to_owned(),
             ));
@@ -273,7 +273,7 @@ fn encode_pdf(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
     let (width, height) = (flattened.width(), flattened.height());
     let colorspace = match &flattened {
         Raster::Gray8 { .. } => "/DeviceGray",
-        _ => "/DeviceRGB",
+        Raster::Rgb8 { .. } | Raster::GrayA8 { .. } | Raster::Rgba8 { .. } => "/DeviceRGB",
     };
     let content = format!(
         "q
@@ -394,7 +394,7 @@ fn encode_jpeg(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
             flattened = raster.clone().flatten_over_white();
             &flattened
         }
-        opaque => opaque,
+        opaque @ (Raster::Gray8 { .. } | Raster::Rgb8 { .. }) => opaque,
     };
     let narrowed_width = u16::try_from(raster.width());
     let narrowed_height = u16::try_from(raster.height());

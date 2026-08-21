@@ -81,7 +81,7 @@ impl Error for SourceError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             Self::Io(err) => Some(err),
-            _ => None,
+            Self::NotFound | Self::OutOfRange { .. } => None,
         }
     }
 }
