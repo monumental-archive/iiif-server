@@ -16,7 +16,7 @@
 //!
 //! The result is a relative path safe to join under a source root.
 
-use std::fmt;
+use core::fmt;
 
 /// A decoded, traversal-checked identifier. The inner string is a relative
 /// path (`a/b/c.tif` style) guaranteed free of `.`/`..`/empty segments,
@@ -152,4 +152,4 @@ impl fmt::Display for IdentifierError {
     }
 }
 
-impl std::error::Error for IdentifierError {}
+impl core::error::Error for IdentifierError {}

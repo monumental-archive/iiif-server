@@ -215,7 +215,7 @@ pub fn info_json(id: &str, image: &ImageDescription, limits: Limits) -> String {
     if !tiles.is_empty() {
         document["tiles"] = tiles.into();
     }
-    #[allow(
+    #[expect(
         clippy::expect_used,
         reason = "map-free static shape: to_string cannot fail"
     )]
@@ -260,8 +260,8 @@ mod tests {
 
     #[test]
     fn caret_is_not_v2() {
-        assert!(parse_image_request("full/^max/0/default.jpg").is_err());
-        assert!(parse_image_request("full/^150,/0/default.jpg").is_err());
+        parse_image_request("full/^max/0/default.jpg").unwrap_err();
+        parse_image_request("full/^150,/0/default.jpg").unwrap_err();
     }
 
     #[test]

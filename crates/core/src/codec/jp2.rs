@@ -117,9 +117,9 @@ impl Jp2Master {
     /// 1/16–1/32 instead of decoding 1/8 and resampling.
     fn levels_for(&self, needed: f64) -> u8 {
         let max_level = self.resolution_levels - 1;
-        let mut choice = 0u8;
+        let mut choice = 0_u8;
         for level in 1..=max_level {
-            if f64::from(1u32 << u32::from(level).min(31)) <= needed {
+            if f64::from(1_u32 << u32::from(level).min(31)) <= needed {
                 choice = level;
             }
         }
@@ -153,7 +153,7 @@ impl Master for Jp2Master {
     fn describe(&self) -> ImageDescription {
         // scaleFactors mirror the codestream's real resolution ladder.
         let scale_factors: Vec<u32> = (0..self.resolution_levels)
-            .map(|level| 1u32 << level)
+            .map(|level| 1_u32 << level)
             .collect();
         let mut sizes: Vec<SizeEntry> = scale_factors
             .iter()
@@ -211,8 +211,8 @@ impl Master for Jp2Master {
         let levels = self.levels_for(needed);
         let fmt = self.pixel_format();
         let bpp = match fmt {
-            PixelFormat::Gray8 => 1usize,
-            _ => 3usize,
+            PixelFormat::Gray8 => 1_usize,
+            _ => 3_usize,
         };
         let roi = Rect {
             x: crop.x,
@@ -220,10 +220,10 @@ impl Master for Jp2Master {
             w: crop.w,
             h: crop.h,
         };
-        let scaled = scaled_covering_pow2(roi, 1u32 << u32::from(levels).min(31));
+        let scaled = scaled_covering_pow2(roi, 1_u32 << u32::from(levels).min(31));
         let mut pool = J2kScratchPool::new();
         let stride = scaled.w as usize * bpp;
-        let mut out = vec![0u8; stride * scaled.h as usize];
+        let mut out = vec![0_u8; stride * scaled.h as usize];
         decoder
             .decode_region_scaled_pow2_into(&mut pool, &mut out, stride, fmt, roi, levels)
             .map_err(|e| CodecError::Corrupt(format!("JP2 decode: {e}")))?;

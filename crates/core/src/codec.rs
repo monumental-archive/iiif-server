@@ -15,12 +15,10 @@
 pub mod jp2;
 pub mod simple;
 
-use std::{
-    fmt,
-    io::{Read, Seek, SeekFrom},
-};
+use core::fmt;
+use std::io::{Read, Seek, SeekFrom};
 
-use num_traits::cast::ToPrimitive;
+use num_traits::cast::ToPrimitive as _;
 use tiff::{
     ColorType,
     decoder::{Decoder, DecodingResult},
@@ -109,10 +107,11 @@ pub trait Master: Send {
 ///
 /// [`CodecError::Unsupported`] with an actionable message for anything
 /// outside the supported matrix.
-pub fn open_master<R: Read + Seek + Send + 'static>(
-    mut reader: R,
-) -> Result<Box<dyn Master>, CodecError> {
-    let mut magic = [0u8; 12];
+pub fn open_master<R>(mut reader: R) -> Result<Box<dyn Master>, CodecError>
+where
+    R: Read + Seek + Send + 'static,
+{
+    let mut magic = [0_u8; 12];
     let got = read_up_to(&mut reader, &mut magic)
         .map_err(|e| CodecError::Corrupt(format!("cannot read file header: {e}")))?;
     reader
@@ -143,12 +142,19 @@ pub fn open_master<R: Read + Seek + Send + 'static>(
 }
 
 /// Read as many of `buf` as the reader will give without erroring on EOF.
-fn read_up_to<R: Read>(reader: &mut R, buf: &mut [u8]) -> std::io::Result<usize> {
+fn read_up_to<R>(reader: &mut R, buf: &mut [u8]) -> std::io::Result<usize>
+where
+    R: Read,
+{
     let mut filled = 0;
     while filled < buf.len() {
         match reader.read(&mut buf[filled..]) {
             Ok(0) => break,
             Ok(n) => filled += n,
+            #[expect(
+                clippy::std_instead_of_core,
+                reason = "`core::io` is not stable on this toolchain — measured: clippy marks this suggestion machine-applicable and the replacement does not compile (E0658, `core_io`). Revisit when core::io stabilises."
+            )]
             Err(e) if e.kind() == std::io::ErrorKind::Interrupted => {}
             Err(e) => return Err(e),
         }
@@ -202,7 +208,7 @@ impl fmt::Display for CodecError {
     }
 }
 
-impl std::error::Error for CodecError {}
+impl core::error::Error for CodecError {}
 
 impl From<RasterError> for CodecError {
     fn from(e: RasterError) -> Self {
@@ -247,7 +253,7 @@ impl<R: Read + Seek> TiffPyramid<R> {
     pub fn open(reader: R) -> Result<Self, CodecError> {
         let mut decoder = Decoder::new(reader)?;
         let mut levels = Vec::new();
-        let mut ifd = 0usize;
+        let mut ifd = 0_usize;
         let (full_w, full_h) = decoder.dimensions()?;
         loop {
             let (width, height) = decoder.dimensions()?;
@@ -489,9 +495,10 @@ fn raster_from_decoded(
             }
             for px in data.chunks_exact_mut(3) {
                 let [y, cb, cr] = [f64::from(px[0]), f64::from(px[1]), f64::from(px[2])];
-                let r = 1.402f64.mul_add(cr - 128.0, y);
-                let g = 0.714_136f64.mul_add(-(cr - 128.0), 0.344_136f64.mul_add(-(cb - 128.0), y));
-                let b = 1.772f64.mul_add(cb - 128.0, y);
+                let r = 1.402_f64.mul_add(cr - 128.0, y);
+                let g =
+                    0.714_136_f64.mul_add(-(cr - 128.0), 0.344_136_f64.mul_add(-(cb - 128.0), y));
+                let b = 1.772_f64.mul_add(cb - 128.0, y);
                 px[0] = r.round().clamp(0.0, 255.0).to_u8().unwrap_or(0);
                 px[1] = g.round().clamp(0.0, 255.0).to_u8().unwrap_or(0);
                 px[2] = b.round().clamp(0.0, 255.0).to_u8().unwrap_or(0);

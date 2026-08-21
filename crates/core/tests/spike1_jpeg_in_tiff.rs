@@ -84,7 +84,8 @@ fn compare(ours: &Raster, golden: &[u8]) -> Comparison {
 fn check_variant(variant: &str, max_mean: f64, max_peak: u8) {
     let path = generated(&format!("spike1_{variant}.tif"));
     let mut tiff = TiffPyramid::open(
-        File::open(&path).unwrap_or_else(|_| panic!("fixture missing \u{2014} run `task spike1` first")),
+        File::open(&path)
+            .unwrap_or_else(|_| panic!("fixture missing \u{2014} run `task spike1` first")),
     )
     .expect("JPEG-in-TIFF pyramid opens");
     assert_eq!(tiff.dimensions(), (2048, 1536));

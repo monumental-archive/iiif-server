@@ -168,7 +168,7 @@ impl Info {
     /// keys, no fallible `Serialize` impls).
     #[must_use]
     pub fn to_json(&self) -> String {
-        #[allow(
+        #[expect(
             clippy::expect_used,
             reason = "map-free static shape: to_string cannot fail"
         )]

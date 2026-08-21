@@ -7,8 +7,6 @@
 //! `check` advises converting large ones to pyramids; small images are fine
 //! here.
 
-use std::io::Cursor;
-
 use super::{CodecError, Master, guard_resident_pixels};
 use crate::{
     eval::CropRect,
@@ -73,8 +71,12 @@ impl SimpleMaster {
     /// # Errors
     ///
     /// [`CodecError::Corrupt`] / [`CodecError::Unsupported`] as above.
+    #[expect(
+        clippy::std_instead_of_core,
+        reason = "`core::io` is not stable on this toolchain — measured: clippy marks this suggestion machine-applicable and the replacement does not compile (E0658, `core_io`). Revisit when core::io stabilises."
+    )]
     pub fn from_png(bytes: &[u8]) -> Result<Self, CodecError> {
-        let decoder = png::Decoder::new(Cursor::new(bytes));
+        let decoder = png::Decoder::new(std::io::Cursor::new(bytes));
         let mut reader = decoder
             .read_info()
             .map_err(|e| CodecError::Corrupt(format!("PNG decode: {e}")))?;
@@ -85,7 +87,7 @@ impl SimpleMaster {
             guard_resident_pixels(info.width, info.height)?;
         }
         let mut buf = vec![
-            0u8;
+            0_u8;
             reader
                 .output_buffer_size()
                 .ok_or_else(|| CodecError::Corrupt("PNG size overflow".to_owned()))?

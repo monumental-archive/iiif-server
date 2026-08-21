@@ -13,7 +13,7 @@
 //! Canonicalization against a concrete image (region → pixels, size →
 //! `w,h`) is a separate evaluation-layer concern.
 
-use std::fmt;
+use core::fmt;
 
 /// The image region to extract, per §4.1.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -183,9 +183,10 @@ impl fmt::Display for ParseError {
     }
 }
 
-impl std::error::Error for ParseError {}
+impl core::error::Error for ParseError {}
 
 /// Strict unsigned decimal integer: one or more ASCII digits, nothing else.
+///
 /// Leading zeros are accepted (the canonical print normalizes them away);
 /// values that overflow `u32` are rejected — every legal pixel value fits.
 fn parse_u32(s: &str) -> Option<u32> {
@@ -829,13 +830,13 @@ mod tests {
     fn quality_and_format() {
         assert_eq!(Quality::parse("default").unwrap(), Quality::Default);
         assert_eq!(Quality::parse("bitonal").unwrap(), Quality::Bitonal);
-        assert!(Quality::parse("native").is_err()); // v2 name, not v3
-        assert!(Quality::parse("grey").is_err());
+        Quality::parse("native").unwrap_err(); // v2 name, not v3
+        Quality::parse("grey").unwrap_err();
         assert_eq!(Format::parse("jpg").unwrap(), Format::Jpg);
         assert_eq!(Format::parse("webp").unwrap(), Format::Webp);
-        assert!(Format::parse("jpeg").is_err());
-        assert!(Format::parse("tiff").is_err());
-        assert!(Format::parse("JPG").is_err());
+        Format::parse("jpeg").unwrap_err();
+        Format::parse("tiff").unwrap_err();
+        Format::parse("JPG").unwrap_err();
     }
 
     #[test]

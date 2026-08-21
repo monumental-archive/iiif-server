@@ -5,10 +5,10 @@
 //! mirror/rotate → encode. Pure compute; the caller owns threading and
 //! backpressure.
 
-use std::fmt;
+use core::fmt;
 
 use fast_image_resize as fir;
-use num_traits::cast::ToPrimitive;
+use num_traits::cast::ToPrimitive as _;
 
 use crate::{
     codec::{CodecError, Master},
@@ -42,7 +42,7 @@ impl fmt::Display for PipelineError {
     }
 }
 
-impl std::error::Error for PipelineError {}
+impl core::error::Error for PipelineError {}
 
 impl From<CodecError> for PipelineError {
     fn from(e: CodecError) -> Self {

@@ -7,9 +7,9 @@
 //! handling (16-bit, planar, subsampled YCbCr) at the decoder layer, which
 //! normalizes to these working rasters.
 
-use std::fmt;
+use core::fmt;
 
-use num_traits::cast::ToPrimitive;
+use num_traits::cast::ToPrimitive as _;
 
 /// An owned 8-bit raster, tightly packed, row-major.
 ///
@@ -69,13 +69,13 @@ impl fmt::Display for RasterError {
     }
 }
 
-impl std::error::Error for RasterError {}
+impl core::error::Error for RasterError {}
 
 /// BT.601 luma of one RGB pixel.
 fn luma_of(r: u8, g: u8, b: u8) -> u8 {
-    let luma = 0.114f64.mul_add(
+    let luma = 0.114_f64.mul_add(
         f64::from(b),
-        0.587f64.mul_add(f64::from(g), 0.299 * f64::from(r)),
+        0.587_f64.mul_add(f64::from(g), 0.299 * f64::from(r)),
     );
     luma.round().clamp(0.0, 255.0).to_u8().unwrap_or(255)
 }
@@ -287,7 +287,7 @@ impl Raster {
         let src_h = self.height() as usize;
         let bpp = self.channels() as usize;
         let src = self.data();
-        let mut dst = vec![0u8; src.len()];
+        let mut dst = vec![0_u8; src.len()];
         // (x, y) → (dst_x, dst_y) = (src_h - 1 - y, x); dst is src_h wide.
         for y in 0..src_h {
             for x in 0..src_w {
@@ -424,7 +424,7 @@ impl Raster {
         let gray = matches!(self, Self::Gray8 { .. } | Self::GrayA8 { .. });
         let src_channels = self.channels() as usize;
         let out_channels: usize = if gray { 2 } else { 4 };
-        let mut out = vec![0u8; canvas_w as usize * canvas_h as usize * out_channels];
+        let mut out = vec![0_u8; canvas_w as usize * canvas_h as usize * out_channels];
         let source_center = (src_w / 2.0, src_h / 2.0);
         let canvas_center = (out_w / 2.0, out_h / 2.0);
         let data = self.data();

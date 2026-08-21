@@ -8,7 +8,7 @@
 //! documented asterisk: valid `image/webp`, larger files, because lossy webp
 //! would require C libwebp) complete it.
 
-use std::fmt;
+use core::fmt;
 
 use crate::{grammar::Format, image::Raster};
 
@@ -45,7 +45,7 @@ impl fmt::Display for EncodeError {
     }
 }
 
-impl std::error::Error for EncodeError {}
+impl core::error::Error for EncodeError {}
 
 /// JPEG quality used for all lossy output. Fixed: capability is baked in,
 /// not toggled, and derivative caching lives at the CDN — a stable byte
@@ -70,6 +70,10 @@ pub fn encode(raster: &Raster, format: Format) -> Result<Vec<u8>, EncodeError> {
     }
 }
 
+#[expect(
+    clippy::std_instead_of_core,
+    reason = "`core::io` is not stable on this toolchain — measured: clippy marks this suggestion machine-applicable and the replacement does not compile (E0658, `core_io`). Revisit when core::io stabilises."
+)]
 fn encode_tiff(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
     use tiff::encoder::{TiffEncoder, colortype};
     // Keep TIFF output opaque: alpha flattens over white.
@@ -144,6 +148,10 @@ fn encode_gif(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
     Ok(out)
 }
 
+#[expect(
+    clippy::std_instead_of_core,
+    reason = "`core::io` is not stable on this toolchain — measured: clippy marks this suggestion machine-applicable and the replacement does not compile (E0658, `core_io`). Revisit when core::io stabilises."
+)]
 fn encode_webp(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
     // Lossless only — the single documented asterisk in the compliance
     // table (lossy webp would require C libwebp).
@@ -165,8 +173,8 @@ fn encode_jp2(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
     // Reversible 5/3 lossless codestream, wrapped as a JP2 file.
     let raster = raster.clone().flatten_over_white();
     let (components, data) = match &raster {
-        Raster::Gray8 { data, .. } => (1u16, data),
-        Raster::Rgb8 { data, .. } => (3u16, data),
+        Raster::Gray8 { data, .. } => (1_u16, data),
+        Raster::Rgb8 { data, .. } => (3_u16, data),
         _ => {
             return Err(EncodeError::Internal(
                 "alpha survived flattening".to_owned(),
@@ -192,7 +200,7 @@ fn encode_jp2(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
 /// Hand-rolled single-image PDF (design decision: ~150 lines beat a
 /// dependency). The page embeds the pipeline's JPEG output via `DCTDecode`
 /// at 72 dpi, sized 1 pt per pixel.
-#[allow(
+#[expect(
     clippy::too_many_lines,
     reason = "a minimal PDF writer is one linear object list; splitting scatters the xref math"
 )]
@@ -213,7 +221,7 @@ Q
     );
 
     let mut pdf: Vec<u8> = Vec::with_capacity(jpeg.len() + 1024);
-    let mut offsets = [0usize; 6];
+    let mut offsets = [0_usize; 6];
     pdf.extend_from_slice(b"%PDF-1.4\n%\xE2\xE3\xCF\xD3\n");
     let objects: [(usize, Vec<u8>); 5] = [
         (1, b"<< /Type /Catalog /Pages 2 0 R >>".to_vec()),

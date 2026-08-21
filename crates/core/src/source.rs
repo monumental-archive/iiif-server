@@ -8,7 +8,7 @@
 //! read/mmap in `iiif-sources`, object stores via ranged GETs later. Decoders
 //! are sync and bridge at the boundary.
 
-use std::{fmt, future::Future, pin::Pin};
+use core::{fmt, future::Future, pin::Pin};
 
 use bytes::Bytes;
 
@@ -64,8 +64,8 @@ impl fmt::Display for SourceError {
     }
 }
 
-impl std::error::Error for SourceError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+impl core::error::Error for SourceError {
+    fn source(&self) -> Option<&(dyn core::error::Error + 'static)> {
         match self {
             Self::Io(e) => Some(e),
             _ => None,
@@ -73,6 +73,10 @@ impl std::error::Error for SourceError {
     }
 }
 
+#[expect(
+    clippy::std_instead_of_core,
+    reason = "`core::io` is not stable on this toolchain — measured: clippy marks this suggestion machine-applicable and the replacement does not compile (E0658, `core_io`). Revisit when core::io stabilises."
+)]
 impl From<std::io::Error> for SourceError {
     fn from(e: std::io::Error) -> Self {
         if e.kind() == std::io::ErrorKind::NotFound {

@@ -7,9 +7,9 @@
 //!
 //! All the dimension-dependent rules the grammar could not check live here.
 
-use std::fmt;
+use core::fmt;
 
-use num_traits::cast::ToPrimitive;
+use num_traits::cast::ToPrimitive as _;
 
 use crate::{
     grammar::{ImageRequest, Quality, Region, Rotation, Size, SizeKind},
@@ -17,6 +17,7 @@ use crate::{
 };
 
 /// Round a non-negative float to `u32`, saturating at the type's ceiling.
+///
 /// Saturated values are always caught by the bounds/limits checks that
 /// follow every call site — saturation just keeps the arithmetic total.
 fn round_u32(v: f64) -> u32 {
@@ -104,7 +105,7 @@ impl fmt::Display for EvalError {
     }
 }
 
-impl std::error::Error for EvalError {}
+impl core::error::Error for EvalError {}
 
 /// Evaluate a request against an image's full dimensions and the
 /// deployment limits.
