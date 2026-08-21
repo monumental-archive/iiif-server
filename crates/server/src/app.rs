@@ -50,6 +50,7 @@ use crate::metrics::{Family, Metrics};
 
 /// JSON-LD media type with the required profile parameter.
 const LD_JSON: &str = "application/ld+json;profile=\"http://iiif.io/api/image/3/context.json\"";
+/// The `Content-Type` a v2.1 info.json is served with.
 const LD_JSON_V2: &str = "application/ld+json;profile=\"http://iiif.io/api/image/2/context.json\"";
 
 /// M5 cache posture: strong validator (`ETag`) plus a modest freshness
@@ -102,6 +103,7 @@ fn built(res: HttpResult<Response<Full<Bytes>>>) -> Response<Full<Bytes>> {
     })
 }
 
+/// A bare 304 carrying the `ETag` that matched.
 fn not_modified(etag: &str) -> Response<Full<Bytes>> {
     built(
         Response::builder()
@@ -115,17 +117,21 @@ fn not_modified(etag: &str) -> Response<Full<Bytes>> {
 /// The compliance-level profile documents, sent as a Link header on every
 /// image and info.json response (optional feature `profileLinkHeader`).
 const PROFILE_LINK: &str = "<http://iiif.io/api/image/3/level2.json>;rel=\"profile\"";
+/// The `Link: …; rel="profile"` header a v2.1 response carries.
 const PROFILE_LINK_V2: &str = "<http://iiif.io/api/image/2/level2.json>;rel=\"profile\"";
 
 /// Which API family a request addresses. Both mount over the same engine
 /// (design spec: the v2.1 endpoint is a translation layer, M3).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Version {
+    /// Image API 2.1.
     V2,
+    /// Image API 3.0.
     V3,
 }
 
 impl Version {
+    /// The path segment this version is routed under.
     const fn prefix(self) -> &'static str {
         match self {
             Self::V2 => "iiif/2",
@@ -133,6 +139,7 @@ impl Version {
         }
     }
 
+    /// The `rel="profile"` link header for this version.
     const fn profile_link(self) -> &'static str {
         match self {
             Self::V2 => PROFILE_LINK_V2,
@@ -140,6 +147,7 @@ impl Version {
         }
     }
 
+    /// The JSON-LD `Content-Type` for this version's info.json.
     const fn ld_json(self) -> &'static str {
         match self {
             Self::V2 => LD_JSON_V2,
@@ -160,11 +168,14 @@ pub enum SourceRoot {
 
 /// One resolved master, ready for the sync decoder bridge.
 enum Resolved {
+    /// A file on disk, read by range on the blocking pool.
     Local(LocalFile),
+    /// An object fetched whole, with its (mtime, length) version pair.
     Object(Bytes, (u64, u64)),
 }
 
 impl SourceRoot {
+    /// Resolve an identifier against this root, whichever backend it is.
     async fn resolve(&self, id: &Identifier) -> Result<Resolved, SourceError> {
         match self {
             Self::Local(root) => root.resolve(id).map(Resolved::Local),
@@ -177,6 +188,7 @@ impl SourceRoot {
 }
 
 impl Resolved {
+    /// The (mtime seconds, byte length) pair the `ETag` hashes.
     const fn source_version(&self) -> (u64, u64) {
         match self {
             Self::Local(file) => file.source_version(),
@@ -184,6 +196,11 @@ impl Resolved {
         }
     }
 
+    /// Surrender a synchronous reader for the decoder bridge.
+    ///
+    /// # Errors
+    ///
+    /// Any [`io::Error`] from handing over the underlying file.
     fn into_reader(self) -> io::Result<SourceReader> {
         Ok(match self {
             Self::Local(file) => SourceReader::File(file.into_std_file()?),
@@ -194,7 +211,9 @@ impl Resolved {
 
 /// The sync `Read + Seek` bridge the codecs consume.
 enum SourceReader {
+    /// Reads go straight to the file handle.
     File(fs::File),
+    /// Reads come from bytes already in memory.
     Memory(Cursor<Bytes>),
 }
 
@@ -275,6 +294,8 @@ impl App {
         response
     }
 
+    /// Route and serve one request. The outer `handle` wraps this with
+    /// metrics and CORS so every exit path is counted exactly once.
     async fn handle_inner<B>(self: &Arc<Self>, req: Request<B>) -> Response<Full<Bytes>>
     where
         B: Send + Sync,
@@ -353,6 +374,7 @@ impl App {
         response
     }
 
+    /// Serve an info.json for one identifier, at either API version.
     async fn info_json<B>(
         &self,
         version: Version,
@@ -419,6 +441,7 @@ impl App {
         )
     }
 
+    /// Serve one image request: resolve, decode, transform, encode.
     async fn image(
         &self,
         version: Version,
@@ -522,6 +545,8 @@ impl App {
         }
     }
 
+    /// The scheme+authority the response's `id`/`@id` are built from —
+    /// `--public-base` when set, otherwise the request's `Host`.
     fn base_uri<B>(&self, req: &Request<B>) -> String {
         if let Some(base) = &self.public_base {
             return base.clone();
@@ -538,19 +563,30 @@ impl App {
 /// What the blocking image task produced.
 enum ImageOutcome {
     /// Revalidation hit: no pixel work was done.
-    NotModified { etag: String },
+    NotModified {
+        /// The `ETag` the client's `If-None-Match` matched.
+        etag: String,
+    },
+    /// The image was produced.
     Fresh {
+        /// The encoded image.
         bytes: Vec<u8>,
+        /// The plan that produced it, for the canonical link header.
         plan: Plan,
+        /// The spec's canonical form of this request.
         canonical_path: String,
+        /// The `ETag` for these bytes.
         etag: String,
     },
 }
 
 /// Failures on the image path, unified for status mapping.
 enum ImageFailure {
+    /// The master could not be opened or decoded.
     Codec(CodecError),
+    /// The request is legal syntax but not against this image.
     Eval(EvalError),
+    /// Decode, transform or encode failed.
     Pipeline(PipelineError),
 }
 
@@ -561,6 +597,7 @@ impl From<CodecError> for ImageFailure {
 }
 
 impl ImageFailure {
+    /// Map the failure onto its spec-mandated status and message.
     fn into_response(self) -> Response<Full<Bytes>> {
         match self {
             Self::Eval(err) => error(StatusCode::BAD_REQUEST, &err.to_string()),
@@ -575,25 +612,40 @@ impl ImageFailure {
 
 /// The resource shapes under `/iiif/3/` and `/iiif/2/`.
 enum Route<'p> {
+    /// `GET /healthz`.
     Health,
+    /// `GET /metrics`.
     Metrics,
+    /// A bare identifier, which the spec redirects to its info.json.
     BaseRedirect {
+        /// Which API version the path was routed under.
         version: Version,
+        /// The percent-encoded identifier, still unvalidated.
         identifier: &'p str,
     },
+    /// An info.json request.
     InfoJson {
+        /// Which API version the path was routed under.
         version: Version,
+        /// The percent-encoded identifier, still unvalidated.
         identifier: &'p str,
     },
+    /// An image request; `rest` is the unparsed IIIF parameter path.
     Image {
+        /// Which API version the path was routed under.
         version: Version,
+        /// The percent-encoded identifier, still unvalidated.
         identifier: &'p str,
+        /// The remaining `{region}/{size}/{rotation}/{quality}.{format}`.
         rest: &'p str,
     },
+    /// Nothing this server routes.
     None,
 }
 
 impl<'p> Route<'p> {
+    /// Classify a request path. The IIIF grammar IS the router, so
+    /// this is the whole routing table.
     fn of(path: &'p str) -> Self {
         if path == "/healthz" {
             return Self::Health;
@@ -631,12 +683,14 @@ impl<'p> Route<'p> {
     }
 }
 
+/// Add the CORS headers every response carries, per the spec.
 fn add_cors(response: &mut Response<Full<Bytes>>) {
     response
         .headers_mut()
         .insert("access-control-allow-origin", HeaderValue::from_static("*"));
 }
 
+/// The `OPTIONS` preflight response.
 fn preflight() -> Response<Full<Bytes>> {
     let mut response = built(
         Response::builder()
@@ -651,6 +705,7 @@ fn preflight() -> Response<Full<Bytes>> {
     response
 }
 
+/// A plain-text error response.
 fn error(status: StatusCode, message: &str) -> Response<Full<Bytes>> {
     built(
         Response::builder()
@@ -660,6 +715,7 @@ fn error(status: StatusCode, message: &str) -> Response<Full<Bytes>> {
     )
 }
 
+/// The 503 the admission bound returns, with `Retry-After`.
 fn overloaded() -> Response<Full<Bytes>> {
     let mut response = error(StatusCode::SERVICE_UNAVAILABLE, "decode pool saturated");
     response
@@ -668,10 +724,12 @@ fn overloaded() -> Response<Full<Bytes>> {
     response
 }
 
+/// Map a grammar failure onto its 400.
 fn parse_error(err: &ParseError) -> Response<Full<Bytes>> {
     error(StatusCode::BAD_REQUEST, &err.to_string())
 }
 
+/// Map a source failure onto 404 or 500.
 fn source_error(err: &SourceError) -> Response<Full<Bytes>> {
     match err {
         SourceError::NotFound => error(StatusCode::NOT_FOUND, "unknown identifier"),
@@ -679,6 +737,7 @@ fn source_error(err: &SourceError) -> Response<Full<Bytes>> {
     }
 }
 
+/// Map a codec failure onto its status; a ceiling refusal is 403.
 fn codec_error(err: &CodecError) -> Response<Full<Bytes>> {
     match err {
         // An operator-side master problem: the identifier exists but is
