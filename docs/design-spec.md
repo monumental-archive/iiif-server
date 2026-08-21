@@ -327,6 +327,18 @@ the stillness is intentional.
   Presentation manifest owned by the application. Documented rationale ships
   with the refusal.
 
+> **AMENDED 2026-08-21 — the contributor agreement is withdrawn.** The
+> repository was imported into the `monumental-archive` organisation
+> (`.github#671`), whose contribution attestation is the Developer
+> Certificate of Origin and which operates no contributor licence
+> agreement. `CLA.md` and the CLA-assistant integration are deleted.
+> Everything below that names a CLA is the 2026-07-26 decision as it was
+> made and is left standing as the record; what is true now is that
+> contributors sign off with `git commit -s`, keep their copyright, and
+> grant no relicensing right — so the "alternative terms on request"
+> position that agreement supported is withdrawn with it. The AGPL-3.0-only
+> licence itself is unchanged. See `docs/licensing.md`.
+
 ## Milestones
 
 - **M0 — skeleton + spikes + the seam.** Workspace (3 crates, workspace-wide

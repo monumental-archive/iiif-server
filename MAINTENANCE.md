@@ -65,11 +65,18 @@ tells adoption committees the stillness is intentional.
 
 ## Licensing
 
-AGPL-3.0-only, and permanently available as such: the [CLA](CLA.md)'s
-relicensing grant lets the maintainer offer additional terms, and the same
-clause commits that "the Project itself will always remain available under
-its open-source license". Alternative terms are offered alongside the AGPL,
-never in place of it.
+AGPL-3.0-only, and permanently available as such — the licence on the
+tree is the whole of the offer.
+
+**This changed at the import (2026-08-21).** The project previously
+carried an Apache-ICLA-derived contributor agreement whose relicensing
+grant let the maintainer offer additional terms alongside the AGPL. The
+organisation's contribution attestation is the DCO, and it operates no
+contributor agreement, so that grant is gone: contributors keep their
+copyright and grant no relicensing right. Alternative terms therefore
+cannot be offered over contributed code — only over code whose copyright
+the maintainer holds. Nothing about running or redistributing this
+software under the AGPL changes.
 
 The three questions an adoption committee asks — does running it oblige us
 to publish anything, does it reach our viewer, can we get other terms — are

@@ -8,8 +8,8 @@ with code in this repository.
 A complete, scope-frozen implementation of the IIIF Image API (3.0 + 2.1,
 level 2 plus all optional features) as one static Rust binary. Pure Rust
 everywhere untrusted input is parsed — zero C in the product (dev-time
-fixture generation is the only exemption). AGPL-3.0-only; external PRs go
-through a CLA.
+fixture generation is the only exemption). AGPL-3.0-only; contributions
+are signed off under the DCO, and there is no contributor agreement.
 
 The feature surface is deliberately finished:
 [docs/design-spec.md](docs/design-spec.md) lists pre-refusals (AVIF/JXL,

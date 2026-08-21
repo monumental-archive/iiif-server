@@ -31,8 +31,10 @@ A decision that is not in one of those is not yet a decision.
   committed in MAINTENANCE.md, and owns the decision registers above.
 - **Contributors** — anyone submitting issues or pull requests under the
   requirements in [CONTRIBUTING.md](CONTRIBUTING.md). Contributions are
-  covered by the [Individual Contributor License Agreement](CLA.md) rather
-  than a DCO sign-off; the CLA-assistant bot records agreement once.
+  covered by a [Developer Certificate of Origin](https://developercertificate.org/)
+  sign-off on every commit, enforced by `lint:dco` in the shared gate.
+  Contributors keep their copyright; there is no contributor licence
+  agreement, and the organisation does not operate one.
 
 Should the project gain regular contributors, committer status and this
 document evolve with it.

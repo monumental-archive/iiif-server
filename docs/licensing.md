@@ -1,7 +1,8 @@
 # Licensing
 
-The server is licensed [AGPL-3.0-only](../LICENSE). External contributions
-carry a [CLA](../CLA.md) whose relicensing grant makes other terms possible.
+The server is licensed [AGPL-3.0-only](../LICENSE), and that is the whole
+of the offer. Contributions are signed off under the Developer
+Certificate of Origin; contributors keep their copyright.
 
 This page answers the questions an adoption committee actually asks, in
 plain English, before they have to be asked somewhere we cannot reply. It
@@ -62,29 +63,34 @@ convey. If that does not fit how you ship, the next question is for you.
 
 ## Can we get it under different terms?
 
-Yes. Ask.
+**No — and this answer changed at the import (2026-08-21).**
 
-This is not an exception being carved out on request; it is what the
-contributor agreement was built for. [CLA.md](../CLA.md) §2 already says
-so, in the repository, publicly:
+Until then the project carried an Apache-ICLA-derived contributor
+agreement whose §2 granted the maintainer the right to license
+contributions "under any license terms the Maintainer chooses ...
+including proprietary and commercial license terms". That grant is what
+made alternative terms real rather than hypothetical, and it is gone.
 
-> this grant includes the right to license Your Contributions, and
-> derivative works thereof, under any license terms the Maintainer chooses,
-> including licenses other than the Project's current license
-> (AGPL-3.0-only), including proprietary and commercial license terms.
+The organisation this project now belongs to attests contributions with
+the [Developer Certificate of Origin](https://developercertificate.org/)
+and operates no contributor licence agreement. Under a DCO sign-off a
+contributor asserts provenance and grants nothing beyond the project's
+own licence, so nobody holds the right to relicense contributed code.
+Offering the tree under other terms would need the agreement of every
+copyright holder in it.
 
-That clause is meaningless under a permissive licence and is precisely what
-makes alternative terms possible rather than hypothetical. Every external
-contribution is gated on it, so the position does not decay as the
-contributor list grows.
+Two things follow, and both are worth stating plainly rather than
+leaving to be discovered:
 
-The same clause commits in the other direction, and that commitment is
-load-bearing for anyone worried about a rug-pull: "The Project itself will
-always remain available under its open-source license." Alternative terms
-are offered *in addition to* the AGPL, never instead of it.
-
-Open an issue to start the conversation. Specifics move off the tracker
-from there.
+- If you were counting on a commercial licence being available on
+  request, it is not. Plan against the AGPL as written.
+- The rug-pull commitment that rode in the same clause — "The Project
+  itself will always remain available under its open-source license" —
+  is no longer a contractual promise either. What replaces it is
+  structural, and arguably stronger: with no relicensing grant, nobody
+  *can* take it closed. The licence on the tree is the only offer there
+  is, and for code already published under it that grant is
+  irrevocable.
 
 ## Why AGPL, rather than a permissive licence?
 

@@ -108,9 +108,9 @@ The workspace is `#![forbid(unsafe_code)]` throughout, clippy runs at
 every group including `restriction` with `-D warnings` and no `allow`
 attributes, and every dependency is permissively licensed (enforced by
 `cargo deny`). See
-[CONTRIBUTING.md](CONTRIBUTING.md) (external contributions need the
-[CLA](CLA.md)) and [docs/design-spec.md](docs/design-spec.md) — the
-founding document this build follows.
+[CONTRIBUTING.md](CONTRIBUTING.md) (contributions are signed off under
+the DCO) and [docs/design-spec.md](docs/design-spec.md) — the founding
+document this build follows.
 
 Also: [GOVERNANCE.md](GOVERNANCE.md) (how decisions get made, and what
 happens if the maintainer disappears),
@@ -154,10 +154,12 @@ this server over HTTP as separate processes, so they keep whatever licences
 they already have, proprietary included. That is the question most AGPL
 hesitancy turns out to be about.
 
-Alternative terms, including commercial, are available — external
-contributions carry a [CLA](CLA.md) whose relicensing grant exists for
-exactly that, and which also commits that the project always remains
-available under its open-source licence. Open an issue to ask.
+The AGPL is the whole of the offer. Alternative terms are **not**
+available: contributions are signed off under the DCO, contributors keep
+their copyright, and nobody holds a relicensing grant over the tree.
+Until the import this project carried a contributor agreement that made
+other terms possible; the organisation operates no such agreement, and
+[docs/licensing.md](docs/licensing.md) records what that changes.
 
 The full FAQ, including why AGPL rather than a permissive licence, is
 [docs/licensing.md](docs/licensing.md).

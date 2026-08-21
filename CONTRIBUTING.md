@@ -2,13 +2,19 @@
 
 Thanks for your interest. Two things to know before you open a PR.
 
-## License and CLA
+## Licence and sign-off
 
-The project is licensed [AGPL-3.0-only](LICENSE). External contributions
-require agreeing to the [Individual Contributor License Agreement](CLA.md)
-(Apache ICLA-derived, including a relicensing grant to the maintainer). The
-CLA-assistant bot will prompt you on your first pull request; agreement is
-recorded once and covers subsequent contributions.
+The project is licensed [AGPL-3.0-only](LICENSE). Contributions are made
+under the [Developer Certificate of Origin](https://developercertificate.org/):
+sign each commit with `git commit -s`, which appends the `Signed-off-by`
+trailer asserting you have the right to submit that work under the
+project's licence.
+
+You keep your copyright. The sign-off is an assertion about provenance,
+not a transfer, and there is no contributor agreement to sign — the
+organisation's contribution attestation is the DCO and nothing else.
+`lint:dco` in the gate refuses a commit whose sign-off address does not
+match its author, so this is enforced rather than requested.
 
 The repository is [REUSE 3.3](https://reuse.software/spec-3.3/) compliant and CI
 enforces it, so a new Rust or shell file needs the same two-line header every
@@ -65,7 +71,8 @@ attention:
 - **No lint exemptions.** See below.
 - **Documentation that the change makes wrong is fixed in the same pull
   request.** Docs that disagree with the code are treated as defects.
-- **The CLA is agreed** — the bot prompts on your first pull request.
+- **Every commit is signed off** (`git commit -s`), with the trailer
+  address matching the commit author. `lint:dco` enforces it.
 
 ## Coding standard
 
