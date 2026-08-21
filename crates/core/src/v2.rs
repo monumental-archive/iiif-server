@@ -75,6 +75,15 @@ pub fn parse_image_request(path: &str) -> Result<V2Request, ParseError> {
 }
 
 /// Returns `(size, aspect_preserved, was_full)`.
+/// Parse a v2.1 size parameter into its v3 equivalent.
+///
+/// Returns `(size, was_full, was_percent)` — the two flags record which
+/// v2 spelling arrived, because canonical v2 output has to reproduce it.
+///
+/// # Errors
+///
+/// [`ParseError`] naming [`Component::Size`] for any form v2.1 does not
+/// define, including the v3-only `^` upscale prefix.
 fn parse_size(input: &str) -> Result<(Size, bool, bool), ParseError> {
     let err = || ParseError {
         component: Component::Size,

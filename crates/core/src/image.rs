@@ -246,6 +246,7 @@ impl Raster {
         Ok(())
     }
 
+    /// The pixel buffer, mutably, whatever the variant.
     const fn data_mut(&mut self) -> &mut Vec<u8> {
         match self {
             Self::Gray8 { data, .. }
@@ -294,6 +295,10 @@ impl Raster {
         }
     }
 
+    /// This raster turned a quarter turn clockwise, as a new raster.
+    ///
+    /// Allocates: the destination has the source's dimensions swapped, so
+    /// it cannot be done in place.
     fn rotated_90(self) -> Self {
         let src_w = self.width() as usize;
         let src_h = self.height() as usize;
@@ -333,6 +338,10 @@ impl Raster {
         }
     }
 
+    /// Turn this raster a half turn, in place.
+    ///
+    /// A half turn preserves the dimensions, so it is a pixel reversal
+    /// and needs no second buffer.
     fn rotate_180(&mut self) {
         let bpp = self.channels() as usize;
         let data = self.data_mut();

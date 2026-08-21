@@ -68,8 +68,9 @@ pub struct Plan {
     /// Whether the size parameter was a `max` form — canonical spelling
     /// keeps `max` rather than `w,h`.
     size_was_max: bool,
-    /// Full image dimensions, kept for canonical-form decisions.
+    /// Full image width, kept for canonical-form decisions.
     full_w: u32,
+    /// Full image height, kept for canonical-form decisions.
     full_h: u32,
 }
 
@@ -149,6 +150,13 @@ pub fn evaluate(
     })
 }
 
+/// Turn a parsed region into pixel coordinates against the full image,
+/// clipping to the image bounds as the spec requires.
+///
+/// # Errors
+///
+/// [`EvalError::RegionOutOfBounds`] when the region lies entirely
+/// outside the image, which is a 400 rather than an empty result.
 fn resolve_region(region: Region, full_w: u32, full_h: u32) -> Result<CropRect, EvalError> {
     match region {
         Region::Full => Ok(CropRect {
@@ -208,7 +216,16 @@ fn resolve_region(region: Region, full_w: u32, full_h: u32) -> Result<CropRect, 
     }
 }
 
-/// Returns `(out_w, out_h, upscales)`.
+/// Resolve the size parameter against the cropped region.
+///
+/// Returns `(out_w, out_h, upscales)`, where `upscales` reports whether
+/// the result is larger than the region it came from.
+///
+/// # Errors
+///
+/// [`EvalError::UpscalingNotAllowed`] when the request would enlarge
+/// without the `^` flag, and [`EvalError::SizeOutOfRange`] when the
+/// result would be below one pixel or beyond the published limits.
 fn resolve_size(
     size: Size,
     region_w: u32,

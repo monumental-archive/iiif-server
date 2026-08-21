@@ -157,6 +157,14 @@ where
 }
 
 /// Read as many of `buf` as the reader will give without erroring on EOF.
+/// Fill `buf` from `reader`, returning how many bytes arrived.
+///
+/// Short reads are normal and are retried; `Interrupted` is retried too.
+/// A return below `buf.len()` means end of input, not failure.
+///
+/// # Errors
+///
+/// Any [`io::Error`] the reader produces other than `Interrupted`.
 fn read_up_to<R>(reader: &mut R, buf: &mut [u8]) -> io::Result<usize>
 where
     R: Read,
@@ -247,7 +255,10 @@ impl From<tiff::TiffError> for CodecError {
 
 /// An opened pyramidal/tiled TIFF master.
 pub struct TiffPyramid<R: Read + Seek> {
+    /// The open TIFF reader, positioned at `current_ifd`.
     decoder: Decoder<R>,
+    /// One entry per pyramid level, largest first, as the IFD chain
+    /// presents them.
     levels: Vec<LevelInfo>,
     /// IFD index the decoder currently points at, to avoid useless seeks.
     current_ifd: usize,
@@ -460,6 +471,13 @@ impl<R: Read + Seek> TiffPyramid<R> {
 
     /// Decode one tile to a raster. The tiff crate hands back
     /// edge-clipped dimensions for boundary tiles.
+    /// Decode one tile of one pyramid level into a raster.
+    ///
+    /// # Errors
+    ///
+    /// [`CodecError::Corrupt`] if the TIFF reader rejects the chunk, and
+    /// [`CodecError::Unsupported`] for a colour type this crate does not
+    /// carry.
     fn decode_tile(&mut self, level: LevelInfo, index: u32) -> Result<Raster, CodecError> {
         let (data_w, data_h) = self.decoder.chunk_data_dimensions(index);
         let colortype = self.decoder.colortype()?;
@@ -470,6 +488,14 @@ impl<R: Read + Seek> TiffPyramid<R> {
 
 /// Convert the tiff crate's decode output into our raster model. M0
 /// supports 8-bit gray and RGB; the M2 matrix widens this.
+/// Turn one decoded TIFF chunk into a [`Raster`], converting colour
+/// where the format allows it.
+///
+/// # Errors
+///
+/// [`CodecError::Unsupported`] for a bit depth or colour type outside
+/// the supported matrix, and [`CodecError::Corrupt`] when the decoded
+/// buffer is shorter than the declared dimensions require.
 fn raster_from_decoded(
     result: DecodingResult,
     colortype: ColorType,

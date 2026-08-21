@@ -43,12 +43,19 @@ const DEFAULT_TILE: u32 = 1024;
 /// cheap relative to pixel work, and a fresh decoder per decode keeps the type
 /// `Send` for the worker pool).
 pub struct Jp2Master {
+    /// The whole compressed codestream. The `Debug` impl below skips it
+    /// deliberately — it is megabytes.
     bytes: Vec<u8>,
-    // (Debug impl below skips `bytes` — megabytes of codestream.)
+    /// Full image width in pixels, from the codestream header.
     width: u32,
+    /// Full image height in pixels, from the codestream header.
     height: u32,
+    /// Component count: 1 for gray, 3 for colour.
     components: u16,
+    /// Resolution levels the codestream carries, which bounds how far a
+    /// power-of-two downscale can be served by decoding less.
     resolution_levels: u8,
+    /// Tile dimensions, or the image dimensions when untiled.
     tile: (u32, u32),
     /// Live pool-pressure hint; see `Master::set_internal_parallelism`.
     internal_parallelism: bool,
@@ -105,6 +112,8 @@ impl Jp2Master {
         })
     }
 
+    /// The decoder's output format for this master: gray for a
+    /// single-component codestream, RGB for anything else.
     const fn pixel_format(&self) -> PixelFormat {
         if self.components == 1 {
             PixelFormat::Gray8

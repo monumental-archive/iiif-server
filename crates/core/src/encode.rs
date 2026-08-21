@@ -74,6 +74,16 @@ pub fn encode(raster: &Raster, format: Format) -> Result<Vec<u8>, EncodeError> {
     }
 }
 
+/// Encode as an uncompressed TIFF.
+///
+/// Alpha is flattened over white first: this writer emits opaque colour
+/// types only.
+///
+/// # Errors
+///
+/// [`EncodeError::Internal`] if the TIFF writer rejects the buffer or the
+/// dimensions, which for an in-memory cursor means a raster whose length
+/// disagrees with its declared size.
 fn encode_tiff(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
     use tiff::encoder::{TiffEncoder, colortype};
     // Keep TIFF output opaque: alpha flattens over white.
@@ -107,6 +117,16 @@ fn encode_tiff(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
     Ok(cursor.into_inner())
 }
 
+/// Encode as a palettized GIF.
+///
+/// Alpha is flattened over white; the encoder quantizes, switching to
+/// NeuQuant beyond 256 distinct colours.
+///
+/// # Errors
+///
+/// [`EncodeError::DimensionsBeyondFormat`] when either axis exceeds
+/// `u16::MAX`, which is the format's own ceiling, and
+/// [`EncodeError::Internal`] if the encoder rejects the frame.
 fn encode_gif(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
     // GIF is palettized and opaque here: flatten, then let the encoder
     // quantize (it switches to NeuQuant beyond 256 distinct colors).
@@ -148,6 +168,15 @@ fn encode_gif(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
     Ok(out)
 }
 
+/// Encode as a lossless WebP.
+///
+/// Lossless only — the single documented asterisk in the compliance
+/// table, because lossy WebP would require C libwebp and this crate
+/// parses and produces no C.
+///
+/// # Errors
+///
+/// [`EncodeError::Internal`] if the encoder rejects the raster.
 fn encode_webp(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
     // Lossless only — the single documented asterisk in the compliance
     // table (lossy webp would require C libwebp).
@@ -165,6 +194,15 @@ fn encode_webp(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
     Ok(out)
 }
 
+/// Encode as a JP2 file wrapping a reversible 5/3 lossless codestream.
+///
+/// Alpha is flattened over white; only gray and RGB reach the codestream.
+///
+/// # Errors
+///
+/// [`EncodeError::Internal`] if alpha survives flattening (which would be
+/// a bug in [`Raster::flatten_over_white`], not in the input) or the
+/// codestream writer fails.
 fn encode_jp2(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
     // Reversible 5/3 lossless codestream, wrapped as a JP2 file.
     let raster = raster.clone().flatten_over_white();
@@ -200,6 +238,14 @@ fn encode_jp2(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
     clippy::too_many_lines,
     reason = "a minimal PDF writer is one linear object list; splitting scatters the xref math"
 )]
+/// Encode as a single-page PDF wrapping a JPEG of the raster.
+///
+/// The page is exactly the image, at 72 dpi, so one pixel is one point.
+///
+/// # Errors
+///
+/// Whatever [`encode_jpeg`] returns, since the embedded image is produced
+/// by it.
 fn encode_pdf(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
     let raster = raster.clone().flatten_over_white();
     let jpeg = encode_jpeg(&raster)?;
@@ -311,6 +357,14 @@ startxref
     Ok(pdf)
 }
 
+/// Encode as a baseline JPEG.
+///
+/// JPEG is opaque, so a raster carrying alpha is flattened over white
+/// first; opaque rasters are encoded without the copy.
+///
+/// # Errors
+///
+/// [`EncodeError::Internal`] if the encoder rejects the raster.
 fn encode_jpeg(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
     // JPEG is opaque: flatten any alpha over white first.
     let flattened;
@@ -348,6 +402,15 @@ fn encode_jpeg(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
     Ok(out)
 }
 
+/// Encode as a PNG, preserving alpha.
+///
+/// The only output format here that carries an alpha channel through
+/// rather than flattening it.
+///
+/// # Errors
+///
+/// [`EncodeError::Internal`] if the encoder rejects the header or the
+/// image data.
 fn encode_png(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
     let mut out = Vec::new();
     {

@@ -222,6 +222,7 @@ pub struct ParseError {
 }
 
 impl ParseError {
+    /// A parse failure naming the component that rejected `input`.
     fn new(component: Component, input: &str) -> Self {
         Self {
             component,

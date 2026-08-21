@@ -108,6 +108,15 @@ pub fn execute(source: &mut dyn Master, plan: &Plan) -> Result<Vec<u8>, Pipeline
 }
 
 /// Lanczos3 resample via `fast_image_resize`; identity sizes short-circuit.
+/// Resample a raster to exactly `out_w` x `out_h`.
+///
+/// Returns the input untouched when it is already that size, which is
+/// the common `full/max` path.
+///
+/// # Errors
+///
+/// [`PipelineError::Internal`] if the resampler rejects the buffer or
+/// the target dimensions.
 fn resize(raster: Raster, out_w: u32, out_h: u32) -> Result<Raster, PipelineError> {
     if raster.width() == out_w && raster.height() == out_h {
         return Ok(raster);

@@ -114,6 +114,7 @@ impl fmt::Display for Identifier {
     }
 }
 
+/// The numeric value of one ASCII hex digit, or `None` if it is not one.
 const fn hex_val(byte: u8) -> Option<u8> {
     match byte {
         b'0'..=b'9' => Some(byte - b'0'),

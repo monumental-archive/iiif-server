@@ -21,6 +21,8 @@ use crate::{
 /// A fully decoded single-resolution master.
 #[derive(Debug)]
 pub struct SimpleMaster {
+    /// The whole image, decoded once at open time — these formats carry
+    /// no pyramid to decode a region from.
     raster: Raster,
 }
 
