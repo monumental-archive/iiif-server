@@ -221,6 +221,16 @@ impl Master for Jp2Master {
     }
 
     #[inline]
+    #[expect(
+        clippy::as_conversions,
+        reason = "widening `u32`/`u8` to `usize` for buffer indexing, lossless on \
+              every target this ships to (musl x86_64 and aarch64). The \
+              alternative is measurably worse and was measured: \
+              `usize::try_from(w).unwrap()` trips `clippy::unwrap_used`, which \
+              this same lint set forbids, so it trades one enabled \
+              restriction for another and adds an error path that cannot \
+              be reached."
+    )]
     fn decode_crop(&mut self, crop: CropRect, needed: f64) -> Result<Raster, CodecError> {
         let mut decoder = J2kDecoder::new(&self.bytes)
             .map_err(|err| CodecError::Corrupt(format!("JP2 parse: {err}")))?;

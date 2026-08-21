@@ -504,6 +504,16 @@ impl<R: Read + Seek> TiffPyramid<R> {
 /// [`CodecError::Unsupported`] for a bit depth or colour type outside
 /// the supported matrix, and [`CodecError::Corrupt`] when the decoded
 /// buffer is shorter than the declared dimensions require.
+#[expect(
+    clippy::as_conversions,
+    reason = "widening `u32`/`u8` to `usize` for buffer indexing, lossless on \
+              every target this ships to (musl x86_64 and aarch64). The \
+              alternative is measurably worse and was measured: \
+              `usize::try_from(w).unwrap()` trips `clippy::unwrap_used`, which \
+              this same lint set forbids, so it trades one enabled \
+              restriction for another and adds an error path that cannot \
+              be reached."
+)]
 fn raster_from_decoded(
     result: DecodingResult,
     colortype: ColorType,

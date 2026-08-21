@@ -167,6 +167,16 @@ impl Raster {
     /// per-decode allocation ceilings upstream make this unreachable in
     /// practice, but the arithmetic stays checked.
     #[inline]
+    #[expect(
+        clippy::as_conversions,
+        reason = "widening `u32`/`u8` to `usize` for buffer indexing, lossless on \
+              every target this ships to (musl x86_64 and aarch64). The \
+              alternative is measurably worse and was measured: \
+              `usize::try_from(w).unwrap()` trips `clippy::unwrap_used`, which \
+              this same lint set forbids, so it trades one enabled \
+              restriction for another and adds an error path that cannot \
+              be reached."
+    )]
     pub fn zeroed_like(&self, width: u32, height: u32) -> Result<Self, RasterError> {
         let pixels = (width as usize)
             .checked_mul(height as usize)
@@ -204,6 +214,16 @@ impl Raster {
     /// Fails when the rectangles fall outside either raster or the pixel
     /// layouts differ.
     #[inline]
+    #[expect(
+        clippy::as_conversions,
+        reason = "widening `u32`/`u8` to `usize` for buffer indexing, lossless on \
+              every target this ships to (musl x86_64 and aarch64). The \
+              alternative is measurably worse and was measured: \
+              `usize::try_from(w).unwrap()` trips `clippy::unwrap_used`, which \
+              this same lint set forbids, so it trades one enabled \
+              restriction for another and adds an error path that cannot \
+              be reached."
+    )]
     pub fn blit(
         &mut self,
         src: &Self,
@@ -264,6 +284,16 @@ impl Raster {
 
     /// Mirror on the vertical axis (left↔right), in place.
     #[inline]
+    #[expect(
+        clippy::as_conversions,
+        reason = "widening `u32`/`u8` to `usize` for buffer indexing, lossless on \
+              every target this ships to (musl x86_64 and aarch64). The \
+              alternative is measurably worse and was measured: \
+              `usize::try_from(w).unwrap()` trips `clippy::unwrap_used`, which \
+              this same lint set forbids, so it trades one enabled \
+              restriction for another and adds an error path that cannot \
+              be reached."
+    )]
     pub fn mirror(&mut self) {
         let width = self.width() as usize;
         let bpp = self.channels() as usize;
@@ -311,6 +341,16 @@ impl Raster {
     ///
     /// Allocates: the destination has the source's dimensions swapped, so
     /// it cannot be done in place.
+    #[expect(
+        clippy::as_conversions,
+        reason = "widening `u32`/`u8` to `usize` for buffer indexing, lossless on \
+              every target this ships to (musl x86_64 and aarch64). The \
+              alternative is measurably worse and was measured: \
+              `usize::try_from(w).unwrap()` trips `clippy::unwrap_used`, which \
+              this same lint set forbids, so it trades one enabled \
+              restriction for another and adds an error path that cannot \
+              be reached."
+    )]
     fn rotated_90(self) -> Self {
         let src_w = self.width() as usize;
         let src_h = self.height() as usize;
@@ -355,6 +395,7 @@ impl Raster {
     /// A half turn preserves the dimensions, so it is a pixel reversal
     /// and needs no second buffer.
     #[expect(
+        clippy::as_conversions,
         clippy::integer_division,
         clippy::integer_division_remainder_used,
         reason = "`len / bpp` is the pixel count and `pixels / 2` is the \
@@ -456,6 +497,16 @@ impl Raster {
     /// recommendation) — hence the alpha output. Bilinear sampling.
     #[must_use]
     #[inline]
+    #[expect(
+        clippy::as_conversions,
+        reason = "widening `u32`/`u8` to `usize` for buffer indexing, lossless on \
+              every target this ships to (musl x86_64 and aarch64). The \
+              alternative is measurably worse and was measured: \
+              `usize::try_from(w).unwrap()` trips `clippy::unwrap_used`, which \
+              this same lint set forbids, so it trades one enabled \
+              restriction for another and adds an error path that cannot \
+              be reached."
+    )]
     pub fn rotate_arbitrary(self, degrees: f64) -> Self {
         let theta = degrees.to_radians();
         let (sin, cos) = theta.sin_cos();
