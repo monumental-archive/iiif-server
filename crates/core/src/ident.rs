@@ -159,4 +159,13 @@ impl fmt::Display for IdentifierError {
     }
 }
 
+#[expect(
+    clippy::missing_trait_methods,
+    reason = "unsatisfiable on stable, measured with rustc rather than argued: \
+              `provide` is E0658 `error_generic_member_access`, and \
+              `type_id` is E0658 `error_type_id` — \"this is memory-unsafe \
+              to override in user code\". `source` is implemented where \
+              this type has one; `description` and `cause` are deprecated \
+              and are left to the standard library's own implementations."
+)]
 impl Error for IdentifierError {}

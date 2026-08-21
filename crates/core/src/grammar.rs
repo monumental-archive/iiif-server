@@ -77,19 +77,6 @@ pub struct Size {
     pub kind: SizeKind,
 }
 
-impl Size {
-    /// A size parameter from its two parts.
-    ///
-    /// A constructor rather than a struct literal because the type is
-    /// `#[non_exhaustive]`; the parser is the usual producer, and this is
-    /// for callers that build one directly.
-    #[inline]
-    #[must_use]
-    pub const fn new(upscale: bool, kind: SizeKind) -> Self {
-        Self { upscale, kind }
-    }
-}
-
 /// The rotation parameter, per §4.3: optional mirror, then clockwise
 /// degrees in `0..=360`.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -99,19 +86,6 @@ pub struct Rotation {
     pub mirror: bool,
     /// Clockwise rotation in degrees, `0..=360`.
     pub degrees: f64,
-}
-
-impl Rotation {
-    /// A rotation parameter from its two parts.
-    ///
-    /// A constructor rather than a struct literal because the type is
-    /// `#[non_exhaustive]`; the parser is the usual producer, and this is
-    /// for callers that build one directly.
-    #[inline]
-    #[must_use]
-    pub const fn new(mirror: bool, degrees: f64) -> Self {
-        Self { mirror, degrees }
-    }
 }
 
 /// The quality parameter, per §4.4.
@@ -167,32 +141,6 @@ pub struct ImageRequest {
     pub format: Format,
 }
 
-impl ImageRequest {
-    /// A complete request from its five parsed components, in the order
-    /// they appear in the path.
-    ///
-    /// A constructor rather than a struct literal because the type is
-    /// `#[non_exhaustive]`; [`ImageRequest::parse`] is the usual
-    /// producer, and this is for callers that build one directly.
-    #[inline]
-    #[must_use]
-    pub const fn new(
-        region: Region,
-        size: Size,
-        rotation: Rotation,
-        quality: Quality,
-        format: Format,
-    ) -> Self {
-        Self {
-            region,
-            size,
-            rotation,
-            quality,
-            format,
-        }
-    }
-}
-
 /// Which request component failed to parse. Every variant maps to a 400.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
@@ -246,6 +194,15 @@ impl fmt::Display for ParseError {
     }
 }
 
+#[expect(
+    clippy::missing_trait_methods,
+    reason = "unsatisfiable on stable, measured with rustc rather than argued: \
+              `provide` is E0658 `error_generic_member_access`, and \
+              `type_id` is E0658 `error_type_id` — \"this is memory-unsafe \
+              to override in user code\". `source` is implemented where \
+              this type has one; `description` and `cause` are deprecated \
+              and are left to the standard library's own implementations."
+)]
 impl Error for ParseError {}
 
 /// Strict unsigned decimal integer: one or more ASCII digits, nothing else.
@@ -377,6 +334,17 @@ impl fmt::Display for Region {
 }
 
 impl Size {
+    /// A size parameter from its two parts.
+    ///
+    /// A constructor rather than a struct literal because the type is
+    /// `#[non_exhaustive]`; the parser is the usual producer, and this is
+    /// for callers that build one directly.
+    #[inline]
+    #[must_use]
+    pub const fn new(upscale: bool, kind: SizeKind) -> Self {
+        Self { upscale, kind }
+    }
+
     /// # Errors
     ///
     /// Returns a [`ParseError`] (HTTP 400) when the input is not a
@@ -459,6 +427,17 @@ impl fmt::Display for Size {
 }
 
 impl Rotation {
+    /// A rotation parameter from its two parts.
+    ///
+    /// A constructor rather than a struct literal because the type is
+    /// `#[non_exhaustive]`; the parser is the usual producer, and this is
+    /// for callers that build one directly.
+    #[inline]
+    #[must_use]
+    pub const fn new(mirror: bool, degrees: f64) -> Self {
+        Self { mirror, degrees }
+    }
+
     /// # Errors
     ///
     /// Returns a [`ParseError`] (HTTP 400) when the input is not a
@@ -596,6 +575,30 @@ impl fmt::Display for Format {
 }
 
 impl ImageRequest {
+    /// A complete request from its five parsed components, in the order
+    /// they appear in the path.
+    ///
+    /// A constructor rather than a struct literal because the type is
+    /// `#[non_exhaustive]`; [`ImageRequest::parse`] is the usual
+    /// producer, and this is for callers that build one directly.
+    #[inline]
+    #[must_use]
+    pub const fn new(
+        region: Region,
+        size: Size,
+        rotation: Rotation,
+        quality: Quality,
+        format: Format,
+    ) -> Self {
+        Self {
+            region,
+            size,
+            rotation,
+            quality,
+            format,
+        }
+    }
+
     /// Parse the four path segments after the identifier:
     /// `{region}/{size}/{rotation}/{quality}.{format}`.
     ///

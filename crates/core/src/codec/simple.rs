@@ -156,6 +156,11 @@ impl SimpleMaster {
 }
 
 impl Master for SimpleMaster {
+    /// No-op: these formats decode whole at open time and run no
+    /// internal thread pool.
+    #[inline]
+    fn set_internal_parallelism(&mut self, _allow: bool) {}
+
     #[inline]
     fn dimensions(&self) -> (u32, u32) {
         (self.raster.width(), self.raster.height())

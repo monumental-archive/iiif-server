@@ -234,6 +234,15 @@ impl fmt::Display for CodecError {
     }
 }
 
+#[expect(
+    clippy::missing_trait_methods,
+    reason = "unsatisfiable on stable, measured with rustc rather than argued: \
+              `provide` is E0658 `error_generic_member_access`, and \
+              `type_id` is E0658 `error_type_id` — \"this is memory-unsafe \
+              to override in user code\". `source` is implemented where \
+              this type has one; `description` and `cause` are deprecated \
+              and are left to the standard library's own implementations."
+)]
 impl Error for CodecError {}
 
 impl From<RasterError> for CodecError {
@@ -586,6 +595,18 @@ fn raster_from_decoded(
 }
 
 impl<R: Read + Seek + Send> Master for TiffPyramid<R> {
+    /// A pyramidal TIFF carries no advisory: the pyramid is what makes
+    /// region decoding cheap, so there is nothing to warn an operator
+    /// about.
+    #[inline]
+    fn advisories(&self) -> Vec<String> {
+        Vec::new()
+    }
+
+    /// No-op: the TIFF decoder has no internal thread pool to gate.
+    #[inline]
+    fn set_internal_parallelism(&mut self, _allow: bool) {}
+
     #[inline]
     fn dimensions(&self) -> (u32, u32) {
         Self::dimensions(self)
