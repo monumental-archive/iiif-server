@@ -110,7 +110,7 @@ correctness fixes. If none are open and you want somewhere to start, adding
 golden or property coverage for an untested path is always welcome and never
 wasted.
 
-[gfi]: https://github.com/CarlAllenn/iiif-server/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22
+[gfi]: https://github.com/monumental-archive/iiif-server/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22
 
 ## Reporting problems
 
@@ -122,4 +122,4 @@ Conduct expectations are in [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md); how
 decisions get made, and what happens if the maintainer disappears, is in
 [GOVERNANCE.md](GOVERNANCE.md).
 
-[issues]: https://github.com/CarlAllenn/iiif-server/issues
+[issues]: https://github.com/monumental-archive/iiif-server/issues

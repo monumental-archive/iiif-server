@@ -2,10 +2,11 @@
 
 ## Reporting a vulnerability
 
-Report privately through GitHub's [security advisory
-form](https://github.com/CarlAllenn/iiif-server/security/advisories/new). That
-keeps the report private until a fix ships and gives you credit on the
-published advisory.
+Report privately through GitHub's [security advisory form][advisory].
+That keeps the report private until a fix ships and gives you credit on
+the published advisory.
+
+[advisory]: https://github.com/monumental-archive/iiif-server/security/advisories/new
 
 Please do not open a public issue for a suspected vulnerability.
 
@@ -52,28 +53,31 @@ wrong — they are just not embargoed.
 
 ## Verifying what you run
 
-Released images and binaries are signed with cosign keylessly and carry SLSA
-build provenance. The signing identity is the publishing workflow at the tag,
-so you can require exactly that:
+Released images carry SLSA build provenance, minted by the organisation's
+**signer** — a repository that runs no caller-supplied code and holds the
+only `id-token: write` on the release path. The signing identity is that
+signer's workflow, not this repository's, which is the whole point of the
+split: an identity that never executes the code it signs for.
 
 ```console
-gh attestation verify oci://ghcr.io/carlallenn/iiif-server@sha256:… \
-  --repo CarlAllenn/iiif-server
+gh attestation verify oci://ghcr.io/monumental-archive/iiif-server:v0.2.0 \
+  --owner monumental-archive \
+  --signer-workflow monumental-archive/signer/.github/workflows/sign.yml \
+  --source-ref refs/tags/v0.2.0 \
+  --deny-self-hosted-runners
 ```
 
-```console
-cosign verify ghcr.io/carlallenn/iiif-server@sha256:… \
-  --certificate-identity-regexp '^https://github.com/CarlAllenn/iiif-server/\.github/workflows/publish\.yml@refs/tags/v' \
-  --certificate-oidc-issuer https://token.actions.githubusercontent.com
-```
+Pin `--signer-digest <signer-commit>` as well to require one reviewed
+version of the signer rather than any revision of it; the commit is
+recorded in the release's evidence bundle.
 
-**cosign 3.0 or newer is required.** From v0.2.0 on, signatures are produced in
-the standardised Sigstore bundle format and stored as an OCI 1.1 referring
-artifact rather than as a legacy `sha256-<digest>.sig` tag. We publish that
-format only — no legacy fallback — so there is one verification path rather
-than a matrix of "which flag do I need". cosign 3.x auto-detects both formats,
-so the command above also verifies the older v0.1.0 signature unchanged.
-`gh attestation verify` is unaffected and has no minimum version.
-
-A signature nobody checks does no work — if you deploy this, wire one of those
+A signature nobody checks does no work — if you deploy this, wire that
 into your pipeline.
+
+**The v0.1.0 signature is a different shape and does not verify this
+way.** It was produced by the pre-import pipeline under the previous
+owner: cosign keyless, with the certificate identity naming that
+repository's own `publish.yml`. Transfers do not carry attestations, and
+the OIDC subject claim changes at transfer, so nothing from before the
+import can be verified against the organisation's identity. v0.2.0 is
+the first release verifiable as above.

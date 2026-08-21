@@ -120,7 +120,7 @@ The repository is [REUSE 3.3](https://reuse.software/spec-3.3/) compliant
 and CI enforces it on every push, so every single file carries its
 copyright and licence information. A scanner in your procurement pipeline
 can answer the per-file question without a human reading anything, and the
-[REUSE API](https://api.reuse.software/info/github.com/CarlAllenn/iiif-server)
+[REUSE API](https://api.reuse.software/info/github.com/monumental-archive/iiif-server)
 reports the current state independently of any claim made here.
 
 ## Not legal advice

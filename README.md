@@ -1,12 +1,12 @@
 # iiif-server (working name)
 
-[![ci](https://github.com/CarlAllenn/iiif-server/actions/workflows/ci.yml/badge.svg)](https://github.com/CarlAllenn/iiif-server/actions/workflows/ci.yml)
-[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/CarlAllenn/iiif-server/badge)](https://scorecard.dev/viewer/?uri=github.com/CarlAllenn/iiif-server)
-[![release](https://img.shields.io/github/v/release/CarlAllenn/iiif-server)](https://github.com/CarlAllenn/iiif-server/releases/latest)
-[![IIIF 3.0 level 2](https://img.shields.io/badge/IIIF%203.0%20level%202-33%2F33-blue)](https://github.com/CarlAllenn/iiif-server/releases/latest/download/validator-report.txt)
-[![IIIF 2.1](https://img.shields.io/badge/IIIF%202.1-30%2F30-blue)](https://github.com/CarlAllenn/iiif-server/releases/latest/download/validator-report.txt)
-[![image size](https://img.shields.io/badge/image-%3C25%20MB-blue)](https://github.com/CarlAllenn/iiif-server/actions/workflows/ci.yml)
-[![REUSE status](https://api.reuse.software/badge/github.com/CarlAllenn/iiif-server)](https://api.reuse.software/info/github.com/CarlAllenn/iiif-server)
+[![gate](https://github.com/monumental-archive/iiif-server/actions/workflows/ci.yml/badge.svg)](https://github.com/monumental-archive/iiif-server/actions/workflows/ci.yml)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/monumental-archive/iiif-server/badge)](https://scorecard.dev/viewer/?uri=github.com/monumental-archive/iiif-server)
+[![release](https://img.shields.io/github/v/release/monumental-archive/iiif-server)](https://github.com/monumental-archive/iiif-server/releases/latest)
+[![IIIF 3.0 level 2](https://img.shields.io/badge/IIIF%203.0%20level%202-33%2F33-blue)](#what-ships)
+[![IIIF 2.1](https://img.shields.io/badge/IIIF%202.1-30%2F30-blue)](#what-ships)
+[![image size](https://img.shields.io/badge/image-%3C25%20MB-blue)](scripts/check_image_size.sh)
+[![REUSE status](https://api.reuse.software/badge/github.com/monumental-archive/iiif-server)](https://api.reuse.software/info/github.com/monumental-archive/iiif-server)
 [![license](https://img.shields.io/badge/license-AGPL--3.0--only-blue.svg)](LICENSE)
 
 A complete, correct, boring implementation of the [IIIF Image
@@ -17,28 +17,25 @@ anywhere in the product**; stateless; scope-frozen at 1.0.
 
 ```bash
 docker run --rm -p 6363:6363 -v ./masters:/imageroot:ro \
-    ghcr.io/carlallenn/iiif-server
+    ghcr.io/monumental-archive/iiif-server
 ```
 
 ```bash
 iiif-server serve s3://bucket/prefix --endpoint https://objects.example.com
 ```
 
-Or without Docker at all:
+The image is one static binary and a certificate bundle on nothing else
+— no shell, no package manager, no distro — about 6 MB to pull and 16–18
+MB unpacked depending on architecture, against the incumbent's 769 MB.
+That comparison is a gate, not a boast: every release builds the image
+per architecture and refuses to publish one over 25 MB unpacked, on the
+bytes pulled back from the registry as well as the local build.
 
-```bash
-curl -LsSf https://github.com/CarlAllenn/iiif-server/releases/latest/download/install.sh | sh
-```
-
-The image is one static binary and a certificate bundle on nothing else —
-no shell, no package manager, no distro — about 6 MB to pull and 16–18 MB
-unpacked depending on architecture, against the incumbent's 769 MB. That
-comparison is a gate, not a boast: every pull request builds the image and
-fails if it exceeds 25 MB unpacked. Static binaries for Linux and macOS are attached to each
-[release](https://github.com/CarlAllenn/iiif-server/releases); both are signed
-with build provenance you can verify
-([SECURITY.md](SECURITY.md)). Recipes, including a hardened compose file, are
-in [docs/deployment.md](docs/deployment.md).
+**The image is the whole distribution.** Standalone binaries and the
+installer script are not published: the released artifact is the
+container image, signed with build provenance you can verify
+([SECURITY.md](SECURITY.md)). Recipes, including a hardened compose file,
+are in [docs/deployment.md](docs/deployment.md).
 
 That is the whole configuration story: one root, numeric limits, pool
 sizing. No properties file, no feature toggles — capability is baked in
@@ -77,9 +74,10 @@ full doctrine, response window, and **pre-refusals** (AVIF/JXL, auth,
 Presentation API, per-image metadata — declined in advance, with
 rationale) live in [MAINTENANCE.md](MAINTENANCE.md).
 
-Correctness is enforced three ways, continuously: the **official IIIF
-validators** run in CI on every push (reports published as artifacts),
-**golden/differential tests** pin pixels against libvips, libjpeg, and
+Correctness is enforced three ways: the **official IIIF validators**
+(`mise run audit:iiif-validate`, run against a built image, both API
+versions), **golden/differential tests** pin pixels against libvips,
+libjpeg, and
 OpenJPEG — bit-exact where the math says bit-exact — and **property
 tests** cover the grammar (parse↔print round-trips, canonicalization,
 totality). The differential/fuzz rig has caught and contained three
@@ -95,16 +93,20 @@ methodology and including where the incumbent wins — is in
 ## Building and developing
 
 Toolchain is pinned with [mise](https://mise.jdx.dev); MSRV is Rust 1.96.
+CI, linters and release machinery are the organisation's, consumed from
+[monumental-archive/.github](https://github.com/monumental-archive/.github)
+— this repository carries a six-line gate caller and nothing else.
 
 ```bash
-mise install
-task ci       # exactly what CI runs: fmt + all linters + tests
-task validate # official IIIF validators (both API versions), local build
+mise install && mise run hooks:install
+mise run ci                  # exactly what CI runs, same tools, same order
+mise run audit:iiif-validate # official IIIF validators against an image
 ```
 
-The workspace is `#![forbid(unsafe_code)]` throughout, clippy pedantic
-with zero `allow` attributes, and every dependency is permissively
-licensed (enforced by `cargo deny`). See
+The workspace is `#![forbid(unsafe_code)]` throughout, clippy runs at
+every group including `restriction` with `-D warnings` and no `allow`
+attributes, and every dependency is permissively licensed (enforced by
+`cargo deny`). See
 [CONTRIBUTING.md](CONTRIBUTING.md) (external contributions need the
 [CLA](CLA.md)) and [docs/design-spec.md](docs/design-spec.md) — the
 founding document this build follows.
@@ -125,22 +127,19 @@ Deployment recipes (CDN caching, forward-auth, systemd):
 The founding spec's engineering milestones are built and continuously
 verified, with one exception recorded honestly: ICC colour management (M2,
 via `moxcms`) is not implemented
-([#45](https://github.com/CarlAllenn/iiif-server/issues/45)).
+([#45](https://github.com/monumental-archive/iiif-server/issues/45)).
 
-Releases are signed and published — versioned image, attested binaries, and
-the validator report attached to each release. **Product naming and the first
-announcement remain deferred to the launch milestone**; publishing under the
-working name is deliberate, because a GHCR path can be renamed later at the
-cost of one line in a consumer's compose file, whereas the repository that
-builds and signs the artifacts is what a verification policy actually names.
-Nothing is published to crates.io, permanently — the reasoning is in
+Releases are signed and published through the organisation's release
+path: a versioned, multi-architecture image, built per architecture on
+native hardware, proved against the bytes pulled back from the registry,
+signed and attested by the org signer. **Product naming and the first
+announcement remain deferred to the launch milestone**; publishing under
+the working name is deliberate, because a GHCR path can be renamed later
+at the cost of one line in a consumer's compose file, whereas the
+repository that builds and signs the artifacts is what a verification
+policy actually names. Nothing is published to crates.io, permanently —
+the reasoning is in
 [docs/release-engineering.md](docs/release-engineering.md).
-
-Windows binaries are not shipped yet. Identifier resolution is the boundary
-between a crafted URL and path traversal, and its fuzz target encodes Unix
-path semantics; Windows adds backslash separators, reserved device names and
-drive-relative paths, which will be tested before anything is published for it
-([#44](https://github.com/CarlAllenn/iiif-server/issues/44)).
 
 ## Licensing
 
