@@ -227,10 +227,26 @@ pub fn info_json(id: &str, image: &ImageDescription, limits: Limits) -> String {
 
 #[cfg(test)]
 mod tests {
-    #![allow(
+    #![expect(
         clippy::unwrap_used,
         clippy::expect_used,
-        reason = "test code: a panic here is the failure signal, not a crash path"
+        clippy::missing_panics_doc,
+        clippy::missing_errors_doc,
+        reason = "test code: a panic here IS the failure signal, not a crash \
+                  path, so documenting one under `# Panics` would describe the \
+                  mechanism a test works by"
+    )]
+    #![expect(
+        clippy::shadow_unrelated,
+        reason = "test code: rebinding `parsed`/`plan` down a short arrange \
+                  -> act -> assert body keeps each assertion next to the value \
+                  it is about; distinct names would number them instead"
+    )]
+    #![expect(
+        clippy::inline_modules,
+        reason = "a `#[cfg(test)] mod tests` beside its subject is how Rust \
+                  unit tests are written, and moving it to its own file would \
+                  put it outside the privacy boundary it exists to test"
     )]
 
     use super::*;
