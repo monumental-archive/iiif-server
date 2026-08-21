@@ -139,7 +139,7 @@ fn encode_tiff(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
 /// Encode as a palettized GIF.
 ///
 /// Alpha is flattened over white; the encoder quantizes, switching to
-/// NeuQuant beyond 256 distinct colours.
+/// `NeuQuant` beyond 256 distinct colours.
 ///
 /// # Errors
 ///
@@ -388,26 +388,26 @@ startxref
 /// [`EncodeError::Internal`] if the encoder rejects the raster.
 fn encode_jpeg(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
     // JPEG is opaque: flatten any alpha over white first.
-    let flattened;
-    let raster = match raster {
+    let owned;
+    let opaque_raster = match raster {
         Raster::GrayA8 { .. } | Raster::Rgba8 { .. } => {
-            flattened = raster.clone().flatten_over_white();
-            &flattened
+            owned = raster.clone().flatten_over_white();
+            &owned
         }
         opaque @ (Raster::Gray8 { .. } | Raster::Rgb8 { .. }) => opaque,
     };
-    let narrowed_width = u16::try_from(raster.width());
-    let narrowed_height = u16::try_from(raster.height());
+    let narrowed_width = u16::try_from(opaque_raster.width());
+    let narrowed_height = u16::try_from(opaque_raster.height());
     let (Ok(width), Ok(height)) = (narrowed_width, narrowed_height) else {
         return Err(EncodeError::DimensionsBeyondFormat {
             format: Format::Jpg,
-            width: raster.width(),
-            height: raster.height(),
+            width: opaque_raster.width(),
+            height: opaque_raster.height(),
         });
     };
     let mut out = Vec::new();
     let encoder = jpeg_encoder::Encoder::new(&mut out, JPEG_QUALITY);
-    let color = match raster {
+    let color = match opaque_raster {
         Raster::Gray8 { .. } => jpeg_encoder::ColorType::Luma,
         Raster::Rgb8 { .. } => jpeg_encoder::ColorType::Rgb,
         // Unreachable after flattening; keep the match total.
@@ -418,7 +418,7 @@ fn encode_jpeg(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
         }
     };
     encoder
-        .encode(raster.data(), width, height, color)
+        .encode(opaque_raster.data(), width, height, color)
         .map_err(|err| EncodeError::Internal(err.to_string()))?;
     Ok(out)
 }

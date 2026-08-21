@@ -182,27 +182,27 @@ fn resize(raster: Raster, out_w: u32, out_h: u32) -> Result<Raster, PipelineErro
     resizer
         .resize(&src, &mut dst, &options)
         .map_err(|err| PipelineError::Resize(err.to_string()))?;
-    let data = dst.into_vec();
+    let resampled = dst.into_vec();
     Ok(match channels {
         1 => Raster::Gray8 {
             width: out_w,
             height: out_h,
-            data,
+            data: resampled,
         },
         2 => Raster::GrayA8 {
             width: out_w,
             height: out_h,
-            data,
+            data: resampled,
         },
         3 => Raster::Rgb8 {
             width: out_w,
             height: out_h,
-            data,
+            data: resampled,
         },
         _ => Raster::Rgba8 {
             width: out_w,
             height: out_h,
-            data,
+            data: resampled,
         },
     })
 }
