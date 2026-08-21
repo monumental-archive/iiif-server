@@ -4,57 +4,42 @@
 # nothing at all. No distro, no shell, no package manager, no writable
 # filesystem — the container-shaped twin of "one static binary".
 #
-# Base images are digest-pinned and Renovate-tracked. The builder is
-# rust:alpine because its toolchain is musl-native: the binary it produces
-# needs no shared libraries, which is what makes the scratch final stage
-# possible.
+# NO COMPILE HAPPENS HERE, by rule (.github#295). The binary is built by
+# scripts/oci-prepare.sh in this repository's mise-pinned toolchain,
+# natively per architecture, and COPYed in: the org's repro gate measured
+# the in-container cargo build nondeterministic while the same crates
+# built bit-for-bit under the pinned native toolchain, so a Dockerfile
+# that compiles IS the failure mode. What is left is pure assembly over
+# pinned inputs, which is why every stage below is digest-pinned and
+# `scratch` is the runtime.
 
-FROM rust:1.97.1-alpine3.22@sha256:df4efa4e0cdfb5245fa06e3f431387b2bcc96782ce5681b7fb6b0297d745bc29 AS build
-
-# gcc and musl-dev already ship in rust:alpine — mimalloc's C needs them.
-# cargo-auditable is the only addition, and it is load-bearing: Rust discards
-# dependency information at compile time, so a scanner pointed at a stripped
-# static binary sees one file and zero packages. cargo-auditable embeds a
-# compressed dependency list that syft, trivy and grype all read. Without it
-# every SBOM this image ever carries would be empty.
-# hadolint ignore rationale for the unpinned apk version lives in
-# .hadolint.yaml (DL3018) — this stage ships nothing.
-RUN apk add --no-cache cargo-auditable
-
-WORKDIR /src
-COPY . .
-
-# Injected by the release pipeline; reported by `--version` and the
-# iiif_build_info metric. Empty in a local build, where the honest answer is
-# "unknown" — a working tree is not a revision.
-ARG IIIF_BUILD_REVISION=""
-ENV IIIF_BUILD_REVISION=${IIIF_BUILD_REVISION}
-
-# --locked: the committed lockfile is the reviewed dependency set, and a
-# release must not resolve anything new. The binary is moved out inside the
-# same layer because the target directory is a cache mount and does not
-# survive into the next one. Deliberately not stripped: `strip` discards the
-# non-allocated section cargo-auditable writes, which would silently undo
-# the SBOM above.
-RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
-    --mount=type=cache,target=/src/target,sharing=locked \
-    cargo auditable build --release --locked --bin iiif-server \
-    && mv target/release/iiif-server /iiif-server
+# The TLS trust store, and the only reason any stage exists above
+# `scratch`. rustls reads the bundle through SSL_CERT_FILE, which is what
+# lets a scratch image talk to S3 at all: there is no operating system
+# here to hold a default one, so the bundle is shipped as a file. Serving
+# local files would work without it; every s3:// deployment would not.
+#
+# Taken from a digest-pinned base rather than from the runner's own
+# /etc/ssl, deliberately: the runner image rolls between builds and its
+# bundle is not an input anything pins, so copying it would put an
+# unpinned file inside a signed artifact. Measured 2026-08-21 — this
+# digest ships etc/ssl/certs/ca-certificates.crt as a regular file,
+# 179359 bytes. Renovate rolls tag and digest together.
+FROM alpine:3.22@sha256:14358309a308569c32bdc37e2e0e9694be33a9d99e68afb0f5ff33cc1f695dce AS certs
 
 FROM scratch
 
-# The TLS trust store. rustls reads it through SSL_CERT_FILE, which is what
-# lets a scratch image talk to S3 at all: there is no operating system here
-# to hold a default bundle, so the bundle is shipped as a file. Serving local
-# files would work without it; every s3:// deployment would not.
-COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
-COPY --from=build /src/LICENSE /LICENSE
-COPY --from=build /iiif-server /iiif-server
+COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY LICENSE /LICENSE
+# Built outside, per architecture, by scripts/oci-prepare.sh — with
+# cargo-auditable, so the .dep-v0 section keeps this image's Rust
+# dependency surface visible to a scanner reading the published bytes.
+COPY dist/iiif-server /iiif-server
 
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
-# Numeric, because scratch has no /etc/passwd to name a user in. 65532 is the
-# conventional non-root uid for distroless-style images.
+# Numeric, because scratch has no /etc/passwd to name a user in. 65532 is
+# the conventional non-root uid for distroless-style images.
 USER 65532:65532
 
 EXPOSE 6363
