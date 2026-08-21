@@ -56,6 +56,15 @@ impl Identifier {
                 bytes.push(byte);
             }
         }
+        #[expect(
+            clippy::map_err_ignore,
+            reason = "the `FromUtf8Error` carries a byte offset into an \
+                      ATTACKER-CONTROLLED identifier, and this error is \
+                      rendered into an HTTP response. `NotUtf8` is a unit \
+                      variant on purpose: the client learns that its \
+                      identifier was rejected, not where the server stopped \
+                      parsing it."
+        )]
         let decoded = String::from_utf8(bytes).map_err(|_| IdentifierError::NotUtf8)?;
         if decoded.bytes().any(|byte| byte < 0x20 || byte == 0x7F) {
             return Err(IdentifierError::ControlCharacter);

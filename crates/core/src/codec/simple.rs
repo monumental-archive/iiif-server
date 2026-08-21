@@ -58,9 +58,9 @@ impl SimpleMaster {
             .ok_or_else(|| CodecError::Corrupt("JPEG has no dimensions".to_owned()))?;
         let (width, height) = (
             u32::try_from(raw_width)
-                .map_err(|_| CodecError::Corrupt("width overflow".to_owned()))?,
+                .map_err(|err| CodecError::Corrupt(format!("width overflow: {err}")))?,
             u32::try_from(raw_height)
-                .map_err(|_| CodecError::Corrupt("height overflow".to_owned()))?,
+                .map_err(|err| CodecError::Corrupt(format!("height overflow: {err}")))?,
         );
         Ok(Self {
             raster: Raster::Rgb8 {

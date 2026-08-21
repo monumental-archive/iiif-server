@@ -174,10 +174,6 @@ where
         match reader.read(&mut buf[filled..]) {
             Ok(0) => break,
             Ok(n) => filled += n,
-            #[expect(
-                clippy::std_instead_of_core,
-                reason = "`core::io` is not stable on this toolchain — measured: clippy marks this suggestion machine-applicable and the replacement does not compile (E0658, `core_io`). Revisit when core::io stabilises."
-            )]
             Err(err) if err.kind() == io::ErrorKind::Interrupted => {}
             Err(err) => return Err(err),
         }

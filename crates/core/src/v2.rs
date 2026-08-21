@@ -106,6 +106,13 @@ fn parse_size(input: &str) -> Result<(Size, bool, bool), ParseError> {
     // Numeric forms: reuse the v3 component grammar, then lift the
     // upscale restriction (`sizeAboveFull`). `pct:n` above 100 must
     // bypass the v3 parse-time cap the same way.
+    #[expect(
+        clippy::map_err_ignore,
+        reason = "the v3 grammar's ParseError names v3 components and v3 \
+                  spellings; a v2.1 request must fail with a v2-shaped \
+                  error, so the inner one is replaced rather than wrapped \
+                  — `err()` is the closure that builds it."
+    )]
     let parsed = if let Some(pct) = input.strip_prefix("pct:") {
         let spelled = format!("^pct:{pct}");
         Size::parse(&spelled).map_err(|_| err())?
@@ -236,7 +243,6 @@ pub fn info_json(id: &str, image: &ImageDescription, limits: Limits) -> String {
 mod tests {
     #![expect(
         clippy::unwrap_used,
-        clippy::expect_used,
         clippy::missing_panics_doc,
         reason = "test code: a panic here IS the failure signal, not a crash \
                   path, so documenting one under `# Panics` would describe the \
