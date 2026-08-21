@@ -58,7 +58,7 @@ fn main() {
     let threads: usize = std::env::var("ALLOC_BENCH_THREADS")
         .ok()
         .and_then(|v| v.parse().ok())
-        .unwrap_or_else(|| std::thread::available_parallelism().map_or(4, std::num::NonZero::get));
+        .unwrap_or_else(|| std::thread::available_parallelism().map_or(4, core::num::NonZero::get));
     let iters: usize = std::env::var("ALLOC_BENCH_ITERS")
         .ok()
         .and_then(|v| v.parse().ok())

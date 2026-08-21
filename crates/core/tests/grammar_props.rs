@@ -129,7 +129,7 @@ proptest! {
         prop_assert_eq!(ImageRequest::parse(&r.to_string()).unwrap(), r);
     }
 
-    /// Printing is idempotent: parse(print(v)) prints identically —
+    /// Printing is idempotent: parse(print(v)) prints identically \u{2014}
     /// i.e. printed forms are already canonical spellings.
     #[test]
     fn print_is_canonical(r in request_strategy()) {
@@ -153,7 +153,7 @@ proptest! {
     /// reparse of the canonical form equals the original parse.
     #[test]
     fn leading_zero_normalization(
-        x in 0u32..1000, y in 0u32..1000, w in 1u32..1000, h in 1u32..1000
+        x in 0_u32..1000, y in 0_u32..1000, w in 1_u32..1000, h in 1_u32..1000
     ) {
         let padded = format!("{x:07},{y:07},{w:07},{h:07}");
         let parsed = Region::parse(&padded).unwrap();

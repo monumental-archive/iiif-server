@@ -30,7 +30,7 @@ fn plain_identifiers() {
     assert_eq!(ok("dir%2Fimage.tif").as_path(), "dir/image.tif");
     assert_eq!(ok("a%2Fb%2Fc").as_path(), "a/b/c");
     // Unencoded non-special characters survive.
-    assert_eq!(ok("M%C3%BCnchen.jp2").as_path(), "München.jp2");
+    assert_eq!(ok("M%C3%BCnchen.jp2").as_path(), "M\u{fc}nchen.jp2");
 }
 
 #[test]

@@ -64,7 +64,7 @@ fn webp_output_is_lossless() {
     assert_eq!(&bytes[8..12], b"WEBP");
     let mut decoder = image_webp::WebPDecoder::new(Cursor::new(&bytes)).unwrap();
     assert_eq!(decoder.dimensions(), (256, 256));
-    let mut data = vec![0u8; decoder.output_buffer_size().unwrap()];
+    let mut data = vec![0_u8; decoder.output_buffer_size().unwrap()];
     decoder.read_image(&mut data).unwrap();
     let off = ((100 * 256 + 100) * 3) as usize;
     // Lossless: exact.
@@ -76,7 +76,7 @@ fn jp2_output_decodes_exactly() {
     let bytes = serve(&format!("{REGION}.jp2"));
     let mut decoder = j2k::J2kDecoder::new(&bytes).unwrap();
     assert_eq!(decoder.info().dimensions, (256, 256));
-    let mut out = vec![0u8; 256 * 256 * 3];
+    let mut out = vec![0_u8; 256 * 256 * 3];
     decoder
         .decode_into(&mut out, 256 * 3, j2k::PixelFormat::Rgb8)
         .unwrap();

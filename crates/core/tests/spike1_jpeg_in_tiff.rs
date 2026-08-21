@@ -21,7 +21,7 @@
 use std::{fs::File, path::PathBuf, time::Instant};
 
 use iiif_core::{codec::TiffPyramid, image::Raster};
-use num_traits::cast::ToPrimitive;
+use num_traits::cast::ToPrimitive as _;
 
 fn generated(name: &str) -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -50,7 +50,7 @@ fn read_ppm(name: &str) -> (u32, u32, Vec<u8>) {
         while pos < data.len() && !data[pos].is_ascii_whitespace() {
             pos += 1;
         }
-        fields.push(std::str::from_utf8(&data[start..pos]).unwrap().to_owned());
+        fields.push(core::str::from_utf8(&data[start..pos]).unwrap().to_owned());
     }
     pos += 1; // single whitespace after maxval
     assert_eq!(fields[0], "P6");
@@ -67,8 +67,8 @@ struct Comparison {
 fn compare(ours: &Raster, golden: &[u8]) -> Comparison {
     let ours = ours.data();
     assert_eq!(ours.len(), golden.len(), "pixel count mismatch");
-    let mut sum = 0u64;
-    let mut max = 0u8;
+    let mut sum = 0_u64;
+    let mut max = 0_u8;
     for (a, b) in ours.iter().zip(golden) {
         let delta = a.abs_diff(*b);
         sum += u64::from(delta);
@@ -84,13 +84,13 @@ fn compare(ours: &Raster, golden: &[u8]) -> Comparison {
 fn check_variant(variant: &str, max_mean: f64, max_peak: u8) {
     let path = generated(&format!("spike1_{variant}.tif"));
     let mut tiff = TiffPyramid::open(
-        File::open(&path).unwrap_or_else(|_| panic!("fixture missing — run `task spike1` first")),
+        File::open(&path).unwrap_or_else(|_| panic!("fixture missing \u{2014} run `task spike1` first")),
     )
     .expect("JPEG-in-TIFF pyramid opens");
     assert_eq!(tiff.dimensions(), (2048, 1536));
     assert!(tiff.levels().len() >= 3, "pyramid expected");
 
-    for (x, y, w, h) in [(192u32, 192u32, 384u32, 384u32), (0, 0, 256, 256)] {
+    for (x, y, w, h) in [(192_u32, 192_u32, 384_u32, 384_u32), (0, 0, 256, 256)] {
         let started = Instant::now();
         let raster = tiff.decode_region(0, x, y, w, h).expect("region decodes");
         let elapsed = started.elapsed();

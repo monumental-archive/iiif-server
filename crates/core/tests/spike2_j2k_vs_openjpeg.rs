@@ -40,7 +40,7 @@ fn generated(name: &str) -> PathBuf {
 
 fn fixture_bytes(variant: &str) -> Vec<u8> {
     std::fs::read(generated(&format!("spike2_{variant}.jp2")))
-        .unwrap_or_else(|_| panic!("fixture missing — run `task spike2` first"))
+        .unwrap_or_else(|_| panic!("fixture missing \u{2014} run `task spike2` first"))
 }
 
 /// Minimal binary-PPM (P6, maxval 255) reader for the golden files.
@@ -63,7 +63,7 @@ fn read_ppm(name: &str) -> (u32, u32, Vec<u8>) {
         while pos < data.len() && !data[pos].is_ascii_whitespace() {
             pos += 1;
         }
-        fields.push(std::str::from_utf8(&data[start..pos]).unwrap().to_owned());
+        fields.push(core::str::from_utf8(&data[start..pos]).unwrap().to_owned());
     }
     pos += 1;
     assert_eq!(fields[0], "P6");
@@ -74,8 +74,8 @@ fn read_ppm(name: &str) -> (u32, u32, Vec<u8>) {
 
 fn error_stats(ours: &[u8], golden: &[u8]) -> (f64, u8) {
     assert_eq!(ours.len(), golden.len(), "sample count mismatch");
-    let mut sum = 0u64;
-    let mut max = 0u8;
+    let mut sum = 0_u64;
+    let mut max = 0_u8;
     for (a, b) in ours.iter().zip(golden) {
         let delta = a.abs_diff(*b);
         sum += u64::from(delta);
@@ -110,12 +110,12 @@ fn metadata_exposes_pyramid_structure() {
 fn decode_region(
     variant: &str,
     parallelism: CpuDecodeParallelism,
-) -> (Vec<u8>, std::time::Duration) {
+) -> (Vec<u8>, core::time::Duration) {
     let bytes = fixture_bytes(variant);
     let mut decoder = J2kDecoder::new(&bytes).expect("parses");
     decoder.set_cpu_decode_parallelism(parallelism);
     let mut pool = J2kScratchPool::new();
-    let mut out = vec![0u8; 512 * 512 * 3];
+    let mut out = vec![0_u8; 512 * 512 * 3];
     let started = Instant::now();
     decoder
         .decode_region_into(&mut pool, &mut out, 512 * 3, PixelFormat::Rgb8, REGION)
@@ -155,7 +155,7 @@ fn region_at_scale_matches_reduced_resolution_golden() {
         let bytes = fixture_bytes(variant);
         let mut decoder = J2kDecoder::new(&bytes).expect("parses");
         let mut pool = J2kScratchPool::new();
-        let mut out = vec![0u8; 2048 * 2048 * 3];
+        let mut out = vec![0_u8; 2048 * 2048 * 3];
         let started = Instant::now();
         decoder
             .decode_region_scaled_into(
@@ -230,7 +230,7 @@ fn htj2k_recode_then_decode_matches_golden() {
     let recoded = j2k::recode_j2k_to_htj2k_lossless(&bytes, options).expect("recode to HTJ2K");
     let mut decoder = J2kDecoder::new(&recoded.bytes).expect("HTJ2K parses");
     let mut pool = J2kScratchPool::new();
-    let mut out = vec![0u8; 512 * 512 * 3];
+    let mut out = vec![0_u8; 512 * 512 * 3];
     let region = Rect {
         x: 1024,
         y: 1024,

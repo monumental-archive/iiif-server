@@ -55,7 +55,7 @@ fn crop_via_pipeline(name: &str, path: &str, full: (u32, u32)) -> (u32, u32, Vec
 }
 
 fn assert_pattern(name: &str, buf: &[u8], out_w: u32, origin: (u32, u32), tolerance: u8) {
-    for (rx, ry) in [(0u32, 0u32), (13, 40), (100, 60), (255, 100)] {
+    for (rx, ry) in [(0_u32, 0_u32), (13, 40), (100, 60), (255, 100)] {
         let off = ((ry * out_w + rx) * 3) as usize;
         if off + 3 > buf.len() {
             continue;

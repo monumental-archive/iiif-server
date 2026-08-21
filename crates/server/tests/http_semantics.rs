@@ -89,7 +89,7 @@ async fn info_json_semantics() {
 
 #[tokio::test]
 async fn info_json_uses_public_base() {
-    use http_body_util::BodyExt;
+    use http_body_util::BodyExt as _;
     let app = app();
     let response = get(&app, "/iiif/3/rgb_pyramid.tif/info.json").await;
     let body = response.into_body().collect().await.unwrap().to_bytes();
@@ -124,7 +124,7 @@ async fn image_carries_canonical_link() {
 
 #[tokio::test]
 async fn head_returns_headers_without_body() {
-    use http_body_util::BodyExt;
+    use http_body_util::BodyExt as _;
     let app = app();
     let req = Request::head("/iiif/3/rgb_pyramid.tif/info.json")
         .body(())
@@ -182,7 +182,7 @@ async fn resident_pixel_ceiling_refusal_is_a_403_not_a_500() {
     // (403, the Image API's refused-operation status) rather than
     // "corrupt master" 500, and the body must carry the conversion
     // advice.
-    use http_body_util::BodyExt;
+    use http_body_util::BodyExt as _;
     let app = app();
     let response = get(
         &app,
@@ -222,7 +222,7 @@ async fn saturated_queue_returns_503_with_retry_after() {
 
 #[tokio::test]
 async fn v2_endpoint_semantics() {
-    use http_body_util::BodyExt;
+    use http_body_util::BodyExt as _;
     let app = app();
     // v2 info.json: @id + profile array.
     let response = get(&app, "/iiif/2/rgb_pyramid.tif/info.json").await;
@@ -271,7 +271,7 @@ async fn v2_endpoint_semantics() {
 
 #[tokio::test]
 async fn etag_and_conditional_requests() {
-    use http_body_util::BodyExt;
+    use http_body_util::BodyExt as _;
     let app = app();
     // info.json carries a strong ETag + Cache-Control.
     let response = get(&app, "/iiif/3/rgb_pyramid.tif/info.json").await;
@@ -320,7 +320,7 @@ async fn etag_and_conditional_requests() {
 
 #[tokio::test]
 async fn metrics_render_the_frozen_set() {
-    use http_body_util::BodyExt;
+    use http_body_util::BodyExt as _;
     let app = app();
     // Generate one of each family.
     drop(get(&app, "/iiif/3/rgb_pyramid.tif/info.json").await);
@@ -328,7 +328,7 @@ async fn metrics_render_the_frozen_set() {
     let response = get(&app, "/metrics").await;
     assert_eq!(response.status(), StatusCode::OK);
     let body = response.into_body().collect().await.unwrap().to_bytes();
-    let text = std::str::from_utf8(&body).unwrap();
+    let text = core::str::from_utf8(&body).unwrap();
     assert!(
         text.contains("iiif_requests_total{family=\"info\"} 1"),
         "{text}"

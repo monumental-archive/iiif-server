@@ -461,7 +461,7 @@ async fn serve(config: Config) -> Result<(), String> {
 }
 
 #[cfg(test)]
-#[allow(
+#[expect(
     clippy::unwrap_used,
     clippy::expect_used,
     reason = "test/bench code: a panic here is the failure signal, not a crash path"
@@ -478,7 +478,7 @@ mod tests {
         let addr = listener.local_addr().expect("local addr");
         tokio::spawn(async move {
             if let Ok((mut stream, _)) = listener.accept().await {
-                let mut scratch = [0u8; 512];
+                let mut scratch = [0_u8; 512];
                 drop(stream.read(&mut scratch).await);
                 drop(stream.write_all(response.as_bytes()).await);
             }
@@ -489,7 +489,7 @@ mod tests {
     #[tokio::test]
     async fn probe_accepts_200() {
         let addr = canned_response("HTTP/1.1 200 OK\r\nContent-Length: 3\r\n\r\nok\n").await;
-        assert!(probe_health(addr).await.is_ok());
+        probe_health(addr).await.unwrap();
     }
 
     /// A saturated server answers 503 on the image routes but /healthz stays

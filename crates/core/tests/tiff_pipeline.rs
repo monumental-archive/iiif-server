@@ -50,7 +50,7 @@ fn pyramid_structure_is_surveyed() {
     let tiff = fixture();
     assert_eq!(tiff.dimensions(), (1024, 768));
     let levels = tiff.levels();
-    assert_eq!(levels.len(), 3, "vips halves 1024→512→256");
+    assert_eq!(levels.len(), 3, "vips halves 1024\u{2192}512\u{2192}256");
     assert_eq!(levels[0].scale_factor, 1);
     assert_eq!(levels[1].scale_factor, 2);
     assert_eq!(levels[2].scale_factor, 4);
