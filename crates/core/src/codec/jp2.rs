@@ -53,6 +53,7 @@ pub struct Jp2Master {
 }
 
 impl core::fmt::Debug for Jp2Master {
+    #[inline]
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("Jp2Master")
             .field("width", &self.width)
@@ -72,6 +73,7 @@ impl Jp2Master {
     /// [`CodecError::Corrupt`] when the stream does not parse;
     /// [`CodecError::Unsupported`] for component layouts outside the
     /// current matrix.
+    #[inline]
     pub fn new(bytes: Vec<u8>) -> Result<Self, CodecError> {
         let decoder =
             J2kDecoder::new(&bytes).map_err(|e| CodecError::Corrupt(format!("JP2 parse: {e}")))?;
@@ -146,10 +148,12 @@ const fn scaled_covering_pow2(rect: Rect, denom: u32) -> Rect {
 }
 
 impl Master for Jp2Master {
+    #[inline]
     fn dimensions(&self) -> (u32, u32) {
         (self.width, self.height)
     }
 
+    #[inline]
     fn describe(&self) -> ImageDescription {
         // scaleFactors mirror the codestream's real resolution ladder.
         let scale_factors: Vec<u32> = (0..self.resolution_levels)
@@ -179,10 +183,12 @@ impl Master for Jp2Master {
         }
     }
 
+    #[inline]
     fn set_internal_parallelism(&mut self, allow: bool) {
         self.internal_parallelism = allow;
     }
 
+    #[inline]
     fn advisories(&self) -> Vec<String> {
         let mut notes = Vec::new();
         if self.resolution_levels <= 1 && u64::from(self.width) * u64::from(self.height) > 4_000_000
@@ -196,6 +202,7 @@ impl Master for Jp2Master {
         notes
     }
 
+    #[inline]
     fn decode_crop(&mut self, crop: CropRect, needed: f64) -> Result<Raster, CodecError> {
         let mut decoder = J2kDecoder::new(&self.bytes)
             .map_err(|e| CodecError::Corrupt(format!("JP2 parse: {e}")))?;

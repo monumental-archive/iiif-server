@@ -32,6 +32,7 @@ pub enum PipelineError {
 }
 
 impl fmt::Display for PipelineError {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Codec(e) => write!(f, "{e}"),
@@ -45,18 +46,21 @@ impl fmt::Display for PipelineError {
 impl core::error::Error for PipelineError {}
 
 impl From<CodecError> for PipelineError {
+    #[inline]
     fn from(e: CodecError) -> Self {
         Self::Codec(e)
     }
 }
 
 impl From<EncodeError> for PipelineError {
+    #[inline]
     fn from(e: EncodeError) -> Self {
         Self::Encode(e)
     }
 }
 
 impl From<RasterError> for PipelineError {
+    #[inline]
     fn from(e: RasterError) -> Self {
         Self::Raster(e)
     }
@@ -67,6 +71,7 @@ impl From<RasterError> for PipelineError {
 /// # Errors
 ///
 /// See [`PipelineError`].
+#[inline]
 pub fn execute(source: &mut dyn Master, plan: &Plan) -> Result<Vec<u8>, PipelineError> {
     // 1. Decode the crop with enough detail for the output scale; the codec picks
     //    its own cheapest path (pyramid level, reduced- resolution wavelet decode,

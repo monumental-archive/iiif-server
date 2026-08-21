@@ -64,6 +64,7 @@ pub enum Raster {
 pub struct RasterError(pub String);
 
 impl fmt::Display for RasterError {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "raster error: {}", self.0)
     }
@@ -103,6 +104,7 @@ pub struct CopyRect {
 impl Raster {
     /// Width in pixels.
     #[must_use]
+    #[inline]
     pub const fn width(&self) -> u32 {
         match self {
             Self::Gray8 { width, .. }
@@ -114,6 +116,7 @@ impl Raster {
 
     /// Height in pixels.
     #[must_use]
+    #[inline]
     pub const fn height(&self) -> u32 {
         match self {
             Self::Gray8 { height, .. }
@@ -125,6 +128,7 @@ impl Raster {
 
     /// Samples per pixel (1, 2, 3 or 4).
     #[must_use]
+    #[inline]
     pub const fn channels(&self) -> u32 {
         match self {
             Self::Gray8 { .. } => 1,
@@ -136,6 +140,7 @@ impl Raster {
 
     /// The raw row-major sample buffer.
     #[must_use]
+    #[inline]
     pub fn data(&self) -> &[u8] {
         match self {
             Self::Gray8 { data, .. }
@@ -152,6 +157,7 @@ impl Raster {
     /// Fails when `width * height * channels` overflows `usize` — the
     /// per-decode allocation ceilings upstream make this unreachable in
     /// practice, but the arithmetic stays checked.
+    #[inline]
     pub fn zeroed_like(&self, width: u32, height: u32) -> Result<Self, RasterError> {
         let pixels = (width as usize)
             .checked_mul(height as usize)
@@ -188,6 +194,7 @@ impl Raster {
     ///
     /// Fails when the rectangles fall outside either raster or the pixel
     /// layouts differ.
+    #[inline]
     pub fn blit(
         &mut self,
         src: &Self,
@@ -246,6 +253,7 @@ impl Raster {
     }
 
     /// Mirror on the vertical axis (left↔right), in place.
+    #[inline]
     pub fn mirror(&mut self) {
         let width = self.width() as usize;
         let bpp = self.channels() as usize;
@@ -265,6 +273,7 @@ impl Raster {
 
     /// Rotate clockwise by the given number of quarter turns (0–3).
     #[must_use]
+    #[inline]
     pub fn rotate_quarters(self, quarters: u8) -> Self {
         match quarters % 4 {
             1 => self.rotated_90(),
@@ -335,6 +344,7 @@ impl Raster {
 
     /// Convert to grayscale (BT.601 luma), a no-op for gray input.
     #[must_use]
+    #[inline]
     pub fn into_gray(self) -> Self {
         match self {
             gray @ (Self::Gray8 { .. } | Self::GrayA8 { .. }) => gray,
@@ -374,6 +384,7 @@ impl Raster {
     /// Convert to bitonal: grayscale, then a 50% threshold to pure
     /// black/white.
     #[must_use]
+    #[inline]
     pub fn into_bitonal(self) -> Self {
         match self.into_gray() {
             Self::Gray8 {
@@ -412,6 +423,7 @@ impl Raster {
     /// the rotated bounds; uncovered corners are transparent (the spec's
     /// recommendation) — hence the alpha output. Bilinear sampling.
     #[must_use]
+    #[inline]
     pub fn rotate_arbitrary(self, degrees: f64) -> Self {
         let theta = degrees.to_radians();
         let (sin, cos) = theta.sin_cos();
@@ -485,6 +497,7 @@ impl Raster {
     /// Flatten alpha over a white background, producing an opaque raster.
     /// No-op for already-opaque rasters.
     #[must_use]
+    #[inline]
     pub fn flatten_over_white(self) -> Self {
         match self {
             opaque @ (Self::Gray8 { .. } | Self::Rgb8 { .. }) => opaque,

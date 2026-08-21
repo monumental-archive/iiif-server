@@ -92,6 +92,7 @@ impl EvalError {
 }
 
 impl fmt::Display for EvalError {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let msg = match self {
             Self::RegionOutOfBounds => "region is outside the image bounds",
@@ -113,6 +114,7 @@ impl core::error::Error for EvalError {}
 /// # Errors
 ///
 /// Every [`EvalError`] maps to HTTP 400 per the spec's region/size rules.
+#[inline]
 pub fn evaluate(
     request: &ImageRequest,
     full_w: u32,
@@ -270,6 +272,7 @@ fn limit_fit_scale(rw: f64, rh: f64, limits: Limits) -> f64 {
 impl Plan {
     /// Whether the extracted region is the entire image.
     #[must_use]
+    #[inline]
     pub const fn is_full_region(&self) -> bool {
         self.crop.x == 0
             && self.crop.y == 0
@@ -281,6 +284,7 @@ impl Plan {
     /// per the spec's canonical-form rules, used for the `Link
     /// rel="canonical"` header.
     #[must_use]
+    #[inline]
     pub fn canonical_path(&self) -> String {
         let region = if self.is_full_region() {
             "full".to_owned()

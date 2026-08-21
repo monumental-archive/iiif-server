@@ -48,6 +48,7 @@ pub enum SourceError {
 }
 
 impl fmt::Display for SourceError {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::NotFound => f.write_str("source not found"),
@@ -65,6 +66,7 @@ impl fmt::Display for SourceError {
 }
 
 impl core::error::Error for SourceError {
+    #[inline]
     fn source(&self) -> Option<&(dyn core::error::Error + 'static)> {
         match self {
             Self::Io(e) => Some(e),
@@ -78,6 +80,7 @@ impl core::error::Error for SourceError {
     reason = "`core::io` is not stable on this toolchain — measured: clippy marks this suggestion machine-applicable and the replacement does not compile (E0658, `core_io`). Revisit when core::io stabilises."
 )]
 impl From<std::io::Error> for SourceError {
+    #[inline]
     fn from(e: std::io::Error) -> Self {
         if e.kind() == std::io::ErrorKind::NotFound {
             Self::NotFound

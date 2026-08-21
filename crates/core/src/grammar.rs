@@ -170,6 +170,7 @@ impl ParseError {
 }
 
 impl fmt::Display for ParseError {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let what = match self.component {
             Component::Region => "region",
@@ -234,6 +235,7 @@ impl Region {
     ///
     /// Returns a [`ParseError`] (HTTP 400) when the input is not a
     /// spec-legal region.
+    #[inline]
     pub fn parse(input: &str) -> Result<Self, ParseError> {
         let err = || ParseError::new(Component::Region, input);
         match input {
@@ -269,6 +271,7 @@ impl Region {
 }
 
 impl fmt::Display for Region {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
             Self::Full => f.write_str("full"),
@@ -292,6 +295,7 @@ impl Size {
     /// Returns a [`ParseError`] (HTTP 400) when the input is not a
     /// spec-legal size, including `pct:` values over 100 without the `^`
     /// upscale flag.
+    #[inline]
     pub fn parse(s: &str) -> Result<Self, ParseError> {
         let err = || ParseError::new(Component::Size, s);
         let (upscale, rest) = s.strip_prefix('^').map_or((false, s), |rest| (true, rest));
@@ -343,6 +347,7 @@ impl Size {
 }
 
 impl fmt::Display for Size {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.upscale {
             f.write_str("^")?;
@@ -363,6 +368,7 @@ impl Rotation {
     ///
     /// Returns a [`ParseError`] (HTTP 400) when the input is not a
     /// spec-legal rotation (optional `!`, then degrees in `0..=360`).
+    #[inline]
     pub fn parse(s: &str) -> Result<Self, ParseError> {
         let err = || ParseError::new(Component::Rotation, s);
         let (mirror, rest) = s.strip_prefix('!').map_or((false, s), |rest| (true, rest));
@@ -378,12 +384,14 @@ impl Rotation {
     /// core milestones implement natively; anything else is arbitrary
     /// rotation.
     #[must_use]
+    #[inline]
     pub fn is_quarter_turn(&self) -> bool {
         self.degrees % 90.0 == 0.0
     }
 }
 
 impl fmt::Display for Rotation {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.mirror {
             f.write_str("!")?;
@@ -397,6 +405,7 @@ impl Quality {
     ///
     /// Returns a [`ParseError`] (HTTP 400) when the input is not one of
     /// the four v3 quality names.
+    #[inline]
     pub fn parse(s: &str) -> Result<Self, ParseError> {
         match s {
             "default" => Ok(Self::Default),
@@ -409,6 +418,7 @@ impl Quality {
 
     /// The spec's lowercase parameter spelling.
     #[must_use]
+    #[inline]
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::Default => "default",
@@ -420,6 +430,7 @@ impl Quality {
 }
 
 impl fmt::Display for Quality {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(self.as_str())
     }
@@ -430,6 +441,7 @@ impl Format {
     ///
     /// Returns a [`ParseError`] (HTTP 400) when the input is not one of
     /// the seven spec-enumerated format names.
+    #[inline]
     pub fn parse(s: &str) -> Result<Self, ParseError> {
         match s {
             "jpg" => Ok(Self::Jpg),
@@ -445,6 +457,7 @@ impl Format {
 
     /// The spec's lowercase extension spelling.
     #[must_use]
+    #[inline]
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::Jpg => "jpg",
@@ -459,6 +472,7 @@ impl Format {
 
     /// The Content-Type this format is served with.
     #[must_use]
+    #[inline]
     pub const fn media_type(self) -> &'static str {
         match self {
             Self::Jpg => "image/jpeg",
@@ -473,6 +487,7 @@ impl Format {
 }
 
 impl fmt::Display for Format {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(self.as_str())
     }
@@ -490,6 +505,7 @@ impl ImageRequest {
     /// Returns a [`ParseError`] (HTTP 400) naming the first component that
     /// failed, or [`Component::Structure`] when the path shape itself is
     /// wrong.
+    #[inline]
     pub fn parse(path: &str) -> Result<Self, ParseError> {
         let mut segs = path.split('/');
         let (region, size, rotation, last) = (
@@ -521,6 +537,7 @@ impl ImageRequest {
 }
 
 impl fmt::Display for ImageRequest {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,

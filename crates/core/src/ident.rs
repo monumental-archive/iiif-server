@@ -31,6 +31,7 @@ impl Identifier {
     ///
     /// Returns an [`IdentifierError`] (HTTP 404) for malformed encodings,
     /// non-UTF-8 or control bytes, backslashes, and any traversal shape.
+    #[inline]
     pub fn decode(raw: &str) -> Result<Self, IdentifierError> {
         if raw.is_empty() {
             return Err(IdentifierError::Empty);
@@ -75,6 +76,7 @@ impl Identifier {
 
     /// The decoded identifier as a root-relative path.
     #[must_use]
+    #[inline]
     pub fn as_path(&self) -> &str {
         &self.0
     }
@@ -83,6 +85,7 @@ impl Identifier {
     /// `id`): percent-encode `%`, the spec's to-encode set, and everything
     /// outside printable US-ASCII.
     #[must_use]
+    #[inline]
     pub fn encoded(&self) -> String {
         const HEX: &[u8; 16] = b"0123456789ABCDEF";
         let mut out = String::with_capacity(self.0.len());
@@ -105,6 +108,7 @@ impl Identifier {
 }
 
 impl fmt::Display for Identifier {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(&self.0)
     }
@@ -139,6 +143,7 @@ pub enum IdentifierError {
 }
 
 impl fmt::Display for IdentifierError {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let msg = match self {
             Self::Empty => "empty identifier",

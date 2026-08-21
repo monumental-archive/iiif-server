@@ -31,6 +31,7 @@ pub enum EncodeError {
 }
 
 impl fmt::Display for EncodeError {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::DimensionsBeyondFormat {
@@ -58,6 +59,7 @@ const JPEG_QUALITY: u8 = 85;
 ///
 /// See [`EncodeError`]; every format succeeds for any raster within the
 /// format's own representational limits.
+#[inline]
 pub fn encode(raster: &Raster, format: Format) -> Result<Vec<u8>, EncodeError> {
     match format {
         Format::Jpg => encode_jpeg(raster),

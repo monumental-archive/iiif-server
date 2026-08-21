@@ -28,6 +28,7 @@ impl SimpleMaster {
     ///
     /// [`CodecError::Corrupt`] when the stream does not decode;
     /// [`CodecError::Unsupported`] for sample layouts outside the matrix.
+    #[inline]
     pub fn from_jpeg(bytes: &[u8]) -> Result<Self, CodecError> {
         use zune_jpeg::zune_core::{colorspace::ColorSpace, options::DecoderOptions};
         let options = DecoderOptions::default().jpeg_set_out_colorspace(ColorSpace::RGB);
@@ -75,6 +76,7 @@ impl SimpleMaster {
         clippy::std_instead_of_core,
         reason = "`core::io` is not stable on this toolchain — measured: clippy marks this suggestion machine-applicable and the replacement does not compile (E0658, `core_io`). Revisit when core::io stabilises."
     )]
+    #[inline]
     pub fn from_png(bytes: &[u8]) -> Result<Self, CodecError> {
         let decoder = png::Decoder::new(std::io::Cursor::new(bytes));
         let mut reader = decoder
@@ -139,16 +141,19 @@ impl SimpleMaster {
 
     /// Wrap an already-decoded raster (used by tests).
     #[must_use]
+    #[inline]
     pub const fn from_raster(raster: Raster) -> Self {
         Self { raster }
     }
 }
 
 impl Master for SimpleMaster {
+    #[inline]
     fn dimensions(&self) -> (u32, u32) {
         (self.raster.width(), self.raster.height())
     }
 
+    #[inline]
     fn describe(&self) -> ImageDescription {
         // No pyramid, no tiles: sizes lists the one complete size. Honest
         // structure — viewers fall back to whole-image requests.
@@ -163,6 +168,7 @@ impl Master for SimpleMaster {
         }
     }
 
+    #[inline]
     fn advisories(&self) -> Vec<String> {
         let pixels = u64::from(self.raster.width()) * u64::from(self.raster.height());
         if pixels > 4_000_000 {
@@ -178,6 +184,7 @@ impl Master for SimpleMaster {
         }
     }
 
+    #[inline]
     fn decode_crop(&mut self, crop: CropRect, _needed: f64) -> Result<Raster, CodecError> {
         let mut out = self.raster.zeroed_like(crop.w, crop.h)?;
         out.blit(

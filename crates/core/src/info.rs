@@ -139,6 +139,7 @@ impl Info {
     /// Assemble the document for one image. `id` is the full base URI of
     /// the image (scheme, server, prefix, identifier — no trailing slash).
     #[must_use]
+    #[inline]
     pub fn new(id: String, image: &ImageDescription, limits: Limits) -> Self {
         Self {
             context: CONTEXT,
@@ -167,6 +168,7 @@ impl Info {
     /// of this struct is structurally infallible (no maps, no non-string
     /// keys, no fallible `Serialize` impls).
     #[must_use]
+    #[inline]
     pub fn to_json(&self) -> String {
         #[expect(
             clippy::expect_used,

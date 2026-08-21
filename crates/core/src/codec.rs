@@ -46,6 +46,7 @@ pub const MAX_RESIDENT_PIXELS: u64 = 268_435_456;
 /// # Errors
 ///
 /// [`CodecError::LimitExceeded`] with the conversion advice.
+#[inline]
 pub fn guard_resident_pixels(width: u32, height: u32) -> Result<(), CodecError> {
     let pixels = u64::from(width) * u64::from(height);
     if pixels > MAX_RESIDENT_PIXELS {
@@ -82,6 +83,7 @@ pub trait Master: Send {
 
     /// `check`-subcommand advice: serving-performance caveats this master
     /// carries, each with the one-line fix. Empty means "serves well".
+    #[inline]
     fn advisories(&self) -> Vec<String> {
         Vec::new()
     }
@@ -93,6 +95,7 @@ pub trait Master: Send {
     /// throughput). Measured crossover on JP2 region decode, M1 Pro:
     /// idle 39 ms vs 66 ms serial; saturated 68 ops/s parallel vs 81 ops/s
     /// serial. Default no-op — most codecs have no internal pool.
+    #[inline]
     fn set_internal_parallelism(&mut self, _allow: bool) {}
 }
 
@@ -107,6 +110,7 @@ pub trait Master: Send {
 ///
 /// [`CodecError::Unsupported`] with an actionable message for anything
 /// outside the supported matrix.
+#[inline]
 pub fn open_master<R>(mut reader: R) -> Result<Box<dyn Master>, CodecError>
 where
     R: Read + Seek + Send + 'static,
@@ -198,6 +202,7 @@ pub enum CodecError {
 }
 
 impl fmt::Display for CodecError {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Unsupported(msg) => write!(f, "unsupported master: {msg}"),
@@ -211,12 +216,14 @@ impl fmt::Display for CodecError {
 impl core::error::Error for CodecError {}
 
 impl From<RasterError> for CodecError {
+    #[inline]
     fn from(e: RasterError) -> Self {
         Self::Raster(e)
     }
 }
 
 impl From<tiff::TiffError> for CodecError {
+    #[inline]
     fn from(e: tiff::TiffError) -> Self {
         match e {
             tiff::TiffError::UnsupportedError(inner) => Self::Unsupported(inner.to_string()),
@@ -234,6 +241,7 @@ pub struct TiffPyramid<R: Read + Seek> {
 }
 
 impl<R: Read + Seek> fmt::Debug for TiffPyramid<R> {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("TiffPyramid")
             .field("levels", &self.levels)
@@ -250,6 +258,7 @@ impl<R: Read + Seek> TiffPyramid<R> {
     /// [`CodecError::Unsupported`] for masters outside the supported
     /// matrix (untiled, mixed layouts); [`CodecError::Corrupt`] for
     /// malformed files.
+    #[inline]
     pub fn open(reader: R) -> Result<Self, CodecError> {
         let mut decoder = Decoder::new(reader)?;
         let mut levels = Vec::new();
@@ -302,12 +311,14 @@ impl<R: Read + Seek> TiffPyramid<R> {
 
     /// Pyramid levels, largest first.
     #[must_use]
+    #[inline]
     pub fn levels(&self) -> &[LevelInfo] {
         &self.levels
     }
 
     /// Full-resolution dimensions.
     #[must_use]
+    #[inline]
     pub fn dimensions(&self) -> (u32, u32) {
         (self.levels[0].width, self.levels[0].height)
     }
@@ -316,6 +327,7 @@ impl<R: Read + Seek> TiffPyramid<R> {
     /// size with the real scale factors, and one `sizes` entry per level
     /// (ascending), so viewers request only natively-cheap tiles.
     #[must_use]
+    #[inline]
     pub fn describe(&self) -> ImageDescription {
         let base = &self.levels[0];
         let scale_factors: Vec<u32> = self.levels.iter().map(|l| l.scale_factor).collect();
@@ -348,6 +360,7 @@ impl<R: Read + Seek> TiffPyramid<R> {
     /// Pick the smallest level that still has enough detail for a
     /// downscale factor of `needed` (full-res pixels per output pixel).
     #[must_use]
+    #[inline]
     pub fn level_for_scale(&self, needed: f64) -> &LevelInfo {
         self.levels
             .iter()
@@ -364,6 +377,7 @@ impl<R: Read + Seek> TiffPyramid<R> {
     /// Propagates decode failures; rejects out-of-bounds requests as
     /// [`CodecError::Corrupt`] (they indicate a caller bug, not a client
     /// error — the evaluation layer already clipped).
+    #[inline]
     pub fn decode_region(
         &mut self,
         level_ifd: usize,
@@ -518,14 +532,17 @@ fn raster_from_decoded(
 }
 
 impl<R: Read + Seek + Send> Master for TiffPyramid<R> {
+    #[inline]
     fn dimensions(&self) -> (u32, u32) {
         Self::dimensions(self)
     }
 
+    #[inline]
     fn describe(&self) -> ImageDescription {
         Self::describe(self)
     }
 
+    #[inline]
     fn decode_crop(&mut self, crop: CropRect, needed: f64) -> Result<Raster, CodecError> {
         // Pick the pyramid level with just enough detail, then map the
         // full-resolution crop into that level's coordinates.

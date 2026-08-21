@@ -42,6 +42,7 @@ pub struct V2Request {
 /// # Errors
 ///
 /// [`ParseError`] (HTTP 400) exactly like the v3 grammar.
+#[inline]
 pub fn parse_image_request(path: &str) -> Result<V2Request, ParseError> {
     let structure = || ParseError {
         component: Component::Structure,
@@ -116,6 +117,7 @@ fn parse_size(input: &str) -> Result<(Size, bool, bool), ParseError> {
 /// pixels; size `full`, `w,` (aspect preserved) or `w,h`; rotation and
 /// quality as literals.
 #[must_use]
+#[inline]
 pub fn canonical_path(plan: &Plan, v2: &V2Request) -> String {
     let full_region = plan.is_full_region();
     let region = if full_region {
@@ -171,6 +173,7 @@ pub const QUALITIES: &[&str] = &["default", "color", "gray", "bitonal"];
 /// Panics only if `serde_json` breaks its own contract: the document is
 /// a static shape with string keys throughout.
 #[must_use]
+#[inline]
 pub fn info_json(id: &str, image: &ImageDescription, limits: Limits) -> String {
     let sizes: Vec<serde_json::Value> = image
         .sizes
