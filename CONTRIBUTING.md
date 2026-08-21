@@ -37,8 +37,10 @@ What is always welcome:
 ## Development
 
 Tooling is pinned with [mise](https://mise.jdx.dev): `mise install`, then
-`task ci` runs exactly what CI runs (fmt + clippy + cargo-deny + linters +
-tests). `lefthook install` wires the same checks as git hooks.
+`mise run ci` runs exactly what CI runs — the organisation's gate,
+consumed from monumental-archive/.github: every belt linter, this
+repository's own tasks, the tests, and the coverage ratchet. `mise run
+hooks:install` wires the same checks as git hooks.
 
 The workspace is `#![forbid(unsafe_code)]` throughout, and every dependency
 must be permissively licensed (enforced by `cargo deny`). Zero C code parses
@@ -51,7 +53,7 @@ A change is ready to merge when all of the following hold. None of them are
 negotiable, and all of them are enforced by CI rather than by review
 attention:
 
-- **`task ci` passes.** It runs exactly what CI runs, so a green local run
+- **`mise run ci` passes.** It runs exactly what CI runs, so a green local run
   and a red CI run should not be possible. If they diverge, that is itself a
   bug worth reporting.
 - **Tests are part of the change, not a follow-up.** A correctness fix wants

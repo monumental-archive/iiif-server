@@ -1,7 +1,7 @@
 target/
 .DS_Store
 settings.local.json
-# Generated test masters (large; rebuilt by `task fixtures:gen`, verified by digest)
+# Generated test masters (large; rebuilt by scripts/gen_fixtures.sh, verified by digest)
 /tests/fixtures/generated/
 # Spike scratch output (numbers get recorded in docs/spikes/, not committed raw)
 /spikes/out/
@@ -14,8 +14,9 @@ settings.local.json
 /fuzz/artifacts/
 /fuzz/target/
 
-# go-task fingerprint cache
-.task/
+# The oci-image class's prepare output: the binary scripts/oci-prepare.sh
+# builds for the Dockerfile to COPY. A build artifact, never committed.
+/dist/
 
 # personal lefthook overrides — never committed
 lefthook-local.yml
