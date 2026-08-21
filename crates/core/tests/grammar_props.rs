@@ -5,6 +5,7 @@
 //! parser total-safety (never panics on arbitrary input).
 
 #![expect(
+    clippy::tests_outside_test_module,
     clippy::absolute_paths,
     clippy::default_numeric_fallback,
     clippy::min_ident_chars,

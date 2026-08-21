@@ -545,6 +545,7 @@ async fn serve(config: Config) -> Result<(), String> {
     // outcome this send is asking for.
     #[expect(
         clippy::let_underscore_must_use,
+        clippy::let_underscore_untyped,
         reason = "the only error this can return is `SendError`, meaning no \
                   receiver is left — which is the state the send is trying \
                   to reach. `drop()` is refused in turn, because the result \

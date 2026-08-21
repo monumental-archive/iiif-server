@@ -11,12 +11,25 @@
 //! (defaults to available parallelism), `ALLOC_BENCH_ITERS` (per
 //! thread, defaults to 40).
 
-#![allow(
-    clippy::unwrap_used,
+#![expect(
+    clippy::absolute_paths,
+    clippy::arithmetic_side_effects,
+    clippy::decimal_literal_representation,
     clippy::expect_used,
+    clippy::float_arithmetic,
+    clippy::integer_division_remainder_used,
+    clippy::min_ident_chars,
+    clippy::missing_assert_message,
+    clippy::missing_docs_in_private_items,
+    clippy::missing_panics_doc,
     clippy::print_stdout,
-    clippy::print_stderr,
-    reason = "diagnostic spike harness: prints findings, panics are failures"
+    clippy::shadow_same,
+    clippy::single_call_fn,
+    reason = "test and example code. A panic IS the failure signal, so \
+              `# Panics` sections and assertion messages would describe \
+              the mechanism the harness works by; fixtures are indexed and \
+              scaled with arithmetic over constants in the file above them. \
+              The crate under test is held to every one of these."
 )]
 
 #[cfg(feature = "mimalloc")]

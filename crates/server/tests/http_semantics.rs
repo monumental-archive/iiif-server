@@ -4,10 +4,24 @@
 //! HTTP-layer conformance semantics, tested against the real handler with
 //! the committed fixture — no sockets, exact header assertions.
 
-#![allow(
-    clippy::unwrap_used,
+#![expect(
+    clippy::absolute_paths,
+    clippy::decimal_literal_representation,
     clippy::expect_used,
-    reason = "test/bench code: a panic here is the failure signal, not a crash path"
+    clippy::indexing_slicing,
+    clippy::missing_panics_doc,
+    clippy::panic,
+    clippy::shadow_reuse,
+    clippy::shadow_unrelated,
+    clippy::single_char_lifetime_names,
+    clippy::std_instead_of_alloc,
+    clippy::tests_outside_test_module,
+    clippy::unwrap_used,
+    reason = "test and example code. A panic IS the failure signal, so \
+              `# Panics` sections and assertion messages would describe \
+              the mechanism the harness works by; fixtures are indexed and \
+              scaled with arithmetic over constants in the file above them. \
+              The crate under test is held to every one of these."
 )]
 
 use std::{path::Path, sync::Arc};
