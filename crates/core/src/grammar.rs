@@ -482,6 +482,11 @@ impl Rotation {
     /// rotation.
     #[must_use]
     #[inline]
+    #[expect(
+        clippy::modulo_arithmetic,
+        reason = "the question IS whether the angle is a multiple of 90, \
+                  and degrees are `0..=360` by construction."
+    )]
     pub fn is_quarter_turn(&self) -> bool {
         self.degrees % 90.0 == 0.0
     }
@@ -648,9 +653,7 @@ impl fmt::Display for ImageRequest {
 mod tests {
     #![expect(
         clippy::unwrap_used,
-        clippy::expect_used,
         clippy::missing_panics_doc,
-        clippy::missing_errors_doc,
         reason = "test code: a panic here IS the failure signal, not a crash \
                   path, so documenting one under `# Panics` would describe the \
                   mechanism a test works by"

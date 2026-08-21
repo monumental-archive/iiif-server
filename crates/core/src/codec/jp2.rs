@@ -145,6 +145,13 @@ impl Jp2Master {
 /// `decode_region_scaled_pow2_into`, which sizes its output this way but
 /// only reports the rect after decoding — we need it first to size the
 /// buffer.
+#[expect(
+    clippy::integer_division,
+    clippy::integer_division_remainder_used,
+    reason = "power-of-two downscale: the origin truncates toward the \
+              containing sample and the far edge uses div_ceil, which is \
+              what makes the result COVER the request rather than clip it."
+)]
 const fn scaled_covering_pow2(rect: Rect, denom: u32) -> Rect {
     let x0 = rect.x / denom;
     let y0 = rect.y / denom;

@@ -228,10 +228,7 @@ pub fn info_json(id: &str, image: &ImageDescription, limits: Limits) -> String {
     if !tiles.is_empty() {
         document["tiles"] = tiles.into();
     }
-    #[expect(
-        clippy::expect_used,
-        reason = "map-free static shape: to_string cannot fail"
-    )]
+    #[expect(reason = "map-free static shape: to_string cannot fail")]
     serde_json::to_string(&document).expect("static shape")
 }
 
@@ -241,7 +238,6 @@ mod tests {
         clippy::unwrap_used,
         clippy::expect_used,
         clippy::missing_panics_doc,
-        clippy::missing_errors_doc,
         reason = "test code: a panic here IS the failure signal, not a crash \
                   path, so documenting one under `# Panics` would describe the \
                   mechanism a test works by"

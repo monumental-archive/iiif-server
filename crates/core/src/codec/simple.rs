@@ -78,6 +78,13 @@ impl SimpleMaster {
     ///
     /// [`CodecError::Corrupt`] / [`CodecError::Unsupported`] as above.
     #[inline]
+    #[expect(
+        clippy::integer_division,
+        clippy::integer_division_remainder_used,
+        reason = "alpha compositing over white: `(v*a + 255*(255-a) + 127) \
+                  / 255` is the standard rounded 8-bit divide — the +127 \
+                  is the rounding and the truncation completes it."
+    )]
     pub fn from_png(bytes: &[u8]) -> Result<Self, CodecError> {
         let decoder = png::Decoder::new(io::Cursor::new(bytes));
         let mut reader = decoder

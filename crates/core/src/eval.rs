@@ -118,6 +118,12 @@ impl Error for EvalError {}
 ///
 /// Every [`EvalError`] maps to HTTP 400 per the spec's region/size rules.
 #[inline]
+#[expect(
+    clippy::modulo_arithmetic,
+    reason = "rotation normalisation: degrees are `0..=360` by the \
+              grammar, so `% 360.0` folds the single wrap-around value \
+              and cannot see a negative operand."
+)]
 pub fn evaluate(
     request: &ImageRequest,
     full_w: u32,
@@ -157,6 +163,13 @@ pub fn evaluate(
 ///
 /// [`EvalError::RegionOutOfBounds`] when the region lies entirely
 /// outside the image, which is a 400 rather than an empty result.
+#[expect(
+    clippy::integer_division,
+    clippy::integer_division_remainder_used,
+    reason = "`square` centres the crop: an odd leftover pixel has to go \
+              to one side, and the spec does not say which, so truncation \
+              picks and stays consistent."
+)]
 fn resolve_region(region: Region, full_w: u32, full_h: u32) -> Result<CropRect, EvalError> {
     match region {
         Region::Full => Ok(CropRect {
@@ -344,7 +357,6 @@ impl Plan {
 mod tests {
     #![expect(
         clippy::unwrap_used,
-        clippy::expect_used,
         clippy::missing_panics_doc,
         clippy::missing_errors_doc,
         reason = "test code: a panic here IS the failure signal, not a crash \

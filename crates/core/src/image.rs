@@ -84,6 +84,12 @@ fn luma_of(red: u8, green: u8, blue: u8) -> u8 {
 }
 
 /// One channel of source-over-white compositing.
+#[expect(
+    clippy::integer_division,
+    clippy::integer_division_remainder_used,
+    reason = "the 8-bit composite divide, as above: rounding is carried \
+              in the numerator and the truncation completes it."
+)]
 fn composite_channel(value: u8, alpha: u8) -> u8 {
     let alpha_wide = u16::from(alpha);
     let numerator = u16::from(value) * alpha_wide + 255 * (255 - alpha_wide) + 127;
@@ -278,6 +284,12 @@ impl Raster {
     /// Rotate clockwise by the given number of quarter turns (0–3).
     #[must_use]
     #[inline]
+    #[expect(
+        clippy::integer_division_remainder_used,
+        reason = "`quarters % 4` normalises a turn count; the operand is \
+                  unsigned, so the sign question this lint guards cannot \
+                  arise."
+    )]
     pub fn rotate_quarters(self, quarters: u8) -> Self {
         match quarters % 4 {
             1 => self.rotated_90(),
@@ -342,6 +354,14 @@ impl Raster {
     ///
     /// A half turn preserves the dimensions, so it is a pixel reversal
     /// and needs no second buffer.
+    #[expect(
+        clippy::integer_division,
+        clippy::integer_division_remainder_used,
+        reason = "`len / bpp` is the pixel count and `pixels / 2` is the \
+                  half that gets swapped — a middle pixel in an odd count \
+                  is already in place, which is exactly what truncating \
+                  leaves alone."
+    )]
     fn rotate_180(&mut self) {
         let bpp = self.channels() as usize;
         let data = self.data_mut();

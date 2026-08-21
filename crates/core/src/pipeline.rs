@@ -73,6 +73,11 @@ impl From<RasterError> for PipelineError {
 ///
 /// See [`PipelineError`].
 #[inline]
+#[expect(
+    clippy::modulo_arithmetic,
+    reason = "selects the quarter-turn fast path; degrees are `0..=360` \
+              by the grammar, so the operand cannot be negative."
+)]
 pub fn execute(source: &mut dyn Master, plan: &Plan) -> Result<Vec<u8>, PipelineError> {
     // 1. Decode the crop with enough detail for the output scale; the codec picks
     //    its own cheapest path (pyramid level, reduced- resolution wavelet decode,

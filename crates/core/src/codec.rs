@@ -402,6 +402,14 @@ impl<R: Read + Seek> TiffPyramid<R> {
     /// [`CodecError::Corrupt`] (they indicate a caller bug, not a client
     /// error — the evaluation layer already clipped).
     #[inline]
+    #[expect(
+        clippy::integer_division,
+        clippy::integer_division_remainder_used,
+        reason = "tile-grid arithmetic: `x / tile_width` IS which column \
+                  the pixel falls in, and the truncation is the answer. A \
+                  checked or exact division here would be asking a \
+                  question the tile grid does not have."
+    )]
     pub fn decode_region(
         &mut self,
         level_ifd: usize,
