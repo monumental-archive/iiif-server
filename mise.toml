@@ -81,13 +81,25 @@ description = "The official IIIF validators (v3 level 2 + v2.1) against a built 
 # the inputs include the public internet. The gate is deterministic;
 # this is not.
 #
-# NOTE (import, .github#671): this task currently has no scheduler. The
-# bespoke scheduled.yml that used to run the validators is deleted, and
-# the canon's repo-audit.yml runs a fixed set of belt audit legs, not a
-# caller's own. The two IIIF conformance shields in README.md are the
-# claim this task is the mechanism for, so the scheduling decision is
-# open and named rather than left to be discovered.
+# IT HAS A SCHEDULER NOW, and that is why the default below is not a
+# local tag. The canon's repo-audit.yml collects `mise run audit` —
+# every audit:* a caller defines — since .github#704, and this
+# repository's audit stub is pinned past it, so the Monday cron runs
+# this task. A cron runner has no locally built image, so the previous
+# default (iiif-server:local) would have failed on a missing image the
+# first time it fired. Found before it fired, not after.
+#
+# The default is therefore the PUBLISHED image, by digest: the bytes a
+# stranger pulls and the org attested, not a local twin — the same rule
+# the release path follows when it smokes the pulled-back image rather
+# than the loaded one. Nothing bumps this pin, so it is a per-release
+# chore until something does; a run against a superseded image is a
+# stale claim, which is worse than a red one and is why it is written
+# here rather than assumed.
+#
+# Override for a local build: IMAGE=iiif-server:local mise run
+# audit:iiif-validate.
 run = '''
 mise trust tools/fixtures/mise.toml
-scripts/validate_image.sh "${IMAGE:-iiif-server:local}"
+scripts/validate_image.sh "${IMAGE:-ghcr.io/monumental-archive/iiif-server@sha256:e751d510a2b45806ab03ce41794b44cee5b5eb8fd078452530dc23a65a77edd5}"
 '''
