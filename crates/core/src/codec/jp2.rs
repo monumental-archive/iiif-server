@@ -140,8 +140,9 @@ impl Jp2Master {
     }
 }
 
-/// The smallest `1/denom`-scaled rectangle covering `rect`: floor the
-/// origin, ceil the far edge. Mirrors the covering contract of
+/// The smallest `1/denom`-scaled rectangle covering `rect`.
+///
+/// Floor the origin, ceil the far edge. Mirrors the covering contract of
 /// `decode_region_scaled_pow2_into`, which sizes its output this way but
 /// only reports the rect after decoding — we need it first to size the
 /// buffer.

@@ -427,6 +427,13 @@ impl Raster {
     /// Convert to grayscale (BT.601 luma), a no-op for gray input.
     #[must_use]
     #[inline]
+    ///
+    /// # Panics
+    ///
+    /// Never in practice. The `assert!` inside the per-pixel loop restates
+    /// `chunks_exact`'s own length guarantee so the optimiser can elide the
+    /// repeated bounds checks — which is what `missing_asserts_for_indexing`
+    /// asks for — and it cannot fire for a chunk that iterator produced.
     pub fn into_gray(self) -> Self {
         match self {
             gray @ (Self::Gray8 { .. } | Self::GrayA8 { .. }) => gray,
@@ -437,7 +444,10 @@ impl Raster {
             } => {
                 let gray = data
                     .chunks_exact(3)
-                    .map(|px| luma_of(px[0], px[1], px[2]))
+                    .map(|px| {
+                        assert!(px.len() >= 3, "chunks_exact(3) yields 3 bytes");
+                        luma_of(px[0], px[1], px[2])
+                    })
                     .collect();
                 Self::Gray8 {
                     width,
@@ -452,7 +462,10 @@ impl Raster {
             } => {
                 let gray = data
                     .chunks_exact(4)
-                    .flat_map(|px| [luma_of(px[0], px[1], px[2]), px[3]])
+                    .flat_map(|px| {
+                        assert!(px.len() >= 4, "chunks_exact(4) yields 4 bytes");
+                        [luma_of(px[0], px[1], px[2]), px[3]]
+                    })
                     .collect();
                 Self::GrayA8 {
                     width,
@@ -590,6 +603,13 @@ impl Raster {
     /// No-op for already-opaque rasters.
     #[must_use]
     #[inline]
+    ///
+    /// # Panics
+    ///
+    /// Never in practice. The `assert!` inside the per-pixel loop restates
+    /// `chunks_exact`'s own length guarantee so the optimiser can elide the
+    /// repeated bounds checks — which is what `missing_asserts_for_indexing`
+    /// asks for — and it cannot fire for a chunk that iterator produced.
     pub fn flatten_over_white(self) -> Self {
         match self {
             opaque @ (Self::Gray8 { .. } | Self::Rgb8 { .. }) => opaque,
@@ -600,7 +620,10 @@ impl Raster {
             } => {
                 let flat = data
                     .chunks_exact(2)
-                    .map(|px| composite_channel(px[0], px[1]))
+                    .map(|px| {
+                        assert!(px.len() >= 2, "chunks_exact(2) yields 2 bytes");
+                        composite_channel(px[0], px[1])
+                    })
                     .collect();
                 Self::Gray8 {
                     width,

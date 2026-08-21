@@ -240,9 +240,11 @@ fn encode_jp2(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
     Ok(wrapped)
 }
 
-/// Hand-rolled single-image PDF (design decision: ~150 lines beat a
-/// dependency). The page embeds the pipeline's JPEG output via `DCTDecode`
-/// at 72 dpi, sized 1 pt per pixel.
+/// Hand-rolled single-image PDF.
+///
+/// A design decision: ~150 lines beat a dependency. The page embeds the
+/// pipeline's JPEG output via `DCTDecode` at 72 dpi, sized 1 pt per
+/// pixel.
 #[expect(
     clippy::too_many_lines,
     reason = "a minimal PDF writer is one linear object list; splitting scatters the xref math"

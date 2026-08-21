@@ -499,8 +499,9 @@ impl<R: Read + Seek> TiffPyramid<R> {
     }
 }
 
-/// Convert the tiff crate's decode output into our raster model. M0
-/// supports 8-bit gray and RGB; the M2 matrix widens this.
+/// Convert the tiff crate's decode output into our raster model.
+///
+/// M0 supports 8-bit gray and RGB; the M2 matrix widens this.
 /// Turn one decoded TIFF chunk into a [`Raster`], converting colour
 /// where the format allows it.
 ///
@@ -519,6 +520,13 @@ impl<R: Read + Seek> TiffPyramid<R> {
               restriction for another and adds an error path that cannot \
               be reached."
 )]
+///
+/// # Panics
+///
+/// Never in practice. The `assert!` inside the per-pixel loop restates
+/// `chunks_exact`'s own length guarantee so the optimiser can elide the
+/// repeated bounds checks — which is what `missing_asserts_for_indexing`
+/// asks for — and it cannot fire for a chunk that iterator produced.
 fn raster_from_decoded(
     result: DecodingResult,
     colortype: ColorType,
@@ -567,6 +575,7 @@ fn raster_from_decoded(
                 return Err(CodecError::Corrupt("short tile data".to_owned()));
             }
             for px in data.chunks_exact_mut(3) {
+                assert!(px.len() >= 3, "chunks_exact_mut(3) yields 3 bytes");
                 let [y, cb, cr] = [f64::from(px[0]), f64::from(px[1]), f64::from(px[2])];
                 let red = 1.402_f64.mul_add(cr - 128.0, y);
                 let green =
