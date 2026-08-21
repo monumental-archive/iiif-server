@@ -1,0 +1,8 @@
+# Repo-local vocabulary, merged with the org's (the belt passes both).
+# Domain jargon only: anything that is a real English correction belongs
+# fixed, not excused.
+
+[default.extend-words]
+# numpy's np.arange — the function's name, inside the embedded Python of
+# scripts/gen_eval_corpus.sh. typos reads it as "arrange".
+arange = "arange"

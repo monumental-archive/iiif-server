@@ -1,40 +1,8 @@
 ---
-# Git hooks: every commit and push passes the full gate. The universal lint
-# layer (shfmt/shellcheck/yamllint/taplo/markdownlint/codespell/ec/
-# actionlint/zizmor + conventional-commit enforcement) is consumed LIVE from
-# renovate-config via remotes: — decision record and consumer skeleton in
-# templates/lefthook/README.md there. Only per-stack Rust jobs live here.
-# We comply with the tools; fixing output is never optional. Personal
-# overrides go in lefthook-local.yml (gitignored).
-
 remotes:
-  - git_url: https://github.com/CarlAllenn/renovate-config
+  - git_url: https://github.com/monumental-archive/.github
+    ref: v1.51.0
     refetch_frequency: 24h
     configs:
-      - lefthook/universal.yml
-
-pre-commit:
-  parallel: true
-  jobs:
-    - name: fmt
-      glob: "*.rs"
-      # Pinned nightly rustfmt via the Taskfile (single source for the pin).
-      run: task lint:fmt-check
-
-    - name: clippy
-      glob: "*.rs"
-      run: cargo clippy --workspace --all-features --all-targets -- -D warnings
-
-    - name: deny
-      glob: "{Cargo.toml,Cargo.lock,deny.toml}"
-      run: cargo deny check -D unmatched-skip
-
-    - name: machete
-      # Dependency drift only enters through a manifest edit.
-      glob: "**/Cargo.toml"
-      run: cargo machete --with-metadata
-
-pre-push:
-  jobs:
-    - name: test
-      run: cargo test --workspace --all-features
+      - lefthook/org-hooks.yml
+...

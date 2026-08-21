@@ -1,13 +1,4 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["github>CarlAllenn/renovate-config"],
-  "packageRules": [
-    {
-      "description": "Pin-forever class (pure compute, no hostile bytes): majors need a deliberate decision, never forced",
-      "matchManagers": ["cargo"],
-      "matchPackageNames": ["fast_image_resize", "jpeg-encoder", "gif", "image-webp"],
-      "matchUpdateTypes": ["major"],
-      "dependencyDashboardApproval": true
-    }
-  ]
+  "extends": ["github>monumental-archive/.github#v1.51.0"]
 }

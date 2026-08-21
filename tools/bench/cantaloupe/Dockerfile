@@ -60,6 +60,16 @@ FROM eclipse-temurin:25-jre-noble@sha256:fbcf915c585659b30eb766ada4d6d7cfc9ec104
 
 # Current security patches for the base's OS packages (temurin images lag
 # Ubuntu's archive between rebuilds); versionless by necessity, upgrade-only.
+#
+# DL3008 EXCEPTION, at the site rather than in a config, and dated:
+# 2026-08-21, the import (.github#671). Ubuntu's archive rotates point
+# releases out, so a pinned apt version stops resolving and breaks a
+# rebuild of THIS image — which is the Cantaloupe comparison harness,
+# built locally for the benchmark and never published, never shipped and
+# never signed. The shipping image is `scratch` and installs nothing at
+# all. The org belt runs hadolint with no config, so an exception lives
+# here where a reader of the line meets it.
+# hadolint ignore=DL3008
 RUN apt-get update \
     && apt-get upgrade -y \
     && apt-get install -y --no-install-recommends libopenjp2-tools \

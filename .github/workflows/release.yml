@@ -1,172 +1,58 @@
+# Release phase 1. This stub is a versioned repo's entire release-PR
+# obligation: version decision, changelog, Release PR, and — on merge —
+# the App-minted v* tag and draft release, all via the shared workflow.
+# Phase 2 (this repository's own publish workflow, triggered by the tag)
+# builds, proves and signs. See docs/release.md in monumental-archive/.github.
 ---
-# Every allowlist in this file is audit-derived (issue #69), read off the
-# runs that actually happened rather than written by construction. The
-# construction-written versions broke four separate release attempts, each on
-# an endpoint no reading of the workflow would produce — Docker Hub's
-# CloudFront blob host, npm reached through mise's hierarchical config, the
-# attestation bundle host, mise's own version index. Do not prune an entry
-# because it looks unnecessary; re-derive it from an audit run or leave it.
-#
-# Three GitHub infrastructure families are wildcarded rather than pinned,
-# because the host index or region rotates between runs and a literal entry
-# is a latent failure rather than a tighter policy:
-# *.actions.githubusercontent.com (run-actions-N-azure-REGION, broker,
-# results-receiver), *.blob.core.windows.net (productionresultssaNN, NN
-# observed 0-19), and *.githubapp.com (the hosted-compute watchdog and
-# orchestrator, which fuzz.yml records reaping runners when blocked).
 name: release
-
-# Phase 1 of two. This workflow decides the version, maintains the Release PR,
-# and — when that PR is merged — tags and cuts a DRAFT GitHub release. It
-# builds nothing and publishes nothing.
-#
-# Merging the Release PR is the commitment point (release canon,
-# renovate-config templates/release/). Nothing releases on an arbitrary push
-# to main: an ordinary push only ever refreshes the PR.
-#
-# Phase 2 (publish.yml) is triggered by the tag this pushes, and runs with
-# `github.ref` set to that tag. That split is the whole point: provenance
-# records the ref of the run that signs, so a workflow running on `main` can
-# only ever attest `refs/heads/main` — a moving pointer that proves nothing.
-# edtf learned this at v1.0.0, whose attestations permanently name a commit
-# that built none of the published bytes.
-#
-# Neither release-plz nor release-please can drive this workspace; the
-# evidence is in docs/release-engineering.md. Phase 1 is therefore git-cliff
-# (version + changelog) plus gh, which is less machinery than it sounds.
 
 "on":
   push:
-    branches: [main]
+    branches:
+      - main
+  # Refresh the open Release PR when a publish completes: the PR is
+  # created before the previous release finishes publishing, so any
+  # derivation that reads "the published release" (the pgrx upgrade
+  # path) would otherwise start from a version about to be superseded
+  # (#358 seam 5). Harmless for repos with no such derivation — the
+  # refresh recomputes the same content.
+  release:
+    types:
+      - published
   # Recovery path: re-run the tag step against a release commit whose first
-  # attempt failed. The script refuses to run on anything else.
+  # attempt failed. The shared workflow refuses anything else.
   workflow_dispatch: {}
 
 permissions: {}
 
-# Never cancel a release mid-flight; queue instead. Keyed per commit.
+# Never cancel a release mid-flight; queue instead — and the group is the
+# WORKFLOW, never the commit. The Release PR machinery works on two fixed
+# branches (release/next, release-staging/next), so per-commit keying
+# serialised nothing: two pushes to main in quick succession ran two
+# release jobs at once, the second recreated the staging ref under the
+# first, and the first died mid-script on a 403 (measured in release-lab,
+# 2026-08-13 — two merges four minutes apart). The canon's own
+# self-release.yml always keyed on the workflow; this template disagreed
+# with it unnoticed, because the canon does not consume this file.
 concurrency:
-  group: release-${{ github.sha }}
+  group: ${{ github.workflow }}
   cancel-in-progress: false
 
 jobs:
-  tag:
-    name: Tag on Release PR merge
-    # The two jobs are mutually exclusive by commit subject, so unlike a
-    # release-plz setup there is no ordering race between them to serialise.
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      startsWith(github.event.head_commit.message, 'chore: release v')
-    runs-on: ubuntu-latest
+  release:
+    # No `with:` at all. The App is identified by the org-wide variable
+    # TAG_MINT_APP_CLIENT_ID, read by the shared workflow itself, so a
+    # caller carries no App identity and never needs updating when it
+    # changes.
+    uses: monumental-archive/.github/.github/workflows/release.yml@71b9c85bc0c2f7777c8baf1482266a863a96ea16 # v1.51.0
     permissions:
-      contents: write # create the draft release (the tag goes via the PAT)
-    steps:
-      # First step of every job, before checkout: runtime egress enforcement
-      # (issue #6 canon). Derived by construction rather than from an audit
-      # run — replace with audit-derived endpoints after the first live
-      # release, per templates/ci/README.md.
-      - uses: step-security/harden-runner@b09bb98e06d4d774595224525879c09bc6e98c40 # v2.20.1
-        with:
-          egress-policy: block
-          disable-sudo: true
-          allowed-endpoints: >
-            *.actions.githubusercontent.com:443
-            *.blob.core.windows.net:443
-            *.githubapp.com:443
-            api.github.com:443
-            codeload.github.com:443
-            github.com:443
-            mise-versions.jdx.dev:443
-            mise.jdx.dev:443
-            objects.githubusercontent.com:443
-            raw.githubusercontent.com:443
-            release-assets.githubusercontent.com:443
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          # git-cliff reads the whole history to build the notes.
-          fetch-depth: 0
-          # The tag is pushed with the PAT below, so the checkout credential
-          # is neither needed nor wanted.
-          persist-credentials: false
-      - uses: jdx/mise-action@7e36c90d9ab29c415a2384db3006f3ec8a8cc654 # v4.2.4
-        with:
-          # renovate: datasource=github-releases depName=jdx/mise
-          version: 2026.8.0
-          # Single-purpose job: install only its own tools (canon rule,
-          # templates/ci/README.md).
-          install_args: taplo aqua:orhun/git-cliff
-          # No tool cache in a job that tags a release (zizmor
-          # cache-poisoning): everything downstream of this tag gets signed.
-          cache: false
-      - name: Tag and cut the draft release
-        env:
-          # PAT, not GITHUB_TOKEN: a tag pushed with the default token does
-          # not trigger publish.yml, and the release would silently never
-          # build.
-          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git remote set-url origin \
-            "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          .github/scripts/tag-release.sh
-
-  release-pr:
-    name: Maintain the Release PR
-    if: >-
-      github.event_name == 'push' &&
-      !startsWith(github.event.head_commit.message, 'chore: release v')
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write # push the release branch
-      pull-requests: write # open/update the Release PR
-    steps:
-      - uses: step-security/harden-runner@b09bb98e06d4d774595224525879c09bc6e98c40 # v2.20.1
-        with:
-          egress-policy: block
-          disable-sudo: true
-          # cafe.github.com is the entry no reading produces: the `gh`
-          # process resolves it while this job drives the GraphQL
-          # createCommitOnBranch call that makes the Release PR's commit.
-          # It appears in the audit runs and nowhere in any documentation,
-          # which is the whole argument for deriving these lists.
-          allowed-endpoints: >
-            *.actions.githubusercontent.com:443
-            *.blob.core.windows.net:443
-            *.githubapp.com:443
-            api.github.com:443
-            cafe.github.com:443
-            codeload.github.com:443
-            crates.io:443
-            github.com:443
-            index.crates.io:443
-            mise-versions.jdx.dev:443
-            mise.jdx.dev:443
-            objects.githubusercontent.com:443
-            raw.githubusercontent.com:443
-            release-assets.githubusercontent.com:443
-            static.crates.io:443
-            static.rust-lang.org:443
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: jdx/mise-action@7e36c90d9ab29c415a2384db3006f3ec8a8cc654 # v4.2.4
-        with:
-          # renovate: datasource=github-releases depName=jdx/mise
-          version: 2026.8.0
-          install_args: rust taplo aqua:orhun/git-cliff
-      - name: Prepare the release
-        id: prepare
-        run: .github/scripts/prepare-release.sh
-      # A range of nothing but chore/ci/docs commits bumps no version, so
-      # there is nothing to propose and no empty PR to leave lying around.
-      - name: Open or update the Release PR
-        if: steps.prepare.outputs.release == 'true'
-        env:
-          # PAT so the Release PR's own CI runs — PRs created with the
-          # default GITHUB_TOKEN do not trigger workflows, and an unverified
-          # release PR is the one PR that must never be merged unverified.
-          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-          VERSION: ${{ steps.prepare.outputs.version }}
-        run: .github/scripts/open-release-pr.sh
+      # Required, and easy to omit. A `uses:` job with no `permissions:`
+      # block inherits the WORKFLOW-level default — `permissions: {}` above
+      # — not some ambient grant. stele derive reads the repository's commits
+      # through the GitHub API, so the shared workflow needs this; without
+      # it the run dies as startup_failure with no jobs and no log.
+      contents: read # the version derivation's history read, and the checkout
+      id-token: write # gitsign's keyless signature on the release tag (#349 S4)
+    secrets:
+      app-private-key: ${{ secrets.TAG_MINT_APP_PRIVATE_KEY }}
+...
