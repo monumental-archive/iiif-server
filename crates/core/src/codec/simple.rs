@@ -125,12 +125,12 @@ impl SimpleMaster {
                     height,
                     data,
                 }
-            },
+            }
             (color, depth) => {
                 return Err(CodecError::Unsupported(format!(
                     "PNG {color:?}/{depth:?} is not yet in the supported matrix"
                 )));
-            },
+            }
         };
         Ok(Self { raster })
     }

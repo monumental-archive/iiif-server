@@ -272,12 +272,12 @@ impl Raster {
                 let mut out = self;
                 out.rotate_180();
                 out
-            },
+            }
             3 => {
                 let mut out = self.rotated_90();
                 out.rotate_180();
                 out
-            },
+            }
             _ => self,
         }
     }
@@ -352,7 +352,7 @@ impl Raster {
                     height,
                     data: gray,
                 }
-            },
+            }
             Self::Rgba8 {
                 width,
                 height,
@@ -367,7 +367,7 @@ impl Raster {
                     height,
                     data: gray,
                 }
-            },
+            }
         }
     }
 
@@ -389,7 +389,7 @@ impl Raster {
                     height,
                     data,
                 }
-            },
+            }
             Self::GrayA8 {
                 width,
                 height,
@@ -403,7 +403,7 @@ impl Raster {
                     height,
                     data,
                 }
-            },
+            }
             other => other, // unreachable: into_gray never returns RGB
         }
     }
@@ -502,7 +502,7 @@ impl Raster {
                     height,
                     data: flat,
                 }
-            },
+            }
             Self::Rgba8 {
                 width,
                 height,
@@ -517,7 +517,7 @@ impl Raster {
                     height,
                     data: flat,
                 }
-            },
+            }
         }
     }
 }

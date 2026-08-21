@@ -39,7 +39,7 @@ impl fmt::Display for EncodeError {
                 height,
             } => {
                 write!(f, "{width}×{height} exceeds what {format} can represent")
-            },
+            }
             Self::Internal(msg) => write!(f, "encoder failure: {msg}"),
         }
     }
@@ -97,7 +97,7 @@ fn encode_tiff(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
                 return Err(EncodeError::Internal(
                     "alpha survived flattening".to_owned(),
                 ));
-            },
+            }
         }
     }
     Ok(cursor.into_inner())
@@ -125,12 +125,12 @@ fn encode_gif(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
                 .flat_map(|&px| [px, px, px])
                 .collect::<Vec<u8>>();
             &rgb
-        },
+        }
         _ => {
             return Err(EncodeError::Internal(
                 "alpha survived flattening".to_owned(),
             ));
-        },
+        }
     };
     let frame = gif::Frame::from_rgb(width, height, pixels);
     let mut out = Vec::new();
@@ -171,7 +171,7 @@ fn encode_jp2(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
             return Err(EncodeError::Internal(
                 "alpha survived flattening".to_owned(),
             ));
-        },
+        }
     };
     let samples = j2k::J2kLosslessSamples {
         data,
@@ -314,7 +314,7 @@ fn encode_jpeg(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
         Raster::GrayA8 { .. } | Raster::Rgba8 { .. } => {
             flattened = raster.clone().flatten_over_white();
             &flattened
-        },
+        }
         opaque => opaque,
     };
     let width = u16::try_from(raster.width());
@@ -336,7 +336,7 @@ fn encode_jpeg(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
             return Err(EncodeError::Internal(
                 "alpha survived flattening".to_owned(),
             ));
-        },
+        }
     };
     encoder
         .encode(raster.data(), width, height, color)

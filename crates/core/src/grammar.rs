@@ -205,7 +205,7 @@ fn parse_f64(s: &str) -> Option<f64> {
                 && !frac.is_empty()
                 && int.bytes().all(|b| b.is_ascii_digit())
                 && frac.bytes().all(|b| b.is_ascii_digit())
-        },
+        }
         None => !s.is_empty() && s.bytes().all(|b| b.is_ascii_digit()),
     };
     if !valid {
@@ -238,7 +238,7 @@ impl Region {
         match input {
             "full" => return Ok(Self::Full),
             "square" => return Ok(Self::Square),
-            _ => {},
+            _ => {}
         }
         if let Some(rest) = input.strip_prefix("pct:") {
             let mut fields = rest.split(',');
@@ -320,21 +320,21 @@ impl Size {
                         return Err(err());
                     }
                     SizeKind::Width(w)
-                },
+                }
                 (true, false) => {
                     let h = parse_u32(h).ok_or_else(err)?;
                     if h == 0 {
                         return Err(err());
                     }
                     SizeKind::Height(h)
-                },
+                }
                 (false, false) => {
                     let (w, h) = (parse_u32(w).ok_or_else(err)?, parse_u32(h).ok_or_else(err)?);
                     if w == 0 || h == 0 {
                         return Err(err());
                     }
                     SizeKind::WidthHeight(w, h)
-                },
+                }
             }
         };
         Ok(Self { upscale, kind })

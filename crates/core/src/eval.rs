@@ -96,7 +96,7 @@ impl fmt::Display for EvalError {
             Self::RegionOutOfBounds => "region is outside the image bounds",
             Self::UpscaleWithoutFlag => {
                 "requested size exceeds the extracted region (use the ^ prefix)"
-            },
+            }
             Self::BelowOnePixel => "scaled size is below one pixel",
             Self::ExceedsLimits => "scaled size exceeds the published limits",
         };
@@ -160,7 +160,7 @@ fn resolve_region(region: Region, full_w: u32, full_h: u32) -> Result<CropRect, 
                 w: side,
                 h: side,
             })
-        },
+        }
         Region::Pixels { x, y, w, h } => {
             if x >= full_w || y >= full_h {
                 return Err(EvalError::RegionOutOfBounds);
@@ -171,7 +171,7 @@ fn resolve_region(region: Region, full_w: u32, full_h: u32) -> Result<CropRect, 
                 w: w.min(full_w - x),
                 h: h.min(full_h - y),
             })
-        },
+        }
         Region::Percent { x, y, w, h } => {
             let px = round_u32(x / 100.0 * f64::from(full_w));
             let py = round_u32(y / 100.0 * f64::from(full_h));
@@ -189,7 +189,7 @@ fn resolve_region(region: Region, full_w: u32, full_h: u32) -> Result<CropRect, 
                 w: pw.min(full_w - px),
                 h: ph.min(full_h - py),
             })
-        },
+        }
     }
 }
 
@@ -211,31 +211,31 @@ fn resolve_size(
                 floor_u32((rw * scale).max(1.0)),
                 floor_u32((rh * scale).max(1.0)),
             )
-        },
+        }
         SizeKind::Width(w) => {
             if !size.upscale && w > region_w {
                 return Err(EvalError::UpscaleWithoutFlag);
             }
             let scale = f64::from(w) / rw;
             (w, round_u32(rh * scale))
-        },
+        }
         SizeKind::Height(h) => {
             if !size.upscale && h > region_h {
                 return Err(EvalError::UpscaleWithoutFlag);
             }
             let scale = f64::from(h) / rh;
             (round_u32(rw * scale), h)
-        },
+        }
         SizeKind::Percent(pct) => {
             let scale = pct / 100.0;
             (round_u32(rw * scale), round_u32(rh * scale))
-        },
+        }
         SizeKind::WidthHeight(w, h) => {
             if !size.upscale && (w > region_w || h > region_h) {
                 return Err(EvalError::UpscaleWithoutFlag);
             }
             (w, h)
-        },
+        }
         SizeKind::Confined(w, h) => {
             let fit = (f64::from(w) / rw).min(f64::from(h) / rh);
             // A confining box strictly larger than the region can only be
@@ -245,7 +245,7 @@ fn resolve_size(
                 return Err(EvalError::UpscaleWithoutFlag);
             }
             (round_u32(rw * fit), round_u32(rh * fit))
-        },
+        }
     };
     let upscales = out_w > region_w || out_h > region_h;
     if upscales && !size.upscale {

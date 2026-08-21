@@ -57,7 +57,7 @@ const USAGE: &str = "usage: iiif-server serve <root> [--bind ADDR] [--max-width 
 <root> is a local directory or s3://bucket/prefix (credentials from the
 environment; --endpoint for S3-compatible services). `check` inspects
 masters offline and prints serving advice. `healthcheck` probes a running
-server's /healthz (default 127.0.0.1:6363) and exits 0 when it answers 200 —
+server's /healthz (default 127.0.0.1:6363) and exits 0 when it answers 200 \u{2014}
 it exists so the container image, which holds nothing but this binary, can
 still declare a HEALTHCHECK.";
 
@@ -104,7 +104,7 @@ async fn probe_health(addr: SocketAddr) -> Result<(), String> {
         .map_err(|e| format!("write {addr}: {e}"))?;
     // The status line is all that matters, and it arrives first; read until
     // the end of it rather than draining a body we will not look at.
-    let mut buffer = [0u8; 128];
+    let mut buffer = [0_u8; 128];
     let mut filled = 0;
     while filled < buffer.len() {
         let read = stream
@@ -140,11 +140,11 @@ async fn shutdown_signal() {
         match tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate()) {
             Ok(mut signal) => {
                 signal.recv().await;
-            },
+            }
             Err(e) => {
                 error!("SIGTERM handler registration failed, falling back to SIGINT only: {e}");
-                std::future::pending::<()>().await;
-            },
+                core::future::pending::<()>().await;
+            }
         }
     };
     #[cfg(not(unix))]
@@ -153,7 +153,7 @@ async fn shutdown_signal() {
     let interrupt = async {
         if let Err(e) = tokio::signal::ctrl_c().await {
             error!("interrupt handler registration failed: {e}");
-            std::future::pending::<()>().await;
+            core::future::pending::<()>().await;
         }
     };
 
@@ -166,8 +166,8 @@ async fn shutdown_signal() {
 /// `iiif-server check <path>`: offline master inspection — the operator
 /// tool that turns serving-time surprises into setup-time advice.
 fn run_check(path: &Path) -> ExitCode {
-    let mut failures = 0u32;
-    let mut checked = 0u32;
+    let mut failures = 0_u32;
+    let mut checked = 0_u32;
     let mut walk = vec![path.to_path_buf()];
     while let Some(entry) = walk.pop() {
         if entry.is_dir() {
@@ -176,11 +176,11 @@ fn run_check(path: &Path) -> ExitCode {
                     for child in children.flatten() {
                         walk.push(child.path());
                     }
-                },
+                }
                 Err(e) => {
                     eprintln!("{}: unreadable directory: {e}", entry.display());
                     failures += 1;
-                },
+                }
             }
             continue;
         }
@@ -204,11 +204,11 @@ fn run_check(path: &Path) -> ExitCode {
                 for advisory in master.advisories() {
                     println!("  advice: {advisory}");
                 }
-            },
+            }
             Err(message) => {
                 println!("{}: REJECTED — {message}", entry.display());
                 failures += 1;
-            },
+            }
         }
     }
     println!("checked {checked} file(s), {failures} rejected");
@@ -222,7 +222,7 @@ fn run_check(path: &Path) -> ExitCode {
 fn parse_args(args: &[String]) -> Result<Config, String> {
     let mut it = args.iter();
     match it.next().map(String::as_str) {
-        Some("serve") => {},
+        Some("serve") => {}
         _ => return Err(USAGE.to_owned()),
     }
     let root = it.next().ok_or(USAGE)?.clone();
@@ -232,7 +232,7 @@ fn parse_args(args: &[String]) -> Result<Config, String> {
         max_width: 8192,
         max_height: 8192,
         max_area: 33_554_432, // 32 megapixels
-        workers: std::thread::available_parallelism().map_or(4, std::num::NonZero::get),
+        workers: std::thread::available_parallelism().map_or(4, core::num::NonZero::get),
         queue_depth: 64,
         public_base: None,
         endpoint: None,
@@ -243,19 +243,19 @@ fn parse_args(args: &[String]) -> Result<Config, String> {
             "--bind" => config.bind = value.parse().map_err(|e| format!("--bind: {e}"))?,
             "--max-width" => {
                 config.max_width = value.parse().map_err(|e| format!("--max-width: {e}"))?;
-            },
+            }
             "--max-height" => {
                 config.max_height = value.parse().map_err(|e| format!("--max-height: {e}"))?;
-            },
+            }
             "--max-area" => {
                 config.max_area = value.parse().map_err(|e| format!("--max-area: {e}"))?;
-            },
+            }
             "--workers" => {
                 config.workers = value.parse().map_err(|e| format!("--workers: {e}"))?;
-            },
+            }
             "--queue-depth" => {
                 config.queue_depth = value.parse().map_err(|e| format!("--queue-depth: {e}"))?;
-            },
+            }
             "--public-base" => config.public_base = Some(value.clone()),
             "--endpoint" => config.endpoint = Some(value.clone()),
             other => return Err(format!("unknown flag {other}\n{USAGE}")),
@@ -275,12 +275,12 @@ fn main() -> ExitCode {
         Some("--version" | "-V") => {
             println!("{}", version_line());
             return ExitCode::SUCCESS;
-        },
+        }
         Some("--help" | "-h") => {
             println!("{USAGE}");
             return ExitCode::SUCCESS;
-        },
-        _ => {},
+        }
+        _ => {}
     }
     tracing_subscriber::fmt()
         .with_env_filter(
@@ -295,7 +295,7 @@ fn main() -> ExitCode {
                 Err(e) => {
                     eprintln!("healthcheck: {raw}: {e}");
                     return ExitCode::FAILURE;
-                },
+                }
             },
             None => SocketAddr::from(([127, 0, 0, 1], 6363)),
         };
@@ -308,7 +308,7 @@ fn main() -> ExitCode {
             Err(e) => {
                 eprintln!("healthcheck: runtime startup failed: {e}");
                 return ExitCode::FAILURE;
-            },
+            }
         };
         // The timer has to be constructed inside the runtime, not handed to
         // block_on ready-made — `Sleep::new` needs the reactor to exist.
@@ -319,11 +319,11 @@ fn main() -> ExitCode {
             Ok(Err(message)) => {
                 eprintln!("healthcheck: {message}");
                 ExitCode::FAILURE
-            },
+            }
             Err(_) => {
                 eprintln!("healthcheck: no answer from {addr} within {HEALTHCHECK_TIMEOUT:?}");
                 ExitCode::FAILURE
-            },
+            }
         };
     }
     if args.first().map(String::as_str) == Some("check") {
@@ -338,21 +338,21 @@ fn main() -> ExitCode {
         Err(message) => {
             eprintln!("{message}");
             return ExitCode::FAILURE;
-        },
+        }
     };
     let runtime = match tokio::runtime::Runtime::new() {
         Ok(runtime) => runtime,
         Err(e) => {
             error!("runtime startup failed: {e}");
             return ExitCode::FAILURE;
-        },
+        }
     };
     match runtime.block_on(serve(config)) {
         Ok(()) => ExitCode::SUCCESS,
         Err(message) => {
             error!("{message}");
             ExitCode::FAILURE
-        },
+        }
     }
 }
 
@@ -420,7 +420,7 @@ async fn serve(config: Config) -> Result<(), String> {
         tokio::spawn(async move {
             let service = service_fn(move |req| {
                 let app = Arc::clone(&app);
-                async move { Ok::<_, std::convert::Infallible>(app.handle(req).await) }
+                async move { Ok::<_, core::convert::Infallible>(app.handle(req).await) }
             });
             let connection = hyper::server::conn::http1::Builder::new()
                 .serve_connection(TokioIo::new(stream), service);

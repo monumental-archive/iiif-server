@@ -295,7 +295,7 @@ impl App {
                         .header(CONTENT_TYPE, "text/plain; version=0.0.4")
                         .body(Full::new(Bytes::from(body))),
                 )
-            },
+            }
             Route::BaseRedirect {
                 version,
                 identifier,
@@ -330,7 +330,7 @@ impl App {
                     .map(str::to_owned);
                 self.image(version, identifier, rest, &base, if_none_match)
                     .await
-            },
+            }
             Route::None => error(StatusCode::NOT_FOUND, "no such resource"),
         };
         add_cors(&mut response);
@@ -501,7 +501,7 @@ impl App {
                         .header(CACHE_CONTROL, CACHE_CONTROL_VALUE)
                         .body(Full::new(Bytes::from(bytes))),
                 )
-            },
+            }
             Ok(Err(failure)) => failure.into_response(),
             Err(_) => error(StatusCode::INTERNAL_SERVER_ERROR, "decode task failed"),
         }
@@ -684,7 +684,7 @@ fn codec_error(e: &CodecError) -> Response<Full<Bytes>> {
         // ceiling); the message carries the conversion advice.
         CodecError::LimitExceeded(msg) => {
             error(StatusCode::FORBIDDEN, &format!("limit exceeded: {msg}"))
-        },
+        }
         CodecError::Raster(_) => error(StatusCode::INTERNAL_SERVER_ERROR, "pipeline failure"),
     }
 }

@@ -94,7 +94,7 @@ impl ByteRangeSource for LocalFile {
                 });
             };
             let join = tokio::task::spawn_blocking(move || {
-                let mut buf = vec![0u8; len_usize];
+                let mut buf = vec![0_u8; len_usize];
                 read_exact_at(&file, &mut buf, offset)?;
                 Ok::<_, std::io::Error>(Bytes::from(buf))
             })
@@ -116,7 +116,7 @@ impl ByteRangeSource for LocalFile {
 /// Positional read without moving a shared cursor.
 #[cfg(unix)]
 fn read_exact_at(file: &File, buf: &mut [u8], offset: u64) -> std::io::Result<()> {
-    use std::os::unix::fs::FileExt;
+    use std::os::unix::fs::FileExt as _;
     file.read_exact_at(buf, offset)
 }
 
@@ -187,8 +187,8 @@ pub struct ObjectRoot {
     prefix: String,
 }
 
-impl std::fmt::Debug for ObjectRoot {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Debug for ObjectRoot {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("ObjectRoot")
             .field("prefix", &self.prefix)
             .finish_non_exhaustive()
@@ -236,7 +236,7 @@ impl ObjectRoot {
     /// [`SourceError::NotFound`] for missing objects; [`SourceError::Io`]
     /// for transport failures.
     pub async fn resolve(&self, id: &Identifier) -> Result<(Bytes, (u64, u64)), SourceError> {
-        use object_store::ObjectStoreExt;
+        use object_store::ObjectStoreExt as _;
         let path = if self.prefix.is_empty() {
             object_store::path::Path::from(id.as_path())
         } else {
@@ -252,7 +252,7 @@ impl ObjectRoot {
             .await
             .map_err(|e| SourceError::Io(std::io::Error::other(e)))?;
         let version_hash = {
-            use std::hash::{Hash, Hasher};
+            use core::hash::{Hash as _, Hasher as _};
             let mut hasher = std::collections::hash_map::DefaultHasher::new();
             meta.e_tag.hash(&mut hasher);
             meta.last_modified.timestamp().hash(&mut hasher);

@@ -149,7 +149,7 @@ fn read_up_to<R: Read>(reader: &mut R, buf: &mut [u8]) -> std::io::Result<usize>
         match reader.read(&mut buf[filled..]) {
             Ok(0) => break,
             Ok(n) => filled += n,
-            Err(e) if e.kind() == std::io::ErrorKind::Interrupted => {},
+            Err(e) if e.kind() == std::io::ErrorKind::Interrupted => {}
             Err(e) => return Err(e),
         }
     }
@@ -462,7 +462,7 @@ fn raster_from_decoded(
                 height,
                 data,
             })
-        },
+        }
         ColorType::RGB(8) => {
             let mut data = data;
             data.truncate(pixels * 3);
@@ -474,7 +474,7 @@ fn raster_from_decoded(
                 height,
                 data,
             })
-        },
+        }
         ColorType::YCbCr(8) => {
             // For JPEG-compressed tiles the tiff crate keeps the JPEG
             // decoder's *input* colorspace, so the buffer holds
@@ -501,7 +501,7 @@ fn raster_from_decoded(
                 height,
                 data,
             })
-        },
+        }
         other => Err(CodecError::Unsupported(format!(
             "color type {other:?} not yet in the supported matrix \
             (level {}×{})",
