@@ -12,6 +12,12 @@ over the surface named in [MAINTENANCE.md](MAINTENANCE.md) — the HTTP API, the
 CLI flags and the container contract. Internal Rust APIs are not covered:
 nothing in this workspace is published to a registry.
 
+## [0.2.2](https://github.com/monumental-archive/iiif-server/compare/v0.2.1...v0.2.2) - 2026-08-21
+
+### Fixed
+
+- update h2 to 0.4.18 for RUSTSEC-2026-0258 ([#131](https://github.com/monumental-archive/iiif-server/pull/131))
+
 ## [0.2.1](https://github.com/monumental-archive/iiif-server/compare/v0.2.0...v0.2.1) - 2026-08-21
 
 ### Fixed
