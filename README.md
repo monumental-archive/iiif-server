@@ -3,8 +3,6 @@
 [![gate](https://github.com/monumental-archive/iiif-server/actions/workflows/ci.yml/badge.svg)](https://github.com/monumental-archive/iiif-server/actions/workflows/ci.yml)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/monumental-archive/iiif-server/badge)](https://scorecard.dev/viewer/?uri=github.com/monumental-archive/iiif-server)
 [![release](https://img.shields.io/github/v/release/monumental-archive/iiif-server)](https://github.com/monumental-archive/iiif-server/releases/latest)
-[![IIIF 3.0 level 2](https://img.shields.io/badge/IIIF%203.0%20level%202-33%2F33-blue)](#what-ships)
-[![IIIF 2.1](https://img.shields.io/badge/IIIF%202.1-30%2F30-blue)](#what-ships)
 [![image size](https://img.shields.io/badge/image-%3C25%20MB-blue)](scripts/check_image_size.sh)
 [![REUSE status](https://api.reuse.software/badge/github.com/monumental-archive/iiif-server)](https://api.reuse.software/info/github.com/monumental-archive/iiif-server)
 [![license](https://img.shields.io/badge/license-AGPL--3.0--only-blue.svg)](LICENSE)
@@ -46,8 +44,8 @@ for every image.
 
 | Surface | Status |
 | --- | --- |
-| Image API 3.0, level 2 + all optional features | official validator: 33/33 |
-| Image API 2.1, all 18 named features | official validator: 30/30 |
+| Image API 3.0, level 2 + all optional features | official validator: 33/33 (run on demand, see below) |
+| Image API 2.1, all 18 named features | official validator: 30/30 (run on demand, see below) |
 | Regions: `full`, `square`, px, `pct:` | complete |
 | Sizes incl. every `^` upscaling form | complete |
 | Rotation: 90° steps, mirroring, arbitrary angles | complete (transparent corners on PNG/WebP) |
@@ -76,7 +74,10 @@ rationale) live in [MAINTENANCE.md](MAINTENANCE.md).
 
 Correctness is enforced three ways: the **official IIIF validators**
 (`mise run audit:iiif-validate`, run against a built image, both API
-versions), **golden/differential tests** pin pixels against libvips,
+versions — **on demand, not on a schedule**, which is why the
+conformance figures above wear no shield: nothing runs them
+automatically yet, and a shield over an unrun check is a claim with no
+mechanism), **golden/differential tests** pin pixels against libvips,
 libjpeg, and
 OpenJPEG — bit-exact where the math says bit-exact — and **property
 tests** cover the grammar (parse↔print round-trips, canonicalization,
