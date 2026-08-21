@@ -5,6 +5,27 @@
 //! served from pyramidal TIFF, lossless JP2, plain JPEG, and plain PNG —
 //! all through `open_master` and the shared pipeline.
 
+#![expect(
+    clippy::arithmetic_side_effects,
+    clippy::as_conversions,
+    clippy::decimal_literal_representation,
+    clippy::default_numeric_fallback,
+    clippy::indexing_slicing,
+    clippy::integer_division,
+    clippy::integer_division_remainder_used,
+    clippy::min_ident_chars,
+    clippy::missing_panics_doc,
+    clippy::panic,
+    clippy::std_instead_of_core,
+    clippy::tests_outside_test_module,
+    reason = "test and example code. A panic IS the failure signal here, so \
+              `# Panics` sections and assertion messages would describe the \
+              mechanism the harness works by; fixtures are indexed and \
+              scaled with arithmetic over constants in the file above them; \
+              and a `#[test]` at the top level of a `tests/` file is what an \
+              integration test IS. The crate under test is held to every \
+              one of these."
+)]
 #![allow(
     clippy::unwrap_used,
     clippy::expect_used,

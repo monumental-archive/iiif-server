@@ -12,6 +12,30 @@
 //!
 //! Run: `cargo run --release -p iiif-sources --example objstore_spike`
 
+#![expect(
+    clippy::absolute_paths,
+    clippy::arithmetic_side_effects,
+    clippy::as_conversions,
+    clippy::decimal_literal_representation,
+    clippy::default_numeric_fallback,
+    clippy::doc_paragraphs_missing_punctuation,
+    clippy::float_arithmetic,
+    clippy::indexing_slicing,
+    clippy::integer_division,
+    clippy::integer_division_remainder_used,
+    clippy::missing_assert_message,
+    clippy::missing_docs_in_private_items,
+    clippy::missing_panics_doc,
+    clippy::shadow_unrelated,
+    clippy::single_call_fn,
+    reason = "test and example code. A panic IS the failure signal here, so \
+              `# Panics` sections and assertion messages would describe the \
+              mechanism the harness works by; fixtures are indexed and \
+              scaled with arithmetic over constants in the file above them; \
+              and a `#[test]` at the top level of a `tests/` file is what an \
+              integration test IS. The crate under test is held to every \
+              one of these."
+)]
 #![allow(
     clippy::unwrap_used,
     clippy::expect_used,

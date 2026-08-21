@@ -7,46 +7,82 @@
 //! Near-zero config: `iiif-server serve ./images` just works. The only
 //! deployment-varying values are the numeric limits and pool sizing.
 
-#![allow(
+#![expect(
     clippy::print_stdout,
     clippy::print_stderr,
     reason = "server binary's check subcommand is a CLI: stdout is output, stderr diagnostics"
 )]
+#![expect(
+    clippy::std_instead_of_core,
+    reason = "`core::io` and friends are not stable on this toolchain; the \
+              suggestion does not compile (E0658, `core_io`)."
+)]
+#![expect(
+    clippy::single_call_fn,
+    reason = "each is a named step of `main`'s dispatch — one per \
+              subcommand, one for the shutdown future, one for the arg \
+              parse. Folding them into `main` would put the whole binary \
+              in one body."
+)]
 
-use hyper::service::service_fn;
+extern crate alloc;
+
+use hyper::{server::conn::http1, service::service_fn};
 use hyper_util::rt::TokioIo;
-use iiif_core::info::Limits;
-use iiif_server::app::{App, SourceRoot};
+use iiif_core::{codec::open_master, info::Limits};
+use iiif_server::{
+    app::{App, SourceRoot},
+    metrics::Metrics,
+};
 
 /// Bench-decided allocator (docs/spikes/alloc-bench.md): musl's malloc
 /// contends badly under concurrent decode; mimalloc measured ~2×.
 #[cfg(feature = "mimalloc")]
 #[global_allocator]
 static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
-use std::{net::SocketAddr, path::Path, process::ExitCode, sync::Arc, time::Duration};
+use alloc::sync::Arc;
+use core::{convert::Infallible, future, num::NonZero, time::Duration};
+use std::{env, fs, net::SocketAddr, path::Path, process::ExitCode, thread};
 
 use iiif_sources::LocalRoot;
 use tokio::{
     io::{AsyncReadExt as _, AsyncWriteExt as _},
     net::{TcpListener, TcpStream},
+    runtime,
+    signal::{
+        ctrl_c,
+        unix::{SignalKind, signal},
+    },
     sync::{Semaphore, mpsc, watch},
+    time::timeout,
 };
 use tracing::{error, info};
 
 /// Deployment knobs, all optional. Parsed by hand: seven flags do not
 /// justify a dependency.
 struct Config {
+    /// The image root: a local path, or an `s3://bucket/prefix` URL.
     root: String,
+    /// Listen address.
     bind: SocketAddr,
+    /// Published and enforced maximum output width.
     max_width: u32,
+    /// Published and enforced maximum output height.
     max_height: u32,
+    /// Published and enforced maximum output area.
     max_area: u64,
+    /// Concurrent decode bound — the size of the decode pool.
     workers: usize,
+    /// Admitted waiters beyond the workers; overflow answers 503.
     queue_depth: usize,
+    /// Scheme+authority for `id`/`@id`, when the `Host` header is wrong
+    /// (behind a proxy that does not preserve it).
     public_base: Option<String>,
+    /// S3-compatible endpoint URL, for non-AWS object stores.
     endpoint: Option<String>,
 }
 
+/// The `--help` text, also printed beside a flag error.
 const USAGE: &str = "usage: iiif-server serve <root> [--bind ADDR] [--max-width N] \
 [--max-height N] [--max-area N] [--workers N] [--queue-depth N] [--public-base URL] \
 [--endpoint URL]
@@ -66,7 +102,9 @@ still declare a HEALTHCHECK.";
 /// that outlives it is worse than one that fails.
 const HEALTHCHECK_TIMEOUT: Duration = Duration::from_secs(3);
 
-/// Ceiling on draining in-flight connections at shutdown. Keep-alive means a
+/// Ceiling on draining in-flight connections at shutdown.
+///
+/// Keep-alive means a
 /// polite client can otherwise hold a connection open indefinitely, so the
 /// drain cannot be unbounded; Docker's default stop timeout is 10s and
 /// Kubernetes' default grace period 30s, so this expires first and the exit
@@ -87,9 +125,26 @@ fn version_line() -> String {
     }
 }
 
-/// `iiif-server healthcheck [ADDR]`: one HTTP/1.1 GET of `/healthz` over a raw
+/// `iiif-server healthcheck [ADDR]`.
+///
+/// One HTTP/1.1 GET of `/healthz` over a raw
 /// socket, no client dependency. The image is `FROM scratch` — there is no
 /// shell and no curl to call, so the binary probes itself.
+///
+/// # Errors
+///
+/// A message describing why the probe failed: no connection, no answer
+/// inside [`HEALTHCHECK_TIMEOUT`], or a status line that is not 200.
+#[expect(
+    clippy::indexing_slicing,
+    clippy::arithmetic_side_effects,
+    clippy::shadow_reuse,
+    reason = "reads into a fixed 256-byte buffer whose `filled` cursor is \
+              bounded by its own length at every step, so the slices cannot \
+              be out of range and the total cannot overflow. The status \
+              line is narrowed from the whole buffer to its first line, \
+              which is the same value refined."
+)]
 async fn probe_health(addr: SocketAddr) -> Result<(), String> {
     let mut stream = TcpStream::connect(addr)
         .await
@@ -129,21 +184,28 @@ async fn probe_health(addr: SocketAddr) -> Result<(), String> {
     }
 }
 
-/// Resolves when the process is asked to stop. SIGTERM is what orchestrators
+/// Resolves when the process is asked to stop.
+///
+/// SIGTERM is what orchestrators
 /// send, and it matters more than it looks: as PID 1 in a container a process
 /// receives no default signal disposition, so an unhandled SIGTERM is ignored
 /// outright and every `docker stop` becomes a ten-second wait ending in
 /// SIGKILL.
+#[expect(
+    clippy::integer_division_remainder_used,
+    reason = "`tokio::select!` expands to arithmetic over its branch \
+              index; none of it is this function's own."
+)]
 async fn shutdown_signal() {
     #[cfg(unix)]
     let terminate = async {
-        match tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate()) {
+        match signal(SignalKind::terminate()) {
             Ok(mut signal) => {
                 signal.recv().await;
             }
             Err(err) => {
                 error!("SIGTERM handler registration failed, falling back to SIGINT only: {err}");
-                core::future::pending::<()>().await;
+                future::pending::<()>().await;
             }
         }
     };
@@ -151,9 +213,9 @@ async fn shutdown_signal() {
     let terminate = std::future::pending::<()>();
 
     let interrupt = async {
-        if let Err(err) = tokio::signal::ctrl_c().await {
+        if let Err(err) = ctrl_c().await {
             error!("interrupt handler registration failed: {err}");
-            core::future::pending::<()>().await;
+            future::pending::<()>().await;
         }
     };
 
@@ -165,13 +227,19 @@ async fn shutdown_signal() {
 
 /// `iiif-server check <path>`: offline master inspection — the operator
 /// tool that turns serving-time surprises into setup-time advice.
+#[expect(
+    clippy::arithmetic_side_effects,
+    clippy::indexing_slicing,
+    reason = "counters over a directory listing, and `tiles[0]` is the \
+              base level every `ImageDescription` carries by construction."
+)]
 fn run_check(path: &Path) -> ExitCode {
     let mut failures = 0_u32;
     let mut checked = 0_u32;
     let mut walk = vec![path.to_path_buf()];
     while let Some(entry) = walk.pop() {
         if entry.is_dir() {
-            match std::fs::read_dir(&entry) {
+            match fs::read_dir(&entry) {
                 Ok(children) => {
                     for child in children.flatten() {
                         walk.push(child.path());
@@ -185,9 +253,9 @@ fn run_check(path: &Path) -> ExitCode {
             continue;
         }
         checked += 1;
-        let opened = std::fs::File::open(&entry)
+        let opened = fs::File::open(&entry)
             .map_err(|err| format!("unreadable: {err}"))
-            .and_then(|file| iiif_core::codec::open_master(file).map_err(|err| err.to_string()));
+            .and_then(|file| open_master(file).map_err(|err| err.to_string()));
         match opened {
             Ok(master) => {
                 let (width, height) = master.dimensions();
@@ -219,6 +287,11 @@ fn run_check(path: &Path) -> ExitCode {
     }
 }
 
+/// Parse the flags after the subcommand into a [`Config`].
+///
+/// # Errors
+///
+/// A message naming the offending flag, ready to print beside [`USAGE`].
 fn parse_args(args: &[String]) -> Result<Config, String> {
     let mut it = args.iter();
     match it.next().map(String::as_str) {
@@ -231,8 +304,13 @@ fn parse_args(args: &[String]) -> Result<Config, String> {
         bind: SocketAddr::from(([127, 0, 0, 1], 6363)),
         max_width: 8192,
         max_height: 8192,
+        #[expect(
+            clippy::decimal_literal_representation,
+            reason = "32 megapixels, and the comment says so. `0x0200_0000` \
+                      would hide the one property a reader checks."
+        )]
         max_area: 33_554_432, // 32 megapixels
-        workers: std::thread::available_parallelism().map_or(4, core::num::NonZero::get),
+        workers: thread::available_parallelism().map_or(4, NonZero::get),
         queue_depth: 64,
         public_base: None,
         endpoint: None,
@@ -271,8 +349,13 @@ fn parse_args(args: &[String]) -> Result<Config, String> {
     Ok(config)
 }
 
+#[expect(
+    clippy::use_debug,
+    reason = "`Duration` has no `Display`; `{:?}` is how a timeout is \
+              rendered for a human on stderr."
+)]
 fn main() -> ExitCode {
-    let args: Vec<String> = std::env::args().skip(1).collect();
+    let args: Vec<String> = env::args().skip(1).collect();
     // Answered before the subscriber exists: `--version` is parsed by scripts
     // and read by bug reports, and neither wants a log line in the way.
     match args.first().map(String::as_str) {
@@ -304,10 +387,7 @@ fn main() -> ExitCode {
             None => SocketAddr::from(([127, 0, 0, 1], 6363)),
         };
         // A current-thread runtime: one socket, one request, no pool.
-        let runtime = match tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-        {
+        let runtime = match runtime::Builder::new_current_thread().enable_all().build() {
             Ok(runtime) => runtime,
             Err(err) => {
                 eprintln!("healthcheck: runtime startup failed: {err}");
@@ -316,8 +396,7 @@ fn main() -> ExitCode {
         };
         // The timer has to be constructed inside the runtime, not handed to
         // block_on ready-made — `Sleep::new` needs the reactor to exist.
-        let probe =
-            async move { tokio::time::timeout(HEALTHCHECK_TIMEOUT, probe_health(addr)).await };
+        let probe = async move { timeout(HEALTHCHECK_TIMEOUT, probe_health(addr)).await };
         return match runtime.block_on(probe) {
             Ok(Ok(())) => ExitCode::SUCCESS,
             Ok(Err(message)) => {
@@ -344,7 +423,7 @@ fn main() -> ExitCode {
             return ExitCode::FAILURE;
         }
     };
-    let runtime = match tokio::runtime::Runtime::new() {
+    let runtime = match runtime::Runtime::new() {
         Ok(runtime) => runtime,
         Err(err) => {
             error!("runtime startup failed: {err}");
@@ -360,6 +439,22 @@ fn main() -> ExitCode {
     }
 }
 
+/// Bind, serve, and drain on shutdown.
+///
+/// # Errors
+///
+/// A message describing whichever of bind, root resolution or the
+/// accept loop failed.
+#[expect(
+    clippy::arithmetic_side_effects,
+    clippy::shadow_reuse,
+    clippy::integer_division_remainder_used,
+    reason = "`tokio::select!` expands to arithmetic over its branch index; \
+              `workers + queue_depth` is the admission bound, validated \
+              when the flags were parsed; the rebindings are per-connection \
+              `Arc::clone`s that deliberately keep the name of what they \
+              clone."
+)]
 async fn serve(config: Config) -> Result<(), String> {
     let root = if config.root.starts_with("s3://") {
         iiif_sources::init_tls();
@@ -381,7 +476,7 @@ async fn serve(config: Config) -> Result<(), String> {
         decode_permits: Arc::new(Semaphore::new(config.workers)),
         workers: config.workers,
         queue_depth: config.queue_depth,
-        metrics: Arc::new(iiif_server::metrics::Metrics::default()),
+        metrics: Arc::new(Metrics::default()),
     });
     let listener = TcpListener::bind(config.bind)
         .await
@@ -420,10 +515,9 @@ async fn serve(config: Config) -> Result<(), String> {
         tokio::spawn(async move {
             let service = service_fn(move |req| {
                 let app = Arc::clone(&app);
-                async move { Ok::<_, core::convert::Infallible>(app.handle(req).await) }
+                async move { Ok::<_, Infallible>(app.handle(req).await) }
             });
-            let connection = hyper::server::conn::http1::Builder::new()
-                .serve_connection(TokioIo::new(stream), service);
+            let connection = http1::Builder::new().serve_connection(TokioIo::new(stream), service);
             tokio::pin!(connection);
             tokio::select! {
                 result = connection.as_mut() => {
@@ -447,12 +541,18 @@ async fn serve(config: Config) -> Result<(), String> {
 
     // Stop listening first, so nothing new is admitted while we drain.
     drop(listener);
+    // A closed receiver means every worker already stopped, which is the
+    // outcome this send is asking for.
+    #[expect(
+        clippy::let_underscore_must_use,
+        reason = "the only error this can return is `SendError`, meaning no \
+                  receiver is left — which is the state the send is trying \
+                  to reach. `drop()` is refused in turn, because the result \
+                  is `Copy` (`dropping_copy_types`)."
+    )]
     let _ = shutdown_tx.send(true);
     drop(drain_tx);
-    if tokio::time::timeout(DRAIN_TIMEOUT, drain_rx.recv())
-        .await
-        .is_ok()
-    {
+    if timeout(DRAIN_TIMEOUT, drain_rx.recv()).await.is_ok() {
         info!("drained cleanly");
     } else {
         info!("drain timed out after {DRAIN_TIMEOUT:?}; exiting anyway");
@@ -464,7 +564,11 @@ async fn serve(config: Config) -> Result<(), String> {
 #[expect(
     clippy::unwrap_used,
     clippy::expect_used,
-    reason = "test/bench code: a panic here is the failure signal, not a crash path"
+    clippy::missing_panics_doc,
+    clippy::inline_modules,
+    reason = "test code: a panic here IS the failure signal, not a crash \
+              path, and a `#[cfg(test)] mod tests` beside its subject is \
+              how Rust unit tests are written"
 )]
 mod tests {
     use super::*;

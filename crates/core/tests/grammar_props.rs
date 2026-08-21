@@ -7,20 +7,19 @@
 #![expect(
     clippy::absolute_paths,
     clippy::default_numeric_fallback,
-    clippy::expect_used,
     clippy::min_ident_chars,
     clippy::missing_panics_doc,
     clippy::shadow_reuse,
     clippy::single_call_fn,
     clippy::unwrap_used,
     clippy::wildcard_enum_match_arm,
-    reason = "integration-test code. A panic IS the failure signal, so \
+    reason = "test and example code. A panic IS the failure signal here, so \
               `# Panics` sections and assertion messages would describe the \
-              mechanism a test works by; fixtures are indexed and scaled \
-              with arithmetic whose operands are constants in the file above \
-              it; and a `#[test]` at the top level of a `tests/` file is what \
-              an integration test IS. The crate under test is held to all of \
-              these — this is the harness that proves it."
+              mechanism the harness works by; fixtures are indexed and \
+              scaled with arithmetic over constants in the file above them; \
+              and a `#[test]` at the top level of a `tests/` file is what an \
+              integration test IS. The crate under test is held to every \
+              one of these."
 )]
 
 use iiif_core::grammar::{Format, ImageRequest, Quality, Region, Rotation, Size, SizeKind};
