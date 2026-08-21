@@ -20,7 +20,10 @@
 
 use std::{fs::File, path::PathBuf, time::Instant};
 
-use iiif_core::{codec::TiffPyramid, image::Raster};
+use iiif_core::{
+    codec::{Master as _, TiffPyramid},
+    image::Raster,
+};
 use num_traits::cast::ToPrimitive as _;
 
 fn generated(name: &str) -> PathBuf {

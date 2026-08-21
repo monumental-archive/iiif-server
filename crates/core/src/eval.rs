@@ -57,6 +57,13 @@ pub struct CropRect {
 /// A fully evaluated request: everything the pipeline needs, nothing the
 /// client sent left uninterpreted.
 #[derive(Debug, Clone, PartialEq)]
+#[expect(
+    clippy::partial_pub_fields,
+    reason = "the public fields are the plan a caller acts on; the three \
+              private ones are canonical-form bookkeeping that only \
+              `canonical_path` reads. Making those public would invite a \
+              caller to depend on how the spelling is reproduced."
+)]
 pub struct Plan {
     /// Region to extract, clipped, in full-resolution pixels.
     pub crop: CropRect,
@@ -77,6 +84,11 @@ pub struct Plan {
     pub upscales: bool,
     /// Whether the size parameter was a `max` form — canonical spelling
     /// keeps `max` rather than `w,h`.
+    ///
+    /// This and the two below are deliberately private: they are the
+    /// canonical-form bookkeeping `canonical_path` reads, not part of the
+    /// plan a caller acts on. `partial_pub_fields` is expected on the
+    /// struct for that reason.
     size_was_max: bool,
     /// Full image width, kept for canonical-form decisions.
     full_w: u32,

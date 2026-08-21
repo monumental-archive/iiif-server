@@ -15,7 +15,7 @@
 use std::{fs::File, io::Cursor, path::PathBuf};
 
 use iiif_core::{
-    codec::TiffPyramid,
+    codec::{Master as _, TiffPyramid},
     eval::evaluate,
     grammar::ImageRequest,
     image::Raster,

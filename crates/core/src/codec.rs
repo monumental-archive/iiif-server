@@ -347,7 +347,10 @@ impl<R: Read + Seek> TiffPyramid<R> {
                 ));
             }
         }
-        let _ = full_h;
+        // full_h is read only by the pyramid-shape checks above; binding
+        // it here keeps the `full_w`/`full_h` pair symmetrical at the call
+        // site rather than passing one and computing the other.
+        let _: u32 = full_h;
         Ok(Self {
             decoder,
             levels,
@@ -360,47 +363,6 @@ impl<R: Read + Seek> TiffPyramid<R> {
     #[inline]
     pub fn levels(&self) -> &[LevelInfo] {
         &self.levels
-    }
-
-    /// Full-resolution dimensions.
-    #[must_use]
-    #[inline]
-    pub fn dimensions(&self) -> (u32, u32) {
-        (self.levels[0].width, self.levels[0].height)
-    }
-
-    /// The info.json ingredients derived from the actual pyramid: tile
-    /// size with the real scale factors, and one `sizes` entry per level
-    /// (ascending), so viewers request only natively-cheap tiles.
-    #[must_use]
-    #[inline]
-    pub fn describe(&self) -> ImageDescription {
-        let base = &self.levels[0];
-        let scale_factors: Vec<u32> = self.levels.iter().map(|level| level.scale_factor).collect();
-        let tiles = vec![TileSet {
-            width: base.tile_width,
-            height: if base.tile_height == base.tile_width {
-                None
-            } else {
-                Some(base.tile_height)
-            },
-            scale_factors,
-        }];
-        let mut sizes: Vec<SizeEntry> = self
-            .levels
-            .iter()
-            .map(|level| SizeEntry {
-                width: level.width,
-                height: level.height,
-            })
-            .collect();
-        sizes.reverse(); // ascending by width, per spec recommendation
-        ImageDescription {
-            width: base.width,
-            height: base.height,
-            tiles,
-            sizes,
-        }
     }
 
     /// Pick the smallest level that still has enough detail for a
@@ -551,6 +513,14 @@ impl<R: Read + Seek> TiffPyramid<R> {
               gives `error[E0004]: non-exhaustive patterns: `_` not \
               covered`. The lint asks for something the compiler refuses."
 )]
+#[expect(
+    clippy::panic_in_result_fn,
+    reason = "the only panic is the `assert!` restating `chunks_exact_mut`'s \
+              own length guarantee, added so the optimiser can elide the \
+              per-pixel bounds checks (`missing_asserts_for_indexing`). It \
+              cannot fire, and routing it through the `Result` would put an \
+              unreachable branch on the decode path."
+)]
 fn raster_from_decoded(
     result: DecodingResult,
     colortype: ColorType,
@@ -638,12 +608,40 @@ impl<R: Read + Seek + Send> Master for TiffPyramid<R> {
 
     #[inline]
     fn dimensions(&self) -> (u32, u32) {
-        Self::dimensions(self)
+        (self.levels[0].width, self.levels[0].height)
     }
 
+    /// The info.json ingredients derived from the actual pyramid: tile
+    /// size with the real scale factors, and one `sizes` entry per level
+    /// (ascending), so viewers request only natively-cheap tiles.
     #[inline]
     fn describe(&self) -> ImageDescription {
-        Self::describe(self)
+        let base = &self.levels[0];
+        let scale_factors: Vec<u32> = self.levels.iter().map(|level| level.scale_factor).collect();
+        let tiles = vec![TileSet {
+            width: base.tile_width,
+            height: if base.tile_height == base.tile_width {
+                None
+            } else {
+                Some(base.tile_height)
+            },
+            scale_factors,
+        }];
+        let mut sizes: Vec<SizeEntry> = self
+            .levels
+            .iter()
+            .map(|level| SizeEntry {
+                width: level.width,
+                height: level.height,
+            })
+            .collect();
+        sizes.reverse(); // ascending by width, per spec recommendation
+        ImageDescription {
+            width: base.width,
+            height: base.height,
+            tiles,
+            sizes,
+        }
     }
 
     #[inline]

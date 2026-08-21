@@ -26,7 +26,11 @@ static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 use std::{fs::File, time::Instant};
 
 use iiif_core::{
-    codec::TiffPyramid, eval::evaluate, grammar::ImageRequest, info::Limits, pipeline,
+    codec::{Master as _, TiffPyramid},
+    eval::evaluate,
+    grammar::ImageRequest,
+    info::Limits,
+    pipeline,
 };
 
 const LIMITS: Limits = Limits::new(8192, 8192, 67_108_864);
@@ -80,7 +84,7 @@ fn main() {
                     // pattern, and the allocation-heavy path.
                     let file = File::open(fixture).expect("open");
                     let mut tiff = TiffPyramid::open(file).expect("parse");
-                    let (width, height) = TiffPyramid::dimensions(&tiff);
+                    let (width, height) = tiff.dimensions();
                     let request = request_for(thread * iters + i);
                     let plan = evaluate(&request, width, height, LIMITS).expect("evaluate");
                     let encoded = pipeline::execute(&mut tiff, &plan).expect("pipeline");

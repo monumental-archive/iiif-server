@@ -15,7 +15,7 @@ use bytes::Bytes;
 
 /// Boxed future alias: the trait must be dyn-safe (sources are chosen at
 /// runtime), so methods return boxed futures rather than using AFIT.
-pub type BoxFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
+pub type BoxFuture<'fut, T> = Pin<Box<dyn Future<Output = T> + Send + 'fut>>;
 
 /// A byte-addressable, immutable-for-the-duration source of one master
 /// image file.
