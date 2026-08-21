@@ -29,11 +29,7 @@ use iiif_core::{
     codec::TiffPyramid, eval::evaluate, grammar::ImageRequest, info::Limits, pipeline,
 };
 
-const LIMITS: Limits = Limits {
-    width: 8192,
-    height: 8192,
-    area: 67_108_864,
-};
+const LIMITS: Limits = Limits::new(8192, 8192, 67_108_864);
 
 /// Deterministic per-iteration request mix: different regions and output
 /// sizes so allocation patterns vary like real traffic.

@@ -686,5 +686,6 @@ fn codec_error(err: &CodecError) -> Response<Full<Bytes>> {
             error(StatusCode::FORBIDDEN, &format!("limit exceeded: {msg}"))
         }
         CodecError::Raster(_) => error(StatusCode::INTERNAL_SERVER_ERROR, "pipeline failure"),
+        _ => error(StatusCode::INTERNAL_SERVER_ERROR, "pipeline failure"),
     }
 }

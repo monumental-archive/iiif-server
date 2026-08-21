@@ -26,11 +26,7 @@ fn fixture_root() -> SourceRoot {
 fn app() -> Arc<App> {
     Arc::new(App {
         root: fixture_root(),
-        limits: Limits {
-            width: 8192,
-            height: 8192,
-            area: 67_108_864,
-        },
+        limits: Limits::new(8192, 8192, 67_108_864),
         public_base: Some("https://images.example.org".to_owned()),
         admission: Arc::new(Semaphore::new(8)),
         decode_permits: Arc::new(Semaphore::new(4)),
@@ -202,11 +198,7 @@ async fn resident_pixel_ceiling_refusal_is_a_403_not_a_500() {
 async fn saturated_queue_returns_503_with_retry_after() {
     let app = Arc::new(App {
         root: fixture_root(),
-        limits: Limits {
-            width: 8192,
-            height: 8192,
-            area: 67_108_864,
-        },
+        limits: Limits::new(8192, 8192, 67_108_864),
         public_base: None,
         // Zero admission permits: every image request is over capacity.
         admission: Arc::new(Semaphore::new(0)),

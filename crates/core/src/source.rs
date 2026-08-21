@@ -31,6 +31,7 @@ pub trait ByteRangeSource: Send + Sync {
 /// Source-layer failure. `NotFound` maps to HTTP 404; everything else is a
 /// 5xx (the master exists but could not be read).
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum SourceError {
     /// The identifier resolves to nothing in this source.
     NotFound,

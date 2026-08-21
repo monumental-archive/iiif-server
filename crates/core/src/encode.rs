@@ -16,6 +16,7 @@ use crate::{grammar::Format, image::Raster};
 /// Encoder failure. Client-caused cases (dimensions beyond a format's
 /// limits) are 400s; the rest are internal.
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum EncodeError {
     /// The output dimensions exceed what the format can represent (JPEG
     /// caps at 65535 per side).

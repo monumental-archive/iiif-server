@@ -20,6 +20,7 @@ use crate::{
 
 /// Pipeline failure, split by who caused it.
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum PipelineError {
     /// Decoding the master failed.
     Codec(CodecError),

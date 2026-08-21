@@ -179,6 +179,7 @@ where
 
 /// One resolution level of a pyramid, in its own pixel coordinates.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct LevelInfo {
     /// IFD index inside the TIFF.
     pub ifd: usize,
@@ -196,6 +197,7 @@ pub struct LevelInfo {
 
 /// Codec-layer failure.
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum CodecError {
     /// The master is outside the supported matrix — one actionable
     /// message, never a wrong image.

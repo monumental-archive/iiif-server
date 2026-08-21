@@ -23,11 +23,7 @@ use iiif_core::{
     pipeline,
 };
 
-const LIMITS: Limits = Limits {
-    width: 8192,
-    height: 8192,
-    area: 67_108_864,
-};
+const LIMITS: Limits = Limits::new(8192, 8192, 67_108_864);
 
 fn fixture() -> TiffPyramid<File> {
     let path =

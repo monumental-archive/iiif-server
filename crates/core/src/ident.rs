@@ -127,6 +127,7 @@ const fn hex_val(byte: u8) -> Option<u8> {
 /// layer (the spec has no finer distinction for bad identifiers, and a 400
 /// here would leak which malformed shapes we distinguish).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum IdentifierError {
     /// Empty after percent-decoding.
     Empty,

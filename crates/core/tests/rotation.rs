@@ -16,11 +16,7 @@ use iiif_core::{
     codec::open_master, eval::evaluate, grammar::ImageRequest, info::Limits, pipeline,
 };
 
-const LIMITS: Limits = Limits {
-    width: 8192,
-    height: 8192,
-    area: 67_108_864,
-};
+const LIMITS: Limits = Limits::new(8192, 8192, 67_108_864);
 
 fn serve(path: &str) -> Vec<u8> {
     let fixture =

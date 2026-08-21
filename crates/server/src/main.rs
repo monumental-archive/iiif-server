@@ -375,11 +375,7 @@ async fn serve(config: Config) -> Result<(), String> {
     };
     let app = Arc::new(App {
         root,
-        limits: Limits {
-            width: config.max_width,
-            height: config.max_height,
-            area: config.max_area,
-        },
+        limits: Limits::new(config.max_width, config.max_height, config.max_area),
         public_base: config.public_base,
         admission: Arc::new(Semaphore::new(config.workers + config.queue_depth)),
         decode_permits: Arc::new(Semaphore::new(config.workers)),

@@ -22,6 +22,7 @@ use crate::{
 /// A parsed v2.1 request plus what the v2 canonical form needs to
 /// remember about the original size spelling.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub struct V2Request {
     /// The request mapped onto v3 semantics.
     pub request: ImageRequest,

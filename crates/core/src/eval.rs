@@ -32,6 +32,7 @@ fn floor_u32(value: f64) -> u32 {
 /// The extracted region in full-resolution pixel coordinates, already
 /// clipped to the image edges.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct CropRect {
     /// Left edge in full-resolution pixels.
     pub x: u32,
@@ -74,6 +75,7 @@ pub struct Plan {
 
 /// Spec-mandated evaluation failures and their HTTP statuses.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum EvalError {
     /// Region entirely outside the image, or zero-pixel after clipping —
     /// 400.

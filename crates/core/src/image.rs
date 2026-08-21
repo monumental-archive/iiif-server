@@ -18,6 +18,7 @@ use num_traits::cast::ToPrimitive as _;
 /// and are consumed only by the encoders (PNG keeps alpha; opaque formats
 /// composite over white).
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum Raster {
     /// Single channel, 1 byte per pixel.
     Gray8 {
@@ -61,6 +62,7 @@ pub enum Raster {
 /// always an internal bug or a decoder contract violation, never a client
 /// error.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct RasterError(pub String);
 
 impl fmt::Display for RasterError {
@@ -90,6 +92,7 @@ fn composite_channel(value: u8, alpha: u8) -> u8 {
 
 /// A source rectangle for [`Raster::blit`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct CopyRect {
     /// Left edge in the source raster.
     pub src_x: u32,

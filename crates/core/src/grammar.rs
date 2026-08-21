@@ -17,6 +17,7 @@ use core::{error::Error, fmt};
 
 /// The image region to extract, per §4.1.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum Region {
     /// `full` — the entire image.
     Full,
@@ -50,6 +51,7 @@ pub enum Region {
 /// How the scaled dimensions are derived, per §4.2 (without the `^` flag,
 /// which lives on [`Size`]).
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum SizeKind {
     /// `max` — maximum size available under server limits.
     Max,
@@ -67,6 +69,7 @@ pub enum SizeKind {
 
 /// The size parameter: an optional `^` upscale flag plus a [`SizeKind`].
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub struct Size {
     /// `^` prefix: upscaling beyond the extracted region is permitted.
     pub upscale: bool,
@@ -74,9 +77,23 @@ pub struct Size {
     pub kind: SizeKind,
 }
 
+impl Size {
+    /// A size parameter from its two parts.
+    ///
+    /// A constructor rather than a struct literal because the type is
+    /// `#[non_exhaustive]`; the parser is the usual producer, and this is
+    /// for callers that build one directly.
+    #[inline]
+    #[must_use]
+    pub const fn new(upscale: bool, kind: SizeKind) -> Self {
+        Self { upscale, kind }
+    }
+}
+
 /// The rotation parameter, per §4.3: optional mirror, then clockwise
 /// degrees in `0..=360`.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub struct Rotation {
     /// `!` prefix: mirror on the vertical axis before rotating.
     pub mirror: bool,
@@ -84,8 +101,22 @@ pub struct Rotation {
     pub degrees: f64,
 }
 
+impl Rotation {
+    /// A rotation parameter from its two parts.
+    ///
+    /// A constructor rather than a struct literal because the type is
+    /// `#[non_exhaustive]`; the parser is the usual producer, and this is
+    /// for callers that build one directly.
+    #[inline]
+    #[must_use]
+    pub const fn new(mirror: bool, degrees: f64) -> Self {
+        Self { mirror, degrees }
+    }
+}
+
 /// The quality parameter, per §4.4.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum Quality {
     /// `default` — the image as stored, no colorspace change.
     Default,
@@ -101,6 +132,7 @@ pub enum Quality {
 /// ones the server can *encode* is a capability question answered
 /// elsewhere (unsupported-but-well-formed → 400 per spec).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum Format {
     /// `jpg` — JPEG.
     Jpg,
@@ -121,6 +153,7 @@ pub enum Format {
 /// A complete parsed image request:
 /// `{region}/{size}/{rotation}/{quality}.{format}`.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub struct ImageRequest {
     /// The region parameter (first path segment).
     pub region: Region,
@@ -134,8 +167,35 @@ pub struct ImageRequest {
     pub format: Format,
 }
 
+impl ImageRequest {
+    /// A complete request from its five parsed components, in the order
+    /// they appear in the path.
+    ///
+    /// A constructor rather than a struct literal because the type is
+    /// `#[non_exhaustive]`; [`ImageRequest::parse`] is the usual
+    /// producer, and this is for callers that build one directly.
+    #[inline]
+    #[must_use]
+    pub const fn new(
+        region: Region,
+        size: Size,
+        rotation: Rotation,
+        quality: Quality,
+        format: Format,
+    ) -> Self {
+        Self {
+            region,
+            size,
+            rotation,
+            quality,
+            format,
+        }
+    }
+}
+
 /// Which request component failed to parse. Every variant maps to a 400.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum Component {
     /// The region segment failed to parse.
     Region,
@@ -153,6 +213,7 @@ pub enum Component {
 
 /// A parse failure: the offending component and the input that failed.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct ParseError {
     /// Which component rejected the input.
     pub component: Component,

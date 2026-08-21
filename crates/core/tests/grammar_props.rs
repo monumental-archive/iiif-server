@@ -69,7 +69,7 @@ fn size_strategy() -> impl Strategy<Value = Size> {
             SizeKind::Percent(n) if n > 100.0 => Just(true).boxed(),
             _ => any::<bool>().boxed(),
         };
-        upscale.prop_map(move |upscale| Size { upscale, kind })
+        upscale.prop_map(move |upscale| Size::new(upscale, kind))
     })
 }
 
@@ -78,7 +78,7 @@ fn rotation_strategy() -> impl Strategy<Value = Rotation> {
         any::<bool>(),
         decimal_f64(360).prop_filter("0..=360", |v| *v <= 360.0),
     )
-        .prop_map(|(mirror, degrees)| Rotation { mirror, degrees })
+        .prop_map(|(mirror, degrees)| Rotation::new(mirror, degrees))
 }
 
 fn quality_strategy() -> impl Strategy<Value = Quality> {
@@ -110,12 +110,8 @@ fn request_strategy() -> impl Strategy<Value = ImageRequest> {
         quality_strategy(),
         format_strategy(),
     )
-        .prop_map(|(region, size, rotation, quality, format)| ImageRequest {
-            region,
-            size,
-            rotation,
-            quality,
-            format,
+        .prop_map(|(region, size, rotation, quality, format)| {
+            ImageRequest::new(region, size, rotation, quality, format)
         })
 }
 
