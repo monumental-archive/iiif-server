@@ -330,7 +330,7 @@ impl<R: Read + Seek> TiffPyramid<R> {
     #[inline]
     pub fn describe(&self) -> ImageDescription {
         let base = &self.levels[0];
-        let scale_factors: Vec<u32> = self.levels.iter().map(|l| l.scale_factor).collect();
+        let scale_factors: Vec<u32> = self.levels.iter().map(|level| level.scale_factor).collect();
         let tiles = vec![TileSet {
             width: base.tile_width,
             height: if base.tile_height == base.tile_width {
@@ -343,9 +343,9 @@ impl<R: Read + Seek> TiffPyramid<R> {
         let mut sizes: Vec<SizeEntry> = self
             .levels
             .iter()
-            .map(|l| SizeEntry {
-                width: l.width,
-                height: l.height,
+            .map(|level| SizeEntry {
+                width: level.width,
+                height: level.height,
             })
             .collect();
         sizes.reverse(); // ascending by width, per spec recommendation
@@ -364,8 +364,8 @@ impl<R: Read + Seek> TiffPyramid<R> {
     pub fn level_for_scale(&self, needed: f64) -> &LevelInfo {
         self.levels
             .iter()
-            .filter(|l| f64::from(l.scale_factor) <= needed.max(1.0))
-            .max_by_key(|l| l.scale_factor)
+            .filter(|level| f64::from(level.scale_factor) <= needed.max(1.0))
+            .max_by_key(|level| level.scale_factor)
             .unwrap_or(&self.levels[0])
     }
 
@@ -383,18 +383,18 @@ impl<R: Read + Seek> TiffPyramid<R> {
         level_ifd: usize,
         x: u32,
         y: u32,
-        w: u32,
-        h: u32,
+        width: u32,
+        height: u32,
     ) -> Result<Raster, CodecError> {
         let level = *self
             .levels
             .iter()
-            .find(|l| l.ifd == level_ifd)
+            .find(|level| level.ifd == level_ifd)
             .ok_or_else(|| CodecError::Corrupt(format!("no level with IFD {level_ifd}")))?;
-        if x.checked_add(w).is_none_or(|edge| edge > level.width)
-            || y.checked_add(h).is_none_or(|edge| edge > level.height)
-            || w == 0
-            || h == 0
+        if x.checked_add(width).is_none_or(|edge| edge > level.width)
+            || y.checked_add(height).is_none_or(|edge| edge > level.height)
+            || width == 0
+            || height == 0
         {
             return Err(CodecError::Corrupt(
                 "region outside level bounds".to_owned(),
@@ -406,9 +406,9 @@ impl<R: Read + Seek> TiffPyramid<R> {
         }
         let tiles_across = level.width.div_ceil(level.tile_width);
         let first_col = x / level.tile_width;
-        let last_col = (x + w - 1) / level.tile_width;
+        let last_col = (x + width - 1) / level.tile_width;
         let first_row = y / level.tile_height;
-        let last_row = (y + h - 1) / level.tile_height;
+        let last_row = (y + height - 1) / level.tile_height;
 
         let mut out: Option<Raster> = None;
         for tile_row in first_row..=last_row {
@@ -417,15 +417,15 @@ impl<R: Read + Seek> TiffPyramid<R> {
                 let tile = self.decode_tile(level, index)?;
                 let out_buf = match &mut out {
                     Some(buf) => buf,
-                    None => out.insert(tile.zeroed_like(w, h)?),
+                    None => out.insert(tile.zeroed_like(width, height)?),
                 };
                 // Intersect this tile's footprint with the request.
                 let tile_left = tile_col * level.tile_width;
                 let tile_top = tile_row * level.tile_height;
                 let left = x.max(tile_left);
                 let top = y.max(tile_top);
-                let right = (x + w).min(tile_left + tile.width());
-                let bottom = (y + h).min(tile_top + tile.height());
+                let right = (x + width).min(tile_left + tile.width());
+                let bottom = (y + height).min(tile_top + tile.height());
                 if right <= left || bottom <= top {
                     continue;
                 }
@@ -509,13 +509,13 @@ fn raster_from_decoded(
             }
             for px in data.chunks_exact_mut(3) {
                 let [y, cb, cr] = [f64::from(px[0]), f64::from(px[1]), f64::from(px[2])];
-                let r = 1.402_f64.mul_add(cr - 128.0, y);
-                let g =
+                let red = 1.402_f64.mul_add(cr - 128.0, y);
+                let green =
                     0.714_136_f64.mul_add(-(cr - 128.0), 0.344_136_f64.mul_add(-(cb - 128.0), y));
-                let b = 1.772_f64.mul_add(cb - 128.0, y);
-                px[0] = r.round().clamp(0.0, 255.0).to_u8().unwrap_or(0);
-                px[1] = g.round().clamp(0.0, 255.0).to_u8().unwrap_or(0);
-                px[2] = b.round().clamp(0.0, 255.0).to_u8().unwrap_or(0);
+                let blue = 1.772_f64.mul_add(cb - 128.0, y);
+                px[0] = red.round().clamp(0.0, 255.0).to_u8().unwrap_or(0);
+                px[1] = green.round().clamp(0.0, 255.0).to_u8().unwrap_or(0);
+                px[2] = blue.round().clamp(0.0, 255.0).to_u8().unwrap_or(0);
             }
             Ok(Raster::Rgb8 {
                 width,
@@ -556,12 +556,12 @@ impl<R: Read + Seek + Send> Master for TiffPyramid<R> {
             .to_u32()
             .unwrap_or(u32::MAX)
             .min(level.height.saturating_sub(1));
-        let right = ((f64::from(crop.x) + f64::from(crop.w)) / factor)
+        let right = ((f64::from(crop.x) + f64::from(crop.width)) / factor)
             .ceil()
             .to_u32()
             .unwrap_or(u32::MAX)
             .min(level.width);
-        let bottom = ((f64::from(crop.y) + f64::from(crop.h)) / factor)
+        let bottom = ((f64::from(crop.y) + f64::from(crop.height)) / factor)
             .ceil()
             .to_u32()
             .unwrap_or(u32::MAX)

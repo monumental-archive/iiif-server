@@ -73,10 +73,10 @@ impl fmt::Display for RasterError {
 impl core::error::Error for RasterError {}
 
 /// BT.601 luma of one RGB pixel.
-fn luma_of(r: u8, g: u8, b: u8) -> u8 {
+fn luma_of(red: u8, green: u8, blue: u8) -> u8 {
     let luma = 0.114_f64.mul_add(
-        f64::from(b),
-        0.587_f64.mul_add(f64::from(g), 0.299 * f64::from(r)),
+        f64::from(blue),
+        0.587_f64.mul_add(f64::from(green), 0.299 * f64::from(red)),
     );
     luma.round().clamp(0.0, 255.0).to_u8().unwrap_or(255)
 }
@@ -523,7 +523,7 @@ impl Raster {
             } => {
                 let flat = data
                     .chunks_exact(4)
-                    .flat_map(|px| [0, 1, 2].map(|c| composite_channel(px[c], px[3])))
+                    .flat_map(|px| [0, 1, 2].map(|channel| composite_channel(px[channel], px[3])))
                     .collect();
                 Self::Rgb8 {
                     width,

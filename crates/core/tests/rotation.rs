@@ -56,8 +56,8 @@ fn rotation_45_jpeg_has_white_corners() {
     let bytes = serve("0,0,256,256/max/45/default.jpg");
     let mut decoder = zune_jpeg::JpegDecoder::new(Cursor::new(&bytes));
     let pixels = decoder.decode().unwrap();
-    let (w, _) = decoder.dimensions().unwrap();
-    assert!((362..=364).contains(&w), "width {w}");
+    let (width, _) = decoder.dimensions().unwrap();
+    assert!((362..=364).contains(&width), "width {width}");
     // Top-left corner is outside the rotated frame → white-ish (JPEG
     // ringing allowed).
     assert!(pixels[0] > 230, "corner should be white, got {}", pixels[0]);

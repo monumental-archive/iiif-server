@@ -20,13 +20,13 @@ use crate::{
 ///
 /// Saturated values are always caught by the bounds/limits checks that
 /// follow every call site — saturation just keeps the arithmetic total.
-fn round_u32(v: f64) -> u32 {
-    v.round().to_u32().unwrap_or(u32::MAX)
+fn round_u32(value: f64) -> u32 {
+    value.round().to_u32().unwrap_or(u32::MAX)
 }
 
 /// Floor variant of [`round_u32`].
-fn floor_u32(v: f64) -> u32 {
-    v.floor().to_u32().unwrap_or(u32::MAX)
+fn floor_u32(value: f64) -> u32 {
+    value.floor().to_u32().unwrap_or(u32::MAX)
 }
 
 /// The extracted region in full-resolution pixel coordinates, already
@@ -38,9 +38,9 @@ pub struct CropRect {
     /// Top edge in full-resolution pixels.
     pub y: u32,
     /// Width in full-resolution pixels.
-    pub w: u32,
+    pub width: u32,
     /// Height in full-resolution pixels.
-    pub h: u32,
+    pub height: u32,
 }
 
 /// A fully evaluated request: everything the pipeline needs, nothing the
@@ -122,7 +122,7 @@ pub fn evaluate(
     limits: Limits,
 ) -> Result<Plan, EvalError> {
     let crop = resolve_region(request.region, full_w, full_h)?;
-    let (out_w, out_h, upscales) = resolve_size(request.size, crop.w, crop.h, limits)?;
+    let (out_w, out_h, upscales) = resolve_size(request.size, crop.width, crop.height, limits)?;
     if out_w == 0 || out_h == 0 {
         return Err(EvalError::BelowOnePixel);
     }
@@ -152,45 +152,55 @@ fn resolve_region(region: Region, full_w: u32, full_h: u32) -> Result<CropRect, 
         Region::Full => Ok(CropRect {
             x: 0,
             y: 0,
-            w: full_w,
-            h: full_h,
+            width: full_w,
+            height: full_h,
         }),
         Region::Square => {
             let side = full_w.min(full_h);
             Ok(CropRect {
                 x: (full_w - side) / 2,
                 y: (full_h - side) / 2,
-                w: side,
-                h: side,
+                width: side,
+                height: side,
             })
         }
-        Region::Pixels { x, y, w, h } => {
+        Region::Pixels {
+            x,
+            y,
+            width,
+            height,
+        } => {
             if x >= full_w || y >= full_h {
                 return Err(EvalError::RegionOutOfBounds);
             }
             Ok(CropRect {
                 x,
                 y,
-                w: w.min(full_w - x),
-                h: h.min(full_h - y),
+                width: width.min(full_w - x),
+                height: height.min(full_h - y),
             })
         }
-        Region::Percent { x, y, w, h } => {
+        Region::Percent {
+            x,
+            y,
+            width,
+            height,
+        } => {
             let px = round_u32(x / 100.0 * f64::from(full_w));
             let py = round_u32(y / 100.0 * f64::from(full_h));
             if px >= full_w || py >= full_h {
                 return Err(EvalError::RegionOutOfBounds);
             }
-            let pw = round_u32(w / 100.0 * f64::from(full_w));
-            let ph = round_u32(h / 100.0 * f64::from(full_h));
+            let pw = round_u32(width / 100.0 * f64::from(full_w));
+            let ph = round_u32(height / 100.0 * f64::from(full_h));
             if pw == 0 || ph == 0 {
                 return Err(EvalError::RegionOutOfBounds);
             }
             Ok(CropRect {
                 x: px,
                 y: py,
-                w: pw.min(full_w - px),
-                h: ph.min(full_h - py),
+                width: pw.min(full_w - px),
+                height: ph.min(full_h - py),
             })
         }
     }
@@ -215,32 +225,32 @@ fn resolve_size(
                 floor_u32((rh * scale).max(1.0)),
             )
         }
-        SizeKind::Width(w) => {
-            if !size.upscale && w > region_w {
+        SizeKind::Width(width) => {
+            if !size.upscale && width > region_w {
                 return Err(EvalError::UpscaleWithoutFlag);
             }
-            let scale = f64::from(w) / rw;
-            (w, round_u32(rh * scale))
+            let scale = f64::from(width) / rw;
+            (width, round_u32(rh * scale))
         }
-        SizeKind::Height(h) => {
-            if !size.upscale && h > region_h {
+        SizeKind::Height(height) => {
+            if !size.upscale && height > region_h {
                 return Err(EvalError::UpscaleWithoutFlag);
             }
-            let scale = f64::from(h) / rh;
-            (round_u32(rw * scale), h)
+            let scale = f64::from(height) / rh;
+            (round_u32(rw * scale), height)
         }
         SizeKind::Percent(pct) => {
             let scale = pct / 100.0;
             (round_u32(rw * scale), round_u32(rh * scale))
         }
-        SizeKind::WidthHeight(w, h) => {
-            if !size.upscale && (w > region_w || h > region_h) {
+        SizeKind::WidthHeight(width, height) => {
+            if !size.upscale && (width > region_w || height > region_h) {
                 return Err(EvalError::UpscaleWithoutFlag);
             }
-            (w, h)
+            (width, height)
         }
-        SizeKind::Confined(w, h) => {
-            let fit = (f64::from(w) / rw).min(f64::from(h) / rh);
+        SizeKind::Confined(width, height) => {
+            let fit = (f64::from(width) / rw).min(f64::from(height) / rh);
             // A confining box strictly larger than the region can only be
             // satisfied "as large as possible" by upscaling; without the
             // `^` flag the official validator requires a 400 here.
@@ -276,8 +286,8 @@ impl Plan {
     pub const fn is_full_region(&self) -> bool {
         self.crop.x == 0
             && self.crop.y == 0
-            && self.crop.w == self.full_w
-            && self.crop.h == self.full_h
+            && self.crop.width == self.full_w
+            && self.crop.height == self.full_h
     }
 
     /// The canonical request path (region/size/rotation/quality.format)
@@ -291,7 +301,7 @@ impl Plan {
         } else {
             format!(
                 "{},{},{},{}",
-                self.crop.x, self.crop.y, self.crop.w, self.crop.h
+                self.crop.x, self.crop.y, self.crop.width, self.crop.height
             )
         };
         let size = match (self.size_was_max, self.upscales) {
@@ -332,8 +342,8 @@ mod tests {
         ImageRequest::parse(path).unwrap()
     }
 
-    fn eval(path: &str, w: u32, h: u32) -> Result<Plan, EvalError> {
-        evaluate(&req(path), w, h, LIMITS)
+    fn eval(path: &str, width: u32, height: u32) -> Result<Plan, EvalError> {
+        evaluate(&req(path), width, height, LIMITS)
     }
 
     #[test]
@@ -344,8 +354,8 @@ mod tests {
             CropRect {
                 x: 0,
                 y: 0,
-                w: 6000,
-                h: 4000
+                width: 6000,
+                height: 4000
             }
         );
         assert_eq!((plan.out_w, plan.out_h), (6000, 4000));
@@ -373,8 +383,8 @@ mod tests {
             CropRect {
                 x: 1000,
                 y: 0,
-                w: 4000,
-                h: 4000
+                width: 4000,
+                height: 4000
             }
         );
     }
@@ -387,8 +397,8 @@ mod tests {
             CropRect {
                 x: 5000,
                 y: 3000,
-                w: 1000,
-                h: 1000
+                width: 1000,
+                height: 1000
             }
         );
         // Canonical region is the clipped rectangle.
@@ -422,8 +432,8 @@ mod tests {
             CropRect {
                 x: 1500,
                 y: 1000,
-                w: 3000,
-                h: 2000
+                width: 3000,
+                height: 2000
             }
         );
     }

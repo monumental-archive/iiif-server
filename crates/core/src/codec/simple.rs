@@ -186,14 +186,14 @@ impl Master for SimpleMaster {
 
     #[inline]
     fn decode_crop(&mut self, crop: CropRect, _needed: f64) -> Result<Raster, CodecError> {
-        let mut out = self.raster.zeroed_like(crop.w, crop.h)?;
+        let mut out = self.raster.zeroed_like(crop.width, crop.height)?;
         out.blit(
             &self.raster,
             CopyRect {
                 src_x: crop.x,
                 src_y: crop.y,
-                width: crop.w,
-                height: crop.h,
+                width: crop.width,
+                height: crop.height,
             },
             0,
             0,

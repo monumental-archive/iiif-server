@@ -125,7 +125,7 @@ pub fn canonical_path(plan: &Plan, v2: &V2Request) -> String {
     } else {
         format!(
             "{},{},{},{}",
-            plan.crop.x, plan.crop.y, plan.crop.w, plan.crop.h
+            plan.crop.x, plan.crop.y, plan.crop.width, plan.crop.height
         )
     };
     let size = if v2.was_full && full_region && !plan.upscales {

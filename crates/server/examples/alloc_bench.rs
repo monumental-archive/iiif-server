@@ -84,9 +84,9 @@ fn main() {
                     // pattern, and the allocation-heavy path.
                     let file = File::open(fixture).expect("open");
                     let mut tiff = TiffPyramid::open(file).expect("parse");
-                    let (w, h) = TiffPyramid::dimensions(&tiff);
+                    let (width, height) = TiffPyramid::dimensions(&tiff);
                     let request = request_for(thread * iters + i);
-                    let plan = evaluate(&request, w, h, LIMITS).expect("evaluate");
+                    let plan = evaluate(&request, width, height, LIMITS).expect("evaluate");
                     let encoded = pipeline::execute(&mut tiff, &plan).expect("pipeline");
                     assert!(!encoded.is_empty());
                 }

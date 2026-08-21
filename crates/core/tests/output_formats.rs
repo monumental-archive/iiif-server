@@ -48,8 +48,8 @@ const REGION: &str = "300,200,256,256/max/0/default";
 fn tif_output_roundtrips_exactly() {
     let bytes = serve(&format!("{REGION}.tif"));
     let mut decoder = tiff::decoder::Decoder::new(Cursor::new(&bytes)).unwrap();
-    let (w, h) = decoder.dimensions().unwrap();
-    assert_eq!((w, h), (256, 256));
+    let (width, height) = decoder.dimensions().unwrap();
+    assert_eq!((width, height), (256, 256));
     let tiff::decoder::DecodingResult::U8(data) = decoder.read_image().unwrap() else {
         panic!("expected 8-bit output");
     };
@@ -114,7 +114,7 @@ fn pdf_output_embeds_the_jpeg() {
     assert!(body.contains("/Filter /DCTDecode"));
     assert!(body.contains("/MediaBox [0 0 256 256]"));
     // The DCTDecode stream is a real JPEG (SOI marker present).
-    let soi = bytes.windows(2).position(|w| w == [0xFF, 0xD8]);
+    let soi = bytes.windows(2).position(|width| width == [0xFF, 0xD8]);
     assert!(soi.is_some(), "no JPEG SOI in PDF");
 }
 

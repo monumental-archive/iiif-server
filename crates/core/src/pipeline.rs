@@ -76,7 +76,7 @@ pub fn execute(source: &mut dyn Master, plan: &Plan) -> Result<Vec<u8>, Pipeline
     // 1. Decode the crop with enough detail for the output scale; the codec picks
     //    its own cheapest path (pyramid level, reduced- resolution wavelet decode,
     //    or resident raster).
-    let needed = f64::from(plan.crop.w) / f64::from(plan.out_w.max(1));
+    let needed = f64::from(plan.crop.width) / f64::from(plan.out_w.max(1));
     let raster = source.decode_crop(plan.crop, needed)?;
 
     // 2. Resample to the output size.

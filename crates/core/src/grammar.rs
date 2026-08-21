@@ -30,9 +30,9 @@ pub enum Region {
         /// Top edge, pixels from the top of the full image.
         y: u32,
         /// Region width in pixels (non-zero).
-        w: u32,
+        width: u32,
         /// Region height in pixels (non-zero).
-        h: u32,
+        height: u32,
     },
     /// `pct:x,y,w,h` — percentages of full-image dimensions.
     Percent {
@@ -41,9 +41,9 @@ pub enum Region {
         /// Top edge as a percentage of full-image height.
         y: f64,
         /// Region width as a percentage of full-image width.
-        w: f64,
+        width: f64,
         /// Region height as a percentage of full-image height.
-        h: f64,
+        height: f64,
     },
 }
 
@@ -190,33 +190,33 @@ impl core::error::Error for ParseError {}
 ///
 /// Leading zeros are accepted (the canonical print normalizes them away);
 /// values that overflow `u32` are rejected — every legal pixel value fits.
-fn parse_u32(s: &str) -> Option<u32> {
-    if s.is_empty() || !s.bytes().all(|b| b.is_ascii_digit()) {
+fn parse_u32(input: &str) -> Option<u32> {
+    if input.is_empty() || !input.bytes().all(|byte| byte.is_ascii_digit()) {
         return None;
     }
-    s.parse().ok()
+    input.parse().ok()
 }
 
 /// Strict non-negative decimal float per the spec's float rules: decimal
 /// digits and at most one `.`, with digits on both sides (`0.9`, not `.9`
 /// or `9.` or `+0.9` or `9e1`).
-fn parse_f64(s: &str) -> Option<f64> {
-    let valid = match s.split_once('.') {
+fn parse_f64(input: &str) -> Option<f64> {
+    let valid = match input.split_once('.') {
         Some((int, frac)) => {
             !int.is_empty()
                 && !frac.is_empty()
-                && int.bytes().all(|b| b.is_ascii_digit())
-                && frac.bytes().all(|b| b.is_ascii_digit())
+                && int.bytes().all(|byte| byte.is_ascii_digit())
+                && frac.bytes().all(|byte| byte.is_ascii_digit())
         }
-        None => !s.is_empty() && s.bytes().all(|b| b.is_ascii_digit()),
+        None => !input.is_empty() && input.bytes().all(|byte| byte.is_ascii_digit()),
     };
     if !valid {
         return None;
     }
     // Grammar-valid decimal strings always parse; enormous ones saturate to
     // a finite f64 (no exponent syntax exists to produce inf/NaN spellings).
-    let v: f64 = s.parse().ok()?;
-    v.is_finite().then_some(v)
+    let value: f64 = input.parse().ok()?;
+    value.is_finite().then_some(value)
 }
 
 /// Print a float per the spec's canonical float rules: integer spelling if
@@ -226,8 +226,8 @@ fn parse_f64(s: &str) -> Option<f64> {
 /// shortest round-trip decimal, no exponent notation, integral values
 /// without a trailing `.0`, sub-one values with the leading `0`, and never
 /// a trailing zero.
-pub(crate) fn fmt_f64(v: f64) -> String {
-    format!("{v}")
+pub(crate) fn fmt_f64(value: f64) -> String {
+    format!("{value}")
 }
 
 impl Region {
@@ -245,28 +245,39 @@ impl Region {
         }
         if let Some(rest) = input.strip_prefix("pct:") {
             let mut fields = rest.split(',');
-            let (x, y, w, h) = (
+            let (x, y, width, height) = (
                 fields.next().and_then(parse_f64).ok_or_else(err)?,
                 fields.next().and_then(parse_f64).ok_or_else(err)?,
                 fields.next().and_then(parse_f64).ok_or_else(err)?,
                 fields.next().and_then(parse_f64).ok_or_else(err)?,
             );
-            if fields.next().is_some() || w <= 0.0 || h <= 0.0 || x >= 100.0 || y >= 100.0 {
+            if fields.next().is_some() || width <= 0.0 || height <= 0.0 || x >= 100.0 || y >= 100.0
+            {
                 return Err(err());
             }
-            return Ok(Self::Percent { x, y, w, h });
+            return Ok(Self::Percent {
+                x,
+                y,
+                width,
+                height,
+            });
         }
         let mut fields = input.split(',');
-        let (x, y, w, h) = (
+        let (x, y, width, height) = (
             fields.next().and_then(parse_u32).ok_or_else(err)?,
             fields.next().and_then(parse_u32).ok_or_else(err)?,
             fields.next().and_then(parse_u32).ok_or_else(err)?,
             fields.next().and_then(parse_u32).ok_or_else(err)?,
         );
-        if fields.next().is_some() || w == 0 || h == 0 {
+        if fields.next().is_some() || width == 0 || height == 0 {
             return Err(err());
         }
-        Ok(Self::Pixels { x, y, w, h })
+        Ok(Self::Pixels {
+            x,
+            y,
+            width,
+            height,
+        })
     }
 }
 
@@ -276,14 +287,24 @@ impl fmt::Display for Region {
         match *self {
             Self::Full => f.write_str("full"),
             Self::Square => f.write_str("square"),
-            Self::Pixels { x, y, w, h } => write!(f, "{x},{y},{w},{h}"),
-            Self::Percent { x, y, w, h } => write!(
+            Self::Pixels {
+                x,
+                y,
+                width,
+                height,
+            } => write!(f, "{x},{y},{width},{height}"),
+            Self::Percent {
+                x,
+                y,
+                width,
+                height,
+            } => write!(
                 f,
                 "pct:{},{},{},{}",
                 fmt_f64(x),
                 fmt_f64(y),
-                fmt_f64(w),
-                fmt_f64(h)
+                fmt_f64(width),
+                fmt_f64(height)
             ),
         }
     }
@@ -296,9 +317,11 @@ impl Size {
     /// spec-legal size, including `pct:` values over 100 without the `^`
     /// upscale flag.
     #[inline]
-    pub fn parse(s: &str) -> Result<Self, ParseError> {
-        let err = || ParseError::new(Component::Size, s);
-        let (upscale, rest) = s.strip_prefix('^').map_or((false, s), |rest| (true, rest));
+    pub fn parse(input: &str) -> Result<Self, ParseError> {
+        let err = || ParseError::new(Component::Size, input);
+        let (upscale, rest) = input
+            .strip_prefix('^')
+            .map_or((false, input), |rest| (true, rest));
         let kind = if rest == "max" {
             SizeKind::Max
         } else if let Some(pct) = rest.strip_prefix("pct:") {
@@ -309,36 +332,42 @@ impl Size {
             }
             SizeKind::Percent(n)
         } else if let Some(confined) = rest.strip_prefix('!') {
-            let (w, h) = confined.split_once(',').ok_or_else(err)?;
-            let (w, h) = (parse_u32(w).ok_or_else(err)?, parse_u32(h).ok_or_else(err)?);
-            if w == 0 || h == 0 {
+            let (width, height) = confined.split_once(',').ok_or_else(err)?;
+            let (width, height) = (
+                parse_u32(width).ok_or_else(err)?,
+                parse_u32(height).ok_or_else(err)?,
+            );
+            if width == 0 || height == 0 {
                 return Err(err());
             }
-            SizeKind::Confined(w, h)
+            SizeKind::Confined(width, height)
         } else {
-            let (w, h) = rest.split_once(',').ok_or_else(err)?;
-            match (w.is_empty(), h.is_empty()) {
+            let (width, height) = rest.split_once(',').ok_or_else(err)?;
+            match (width.is_empty(), height.is_empty()) {
                 (true, true) => return Err(err()),
                 (false, true) => {
-                    let w = parse_u32(w).ok_or_else(err)?;
-                    if w == 0 {
+                    let width = parse_u32(width).ok_or_else(err)?;
+                    if width == 0 {
                         return Err(err());
                     }
-                    SizeKind::Width(w)
+                    SizeKind::Width(width)
                 }
                 (true, false) => {
-                    let h = parse_u32(h).ok_or_else(err)?;
-                    if h == 0 {
+                    let height = parse_u32(height).ok_or_else(err)?;
+                    if height == 0 {
                         return Err(err());
                     }
-                    SizeKind::Height(h)
+                    SizeKind::Height(height)
                 }
                 (false, false) => {
-                    let (w, h) = (parse_u32(w).ok_or_else(err)?, parse_u32(h).ok_or_else(err)?);
-                    if w == 0 || h == 0 {
+                    let (width, height) = (
+                        parse_u32(width).ok_or_else(err)?,
+                        parse_u32(height).ok_or_else(err)?,
+                    );
+                    if width == 0 || height == 0 {
                         return Err(err());
                     }
-                    SizeKind::WidthHeight(w, h)
+                    SizeKind::WidthHeight(width, height)
                 }
             }
         };
@@ -354,11 +383,11 @@ impl fmt::Display for Size {
         }
         match self.kind {
             SizeKind::Max => f.write_str("max"),
-            SizeKind::Width(w) => write!(f, "{w},"),
-            SizeKind::Height(h) => write!(f, ",{h}"),
+            SizeKind::Width(width) => write!(f, "{width},"),
+            SizeKind::Height(height) => write!(f, ",{height}"),
             SizeKind::Percent(n) => write!(f, "pct:{}", fmt_f64(n)),
-            SizeKind::WidthHeight(w, h) => write!(f, "{w},{h}"),
-            SizeKind::Confined(w, h) => write!(f, "!{w},{h}"),
+            SizeKind::WidthHeight(width, height) => write!(f, "{width},{height}"),
+            SizeKind::Confined(width, height) => write!(f, "!{width},{height}"),
         }
     }
 }
@@ -369,9 +398,11 @@ impl Rotation {
     /// Returns a [`ParseError`] (HTTP 400) when the input is not a
     /// spec-legal rotation (optional `!`, then degrees in `0..=360`).
     #[inline]
-    pub fn parse(s: &str) -> Result<Self, ParseError> {
-        let err = || ParseError::new(Component::Rotation, s);
-        let (mirror, rest) = s.strip_prefix('!').map_or((false, s), |rest| (true, rest));
+    pub fn parse(input: &str) -> Result<Self, ParseError> {
+        let err = || ParseError::new(Component::Rotation, input);
+        let (mirror, rest) = input
+            .strip_prefix('!')
+            .map_or((false, input), |rest| (true, rest));
         let degrees = parse_f64(rest).ok_or_else(err)?;
         // "any floating point number from 0 to 360" — inclusive.
         if degrees > 360.0 {
@@ -406,13 +437,13 @@ impl Quality {
     /// Returns a [`ParseError`] (HTTP 400) when the input is not one of
     /// the four v3 quality names.
     #[inline]
-    pub fn parse(s: &str) -> Result<Self, ParseError> {
-        match s {
+    pub fn parse(input: &str) -> Result<Self, ParseError> {
+        match input {
             "default" => Ok(Self::Default),
             "color" => Ok(Self::Color),
             "gray" => Ok(Self::Gray),
             "bitonal" => Ok(Self::Bitonal),
-            _ => Err(ParseError::new(Component::Quality, s)),
+            _ => Err(ParseError::new(Component::Quality, input)),
         }
     }
 
@@ -442,8 +473,8 @@ impl Format {
     /// Returns a [`ParseError`] (HTTP 400) when the input is not one of
     /// the seven spec-enumerated format names.
     #[inline]
-    pub fn parse(s: &str) -> Result<Self, ParseError> {
-        match s {
+    pub fn parse(input: &str) -> Result<Self, ParseError> {
+        match input {
             "jpg" => Ok(Self::Jpg),
             "tif" => Ok(Self::Tif),
             "png" => Ok(Self::Png),
@@ -451,7 +482,7 @@ impl Format {
             "jp2" => Ok(Self::Jp2),
             "pdf" => Ok(Self::Pdf),
             "webp" => Ok(Self::Webp),
-            _ => Err(ParseError::new(Component::Format, s)),
+            _ => Err(ParseError::new(Component::Format, input)),
         }
     }
 
@@ -558,8 +589,8 @@ mod tests {
     use super::*;
 
     #[track_caller]
-    fn region(s: &str) -> Region {
-        Region::parse(s).unwrap()
+    fn region(input: &str) -> Region {
+        Region::parse(input).unwrap()
     }
 
     #[test]
@@ -571,8 +602,8 @@ mod tests {
             Region::Pixels {
                 x: 0,
                 y: 0,
-                w: 1,
-                h: 1
+                width: 1,
+                height: 1
             }
         );
         assert_eq!(
@@ -580,8 +611,8 @@ mod tests {
             Region::Pixels {
                 x: 125,
                 y: 15,
-                w: 120,
-                h: 140
+                width: 120,
+                height: 140
             }
         );
         // Leading zeros are accepted; canonical print normalizes.
@@ -590,8 +621,8 @@ mod tests {
             Region::Pixels {
                 x: 7,
                 y: 0,
-                w: 1,
-                h: 1
+                width: 1,
+                height: 1
             }
         );
         assert_eq!(
@@ -599,8 +630,8 @@ mod tests {
             Region::Percent {
                 x: 41.6,
                 y: 7.5,
-                w: 40.0,
-                h: 70.0
+                width: 40.0,
+                height: 70.0
             }
         );
         assert_eq!(
@@ -608,15 +639,15 @@ mod tests {
             Region::Percent {
                 x: 0.0,
                 y: 0.0,
-                w: 100.0,
-                h: 100.0
+                width: 100.0,
+                height: 100.0
             }
         );
     }
 
     #[test]
     fn region_invalid() {
-        for s in [
+        for input in [
             "",
             "fully",
             "Full",
@@ -647,13 +678,13 @@ mod tests {
             "4294967296,0,1,1",
             "pct:-0.1,0,1,1",
         ] {
-            assert!(Region::parse(s).is_err(), "should reject {s:?}");
+            assert!(Region::parse(input).is_err(), "should reject {input:?}");
         }
     }
 
     #[track_caller]
-    fn size(s: &str) -> Size {
-        Size::parse(s).unwrap()
+    fn size(input: &str) -> Size {
+        Size::parse(input).unwrap()
     }
 
     #[test]
@@ -739,7 +770,7 @@ mod tests {
 
     #[test]
     fn size_invalid() {
-        for s in [
+        for input in [
             "",
             "^",
             "full",
@@ -769,7 +800,7 @@ mod tests {
             ",1.5",
             "%5Emax",
         ] {
-            assert!(Size::parse(s).is_err(), "should reject {s:?}");
+            assert!(Size::parse(input).is_err(), "should reject {input:?}");
         }
     }
 
@@ -821,16 +852,16 @@ mod tests {
 
     #[test]
     fn rotation_invalid() {
-        for s in [
+        for input in [
             "", "!", "-0", "-90", "360.001", "361", "1e2", ".5", "90.", "+90", "9O",
         ] {
-            assert!(Rotation::parse(s).is_err(), "should reject {s:?}");
+            assert!(Rotation::parse(input).is_err(), "should reject {input:?}");
         }
     }
 
     #[test]
     fn quarter_turns() {
-        for (s, expect) in [
+        for (input, expect) in [
             ("0", true),
             ("90", true),
             ("180", true),
@@ -839,7 +870,11 @@ mod tests {
             ("22.5", false),
             ("90.1", false),
         ] {
-            assert_eq!(Rotation::parse(s).unwrap().is_quarter_turn(), expect, "{s}");
+            assert_eq!(
+                Rotation::parse(input).unwrap().is_quarter_turn(),
+                expect,
+                "{input}"
+            );
         }
     }
 
@@ -858,18 +893,21 @@ mod tests {
 
     #[test]
     fn full_request() {
-        let r = ImageRequest::parse("full/max/0/default.jpg").unwrap();
-        assert_eq!(r.to_string(), "full/max/0/default.jpg");
-        let r = ImageRequest::parse("125,15,120,140/90,/!345.3/gray.png").unwrap();
-        assert_eq!(r.to_string(), "125,15,120,140/90,/!345.3/gray.png");
-        for s in [
+        let req = ImageRequest::parse("full/max/0/default.jpg").unwrap();
+        assert_eq!(req.to_string(), "full/max/0/default.jpg");
+        let req = ImageRequest::parse("125,15,120,140/90,/!345.3/gray.png").unwrap();
+        assert_eq!(req.to_string(), "125,15,120,140/90,/!345.3/gray.png");
+        for input in [
             "full/max/0/default",
             "full/max/0.jpg",
             "full/max/0/default.jpg/extra",
             "/full/max/0/default.jpg",
             "full/max/0/default.jpg.png",
         ] {
-            assert!(ImageRequest::parse(s).is_err(), "should reject {s:?}");
+            assert!(
+                ImageRequest::parse(input).is_err(),
+                "should reject {input:?}"
+            );
         }
     }
 

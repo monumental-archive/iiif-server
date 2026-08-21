@@ -190,7 +190,7 @@ fn run_check(path: &Path) -> ExitCode {
             .and_then(|file| iiif_core::codec::open_master(file).map_err(|err| err.to_string()));
         match opened {
             Ok(master) => {
-                let (w, h) = master.dimensions();
+                let (width, height) = master.dimensions();
                 let description = master.describe();
                 let structure = if description.tiles.is_empty() {
                     "untiled".to_owned()
@@ -200,7 +200,7 @@ fn run_check(path: &Path) -> ExitCode {
                         description.tiles[0].width, description.tiles[0].scale_factors
                     )
                 };
-                println!("{}: OK — {w}×{h}, {structure}", entry.display());
+                println!("{}: OK — {width}×{height}, {structure}", entry.display());
                 for advisory in master.advisories() {
                     println!("  advice: {advisory}");
                 }

@@ -76,26 +76,26 @@ fn jp2_partial_grid_master_serves_exact_pixels() {
     // 512px tiles on 1024×768: the bottom row is partial. Region decode
     // on partial grids needs the fixed j2k (frames-sg/j2k#62); this
     // pins bit-exactness through the region path.
-    let (w, h, buf) = crop_via_pipeline(
+    let (width, height, buf) = crop_via_pipeline(
         "rgb_pyramid.jp2",
         "300,200,256,256/max/0/default.png",
         (1024, 768),
     );
-    assert_eq!((w, h), (256, 256));
+    assert_eq!((width, height), (256, 256));
     // Lossless 5/3: exact.
-    assert_pattern("jp2", &buf, w, (300, 200), 0);
+    assert_pattern("jp2", &buf, width, (300, 200), 0);
 }
 
 #[test]
 fn jp2_exact_grid_master_serves_exact_pixels() {
     // 256px tiles divide 1024×768 exactly.
-    let (w, h, buf) = crop_via_pipeline(
+    let (width, height, buf) = crop_via_pipeline(
         "rgb_exact.jp2",
         "300,200,256,256/max/0/default.png",
         (1024, 768),
     );
-    assert_eq!((w, h), (256, 256));
-    assert_pattern("jp2-exact", &buf, w, (300, 200), 0);
+    assert_eq!((width, height), (256, 256));
+    assert_pattern("jp2-exact", &buf, width, (300, 200), 0);
 }
 
 #[test]
@@ -114,8 +114,9 @@ fn jp2_describe_exposes_resolution_ladder() {
 fn jp2_downscaled_request_uses_reduced_resolution() {
     // Full image at 256 wide: the codec should decode at 1/4, and the
     // result must still match the pattern (averaged, so tolerance).
-    let (w, h, buf) = crop_via_pipeline("rgb_pyramid.jp2", "full/256,/0/default.png", (1024, 768));
-    assert_eq!((w, h), (256, 192));
+    let (width, height, buf) =
+        crop_via_pipeline("rgb_pyramid.jp2", "full/256,/0/default.png", (1024, 768));
+    assert_eq!((width, height), (256, 192));
     // Downsampled smooth ramps stay near the midpoint sample.
     let off = ((100 * 256 + 100) * 3) as usize;
     let expected = expected_pixel(400, 400);
@@ -124,25 +125,25 @@ fn jp2_downscaled_request_uses_reduced_resolution() {
 
 #[test]
 fn plain_jpeg_master_serves() {
-    let (w, h, buf) = crop_via_pipeline(
+    let (width, height, buf) = crop_via_pipeline(
         "rgb_plain.jpg",
         "300,200,256,256/max/0/default.png",
         (1024, 768),
     );
-    assert_eq!((w, h), (256, 256));
+    assert_eq!((width, height), (256, 256));
     // Q92 JPEG of a smooth-ish ramp: small tolerance, structure intact.
-    assert_pattern("jpeg", &buf, w, (300, 200), 12);
+    assert_pattern("jpeg", &buf, width, (300, 200), 12);
 }
 
 #[test]
 fn plain_png_master_serves() {
-    let (w, h, buf) = crop_via_pipeline(
+    let (width, height, buf) = crop_via_pipeline(
         "rgb_plain.png",
         "100,100,256,256/max/0/default.png",
         (512, 384),
     );
-    assert_eq!((w, h), (256, 256));
-    assert_pattern("png", &buf, w, (100, 100), 0);
+    assert_eq!((width, height), (256, 256));
+    assert_pattern("png", &buf, width, (100, 100), 0);
 }
 
 #[test]

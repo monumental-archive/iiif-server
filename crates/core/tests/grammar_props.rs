@@ -30,15 +30,26 @@ fn region_strategy() -> impl Strategy<Value = Region> {
     prop_oneof![
         Just(Region::Full),
         Just(Region::Square),
-        (any::<u32>(), any::<u32>(), 1..=u32::MAX, 1..=u32::MAX)
-            .prop_map(|(x, y, w, h)| Region::Pixels { x, y, w, h }),
+        (any::<u32>(), any::<u32>(), 1..=u32::MAX, 1..=u32::MAX).prop_map(
+            |(x, y, width, height)| Region::Pixels {
+                x,
+                y,
+                width,
+                height
+            }
+        ),
         (
             decimal_f64(99),
             decimal_f64(99),
             positive_decimal_f64(100),
             positive_decimal_f64(100),
         )
-            .prop_map(|(x, y, w, h)| Region::Percent { x, y, w, h }),
+            .prop_map(|(x, y, width, height)| Region::Percent {
+                x,
+                y,
+                width,
+                height
+            }),
     ]
 }
 
@@ -48,8 +59,9 @@ fn size_strategy() -> impl Strategy<Value = Size> {
         (1..=u32::MAX).prop_map(SizeKind::Width),
         (1..=u32::MAX).prop_map(SizeKind::Height),
         positive_decimal_f64(200).prop_map(SizeKind::Percent),
-        (1..=u32::MAX, 1..=u32::MAX).prop_map(|(w, h)| SizeKind::WidthHeight(w, h)),
-        (1..=u32::MAX, 1..=u32::MAX).prop_map(|(w, h)| SizeKind::Confined(w, h)),
+        (1..=u32::MAX, 1..=u32::MAX)
+            .prop_map(|(width, height)| SizeKind::WidthHeight(width, height)),
+        (1..=u32::MAX, 1..=u32::MAX).prop_map(|(width, height)| SizeKind::Confined(width, height)),
     ];
     kind.prop_flat_map(|kind| {
         // pct > 100 is only legal with the `^` flag.
@@ -153,9 +165,9 @@ proptest! {
     /// reparse of the canonical form equals the original parse.
     #[test]
     fn leading_zero_normalization(
-        x in 0_u32..1000, y in 0_u32..1000, w in 1_u32..1000, h in 1_u32..1000
+        x in 0_u32..1000, y in 0_u32..1000, width in 1_u32..1000, height in 1_u32..1000
     ) {
-        let padded = format!("{x:07},{y:07},{w:07},{h:07}");
+        let padded = format!("{x:07},{y:07},{width:07},{height:07}");
         let parsed = Region::parse(&padded).unwrap();
         let canonical = parsed.to_string();
         prop_assert_eq!(Region::parse(&canonical).unwrap(), parsed);

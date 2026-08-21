@@ -89,8 +89,8 @@ impl Jp2Master {
         let tile = info
             .tile_layout
             .as_ref()
-            .map_or((DEFAULT_TILE, DEFAULT_TILE), |t| {
-                (t.tile_width, t.tile_height)
+            .map_or((DEFAULT_TILE, DEFAULT_TILE), |tile| {
+                (tile.tile_width, tile.tile_height)
             });
         Ok(Self {
             bytes,
@@ -224,8 +224,8 @@ impl Master for Jp2Master {
         let roi = Rect {
             x: crop.x,
             y: crop.y,
-            w: crop.w,
-            h: crop.h,
+            w: crop.width,
+            h: crop.height,
         };
         let scaled = scaled_covering_pow2(roi, 1_u32 << u32::from(levels).min(31));
         let mut pool = J2kScratchPool::new();

@@ -68,8 +68,8 @@ fn read_ppm(name: &str) -> (u32, u32, Vec<u8>) {
     pos += 1;
     assert_eq!(fields[0], "P6");
     assert_eq!(fields[3], "255");
-    let (w, h): (u32, u32) = (fields[1].parse().unwrap(), fields[2].parse().unwrap());
-    (w, h, data[pos..].to_vec())
+    let (width, height): (u32, u32) = (fields[1].parse().unwrap(), fields[2].parse().unwrap());
+    (width, height, data[pos..].to_vec())
 }
 
 fn error_stats(ours: &[u8], golden: &[u8]) -> (f64, u8) {

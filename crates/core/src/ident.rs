@@ -41,8 +41,8 @@ impl Identifier {
         // identifier and only exists to confuse path handling downstream.
         let mut bytes = Vec::with_capacity(raw.len());
         let mut it = raw.bytes();
-        while let Some(b) = it.next() {
-            if b == b'%' {
+        while let Some(byte) = it.next() {
+            if byte == b'%' {
                 let hi = it
                     .next()
                     .and_then(hex_val)
@@ -53,11 +53,11 @@ impl Identifier {
                     .ok_or(IdentifierError::BadEscape)?;
                 bytes.push(hi * 16 + lo);
             } else {
-                bytes.push(b);
+                bytes.push(byte);
             }
         }
         let decoded = String::from_utf8(bytes).map_err(|_| IdentifierError::NotUtf8)?;
-        if decoded.bytes().any(|b| b < 0x20 || b == 0x7F) {
+        if decoded.bytes().any(|byte| byte < 0x20 || byte == 0x7F) {
             return Err(IdentifierError::ControlCharacter);
         }
         if decoded.contains('\\') {
@@ -89,18 +89,18 @@ impl Identifier {
     pub fn encoded(&self) -> String {
         const HEX: &[u8; 16] = b"0123456789ABCDEF";
         let mut out = String::with_capacity(self.0.len());
-        for b in self.0.bytes() {
-            let escape = match b {
+        for byte in self.0.bytes() {
+            let escape = match byte {
                 b'/' | b'?' | b'#' | b'[' | b']' | b'@' | b'%' => true,
                 0x21..=0x7E => false,
                 _ => true,
             };
             if escape {
                 out.push('%');
-                out.push(char::from(HEX[usize::from(b >> 4)]));
-                out.push(char::from(HEX[usize::from(b & 0xF)]));
+                out.push(char::from(HEX[usize::from(byte >> 4)]));
+                out.push(char::from(HEX[usize::from(byte & 0xF)]));
             } else {
-                out.push(char::from(b));
+                out.push(char::from(byte));
             }
         }
         out
@@ -114,11 +114,11 @@ impl fmt::Display for Identifier {
     }
 }
 
-const fn hex_val(b: u8) -> Option<u8> {
-    match b {
-        b'0'..=b'9' => Some(b - b'0'),
-        b'a'..=b'f' => Some(b - b'a' + 10),
-        b'A'..=b'F' => Some(b - b'A' + 10),
+const fn hex_val(byte: u8) -> Option<u8> {
+    match byte {
+        b'0'..=b'9' => Some(byte - b'0'),
+        b'a'..=b'f' => Some(byte - b'a' + 10),
+        b'A'..=b'F' => Some(byte - b'A' + 10),
         _ => None,
     }
 }
