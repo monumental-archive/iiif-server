@@ -74,11 +74,12 @@ Presentation API, per-image metadata — declined in advance, with
 rationale) live in [MAINTENANCE.md](MAINTENANCE.md).
 
 Correctness is enforced three ways: the **official IIIF validators**
-(`mise run audit:iiif-validate`, run against a built image, both API
-versions — **on demand, not on a schedule**, which is why the
-conformance figures above wear no shield: nothing runs them
-automatically yet, and a shield over an unrun check is a claim with no
-mechanism), **golden/differential tests** pin pixels against libvips,
+(`mise run audit:iiif-validate`, run against the published image, both
+API versions — **on the Monday audit cron**, since the org's audit
+workflow collects this repository's own `audit:*` tasks; the
+conformance figures above still wear no shield because no scheduled run
+has produced evidence yet, and a shield over an unrun check is a claim
+with no mechanism), **golden/differential tests** pin pixels against libvips,
 libjpeg, and
 OpenJPEG — bit-exact where the math says bit-exact — and **property
 tests** cover the grammar (parse↔print round-trips, canonicalization,
