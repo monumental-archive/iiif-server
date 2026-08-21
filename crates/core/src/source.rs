@@ -8,6 +8,19 @@
 //! read/mmap in `iiif-sources`, object stores via ranged GETs later. Decoders
 //! are sync and bridge at the boundary.
 
+#![expect(
+    clippy::pattern_type_mismatch,
+    reason = "these matches use default binding modes on a `&self` receiver, \
+          which is the edition-2021/2024 idiom. The fix does not \
+          compile as written: `match *self` on these enums gives \
+          `error[E0507]: cannot move out of `self` as enum variant `Io` \
+          which is behind a shared reference`, because the payloads are \
+          not `Copy`. What satisfies the lint is `ref` bindings — the \
+          pre-2018 style default binding modes were introduced to \
+          remove — so this is a case where conforming would move the \
+          code backwards."
+)]
+
 use core::{error::Error, fmt, future::Future, pin::Pin};
 use std::io;
 

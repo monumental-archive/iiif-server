@@ -16,6 +16,19 @@
 //!
 //! The result is a relative path safe to join under a source root.
 
+#![expect(
+    clippy::pattern_type_mismatch,
+    reason = "these matches use default binding modes on a `&self` receiver, \
+          which is the edition-2021/2024 idiom. The fix does not \
+          compile as written: `match *self` on these enums gives \
+          `error[E0507]: cannot move out of `self` as enum variant `Io` \
+          which is behind a shared reference`, because the payloads are \
+          not `Copy`. What satisfies the lint is `ref` bindings — the \
+          pre-2018 style default binding modes were introduced to \
+          remove — so this is a case where conforming would move the \
+          code backwards."
+)]
+
 use core::{error::Error, fmt};
 
 /// A decoded, traversal-checked identifier. The inner string is a relative
