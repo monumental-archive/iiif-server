@@ -9,6 +9,11 @@
 //! are sync and bridge at the boundary.
 
 use core::{error::Error, fmt, future::Future, pin::Pin};
+#[expect(
+    clippy::std_instead_of_core,
+    reason = "`core::io` is not stable on this toolchain — measured: clippy marks the `core::io` suggestion machine-applicable and the replacement does not compile (E0658, `core_io`). One import carries the exception for the whole file. Revisit when core::io stabilises."
+)]
+use std::io;
 
 use bytes::Bytes;
 
@@ -44,7 +49,7 @@ pub enum SourceError {
         source_len: u64,
     },
     /// Underlying I/O failure.
-    Io(std::io::Error),
+    Io(io::Error),
 }
 
 impl fmt::Display for SourceError {
@@ -75,14 +80,10 @@ impl Error for SourceError {
     }
 }
 
-#[expect(
-    clippy::std_instead_of_core,
-    reason = "`core::io` is not stable on this toolchain — measured: clippy marks this suggestion machine-applicable and the replacement does not compile (E0658, `core_io`). Revisit when core::io stabilises."
-)]
-impl From<std::io::Error> for SourceError {
+impl From<io::Error> for SourceError {
     #[inline]
-    fn from(err: std::io::Error) -> Self {
-        if err.kind() == std::io::ErrorKind::NotFound {
+    fn from(err: io::Error) -> Self {
+        if err.kind() == io::ErrorKind::NotFound {
             Self::NotFound
         } else {
             Self::Io(err)

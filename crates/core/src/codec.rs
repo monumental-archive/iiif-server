@@ -16,16 +16,22 @@ pub mod jp2;
 pub mod simple;
 
 use core::{error::Error, fmt};
-use std::io::{Read, Seek, SeekFrom};
+#[expect(
+    clippy::std_instead_of_core,
+    reason = "`core::io` is not stable on this toolchain — measured: clippy marks the `core::io` suggestion machine-applicable and the replacement does not compile (E0658, `core_io`). One import carries the exception for the whole file. Revisit when core::io stabilises."
+)]
+use std::io::{self, Read, Seek, SeekFrom};
 
 use num_traits::cast::ToPrimitive as _;
 use tiff::{
     ColorType,
+    decoder::ChunkType,
     decoder::{Decoder, DecodingResult},
 };
 
 use crate::{
     eval::CropRect,
+    image::CopyRect,
     image::{Raster, RasterError},
     info::{ImageDescription, SizeEntry, TileSet},
 };
@@ -146,7 +152,7 @@ where
 }
 
 /// Read as many of `buf` as the reader will give without erroring on EOF.
-fn read_up_to<R>(reader: &mut R, buf: &mut [u8]) -> std::io::Result<usize>
+fn read_up_to<R>(reader: &mut R, buf: &mut [u8]) -> io::Result<usize>
 where
     R: Read,
 {
@@ -266,7 +272,7 @@ impl<R: Read + Seek> TiffPyramid<R> {
         let (full_w, full_h) = decoder.dimensions()?;
         loop {
             let (width, height) = decoder.dimensions()?;
-            if decoder.get_chunk_type() != tiff::decoder::ChunkType::Tile {
+            if decoder.get_chunk_type() != ChunkType::Tile {
                 return Err(CodecError::Unsupported(format!(
                     "IFD {ifd} is not tiled; this master will serve slowly — \
                     convert with: vips tiffsave in.tif out.tif --tile --pyramid"
@@ -431,7 +437,7 @@ impl<R: Read + Seek> TiffPyramid<R> {
                 }
                 out_buf.blit(
                     &tile,
-                    crate::image::CopyRect {
+                    CopyRect {
                         src_x: left - tile_left,
                         src_y: top - tile_top,
                         width: right - left,

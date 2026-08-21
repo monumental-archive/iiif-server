@@ -5,6 +5,8 @@
 //! `OpenJPEG`-based incumbent has, validated bit-exact against `OpenJPEG` by
 //! SPIKE 2.
 
+use core::fmt;
+
 use j2k::{CpuDecodeParallelism, J2kDecoder, J2kScratchPool, PixelFormat, Rect};
 
 use super::{CodecError, Master};
@@ -52,9 +54,9 @@ pub struct Jp2Master {
     internal_parallelism: bool,
 }
 
-impl core::fmt::Debug for Jp2Master {
+impl fmt::Debug for Jp2Master {
     #[inline]
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Jp2Master")
             .field("width", &self.width)
             .field("height", &self.height)

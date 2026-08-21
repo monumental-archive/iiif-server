@@ -7,11 +7,19 @@
 //! `check` advises converting large ones to pyramids; small images are fine
 //! here.
 
+#[expect(
+    clippy::std_instead_of_core,
+    reason = "`core::io` is not stable on this toolchain — measured: clippy marks the `core::io` suggestion machine-applicable and the replacement does not compile (E0658, `core_io`). One import carries the exception for the whole file. Revisit when core::io stabilises."
+)]
+use std::io;
+
 use super::{CodecError, Master, guard_resident_pixels};
+use zune_jpeg::zune_core::bytestream::ZCursor;
+
 use crate::{
     eval::CropRect,
     image::{CopyRect, Raster},
-    info::ImageDescription,
+    info::{ImageDescription, SizeEntry},
 };
 
 /// A fully decoded single-resolution master.
@@ -32,10 +40,7 @@ impl SimpleMaster {
     pub fn from_jpeg(bytes: &[u8]) -> Result<Self, CodecError> {
         use zune_jpeg::zune_core::{colorspace::ColorSpace, options::DecoderOptions};
         let options = DecoderOptions::default().jpeg_set_out_colorspace(ColorSpace::RGB);
-        let mut decoder = zune_jpeg::JpegDecoder::new_with_options(
-            zune_jpeg::zune_core::bytestream::ZCursor::new(bytes),
-            options,
-        );
+        let mut decoder = zune_jpeg::JpegDecoder::new_with_options(ZCursor::new(bytes), options);
         // Headers first: dimensions must clear the bomb ceiling before
         // any pixel buffer is allocated.
         decoder
@@ -72,13 +77,9 @@ impl SimpleMaster {
     /// # Errors
     ///
     /// [`CodecError::Corrupt`] / [`CodecError::Unsupported`] as above.
-    #[expect(
-        clippy::std_instead_of_core,
-        reason = "`core::io` is not stable on this toolchain — measured: clippy marks this suggestion machine-applicable and the replacement does not compile (E0658, `core_io`). Revisit when core::io stabilises."
-    )]
     #[inline]
     pub fn from_png(bytes: &[u8]) -> Result<Self, CodecError> {
-        let decoder = png::Decoder::new(std::io::Cursor::new(bytes));
+        let decoder = png::Decoder::new(io::Cursor::new(bytes));
         let mut reader = decoder
             .read_info()
             .map_err(|err| CodecError::Corrupt(format!("PNG decode: {err}")))?;
@@ -161,7 +162,7 @@ impl Master for SimpleMaster {
             width: self.raster.width(),
             height: self.raster.height(),
             tiles: Vec::new(),
-            sizes: vec![crate::info::SizeEntry {
+            sizes: vec![SizeEntry {
                 width: self.raster.width(),
                 height: self.raster.height(),
             }],

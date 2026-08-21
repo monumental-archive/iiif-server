@@ -12,7 +12,7 @@ use core::{error::Error, fmt};
 use num_traits::cast::ToPrimitive as _;
 
 use crate::{
-    grammar::{ImageRequest, Quality, Region, Rotation, Size, SizeKind},
+    grammar::{Format, ImageRequest, Quality, Region, Rotation, Size, SizeKind},
     info::Limits,
 };
 
@@ -60,7 +60,7 @@ pub struct Plan {
     /// Requested quality, passed through to the raster stage.
     pub quality: Quality,
     /// Requested output format, passed through to the encode stage.
-    pub format: crate::grammar::Format,
+    pub format: Format,
     /// Whether the scale step upscales beyond the extracted region — used
     /// for the canonical `^` spelling.
     pub upscales: bool,

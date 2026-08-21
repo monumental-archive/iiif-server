@@ -16,7 +16,7 @@ use crate::{
     grammar::{
         Component, Format, ImageRequest, ParseError, Quality, Region, Rotation, Size, SizeKind,
     },
-    info::{ImageDescription, Limits},
+    info::{ImageDescription, Limits, SizeEntry, TileSet},
 };
 
 /// A parsed v2.1 request plus what the v2 canonical form needs to
@@ -298,12 +298,12 @@ mod tests {
         let description = ImageDescription {
             width: 1024,
             height: 768,
-            tiles: vec![crate::info::TileSet {
+            tiles: vec![TileSet {
                 width: 256,
                 height: None,
                 scale_factors: vec![1, 2, 4],
             }],
-            sizes: vec![crate::info::SizeEntry {
+            sizes: vec![SizeEntry {
                 width: 1024,
                 height: 768,
             }],

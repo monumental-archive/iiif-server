@@ -9,6 +9,11 @@
 //! would require C libwebp) complete it.
 
 use core::{error::Error, fmt};
+#[expect(
+    clippy::std_instead_of_core,
+    reason = "`core::io` is not stable on this toolchain — measured: clippy marks the `core::io` suggestion machine-applicable and the replacement does not compile (E0658, `core_io`). One import carries the exception for the whole file. Revisit when core::io stabilises."
+)]
+use std::io;
 
 use crate::{grammar::Format, image::Raster};
 
@@ -72,15 +77,11 @@ pub fn encode(raster: &Raster, format: Format) -> Result<Vec<u8>, EncodeError> {
     }
 }
 
-#[expect(
-    clippy::std_instead_of_core,
-    reason = "`core::io` is not stable on this toolchain — measured: clippy marks this suggestion machine-applicable and the replacement does not compile (E0658, `core_io`). Revisit when core::io stabilises."
-)]
 fn encode_tiff(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
     use tiff::encoder::{TiffEncoder, colortype};
     // Keep TIFF output opaque: alpha flattens over white.
     let raster = raster.clone().flatten_over_white();
-    let mut cursor = std::io::Cursor::new(Vec::new());
+    let mut cursor = io::Cursor::new(Vec::new());
     {
         let mut encoder =
             TiffEncoder::new(&mut cursor).map_err(|err| EncodeError::Internal(err.to_string()))?;
@@ -150,15 +151,11 @@ fn encode_gif(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
     Ok(out)
 }
 
-#[expect(
-    clippy::std_instead_of_core,
-    reason = "`core::io` is not stable on this toolchain — measured: clippy marks this suggestion machine-applicable and the replacement does not compile (E0658, `core_io`). Revisit when core::io stabilises."
-)]
 fn encode_webp(raster: &Raster) -> Result<Vec<u8>, EncodeError> {
     // Lossless only — the single documented asterisk in the compliance
     // table (lossy webp would require C libwebp).
     let mut out = Vec::new();
-    let encoder = image_webp::WebPEncoder::new(std::io::Cursor::new(&mut out));
+    let encoder = image_webp::WebPEncoder::new(io::Cursor::new(&mut out));
     let color = match raster {
         Raster::Gray8 { .. } => image_webp::ColorType::L8,
         Raster::GrayA8 { .. } => image_webp::ColorType::La8,
