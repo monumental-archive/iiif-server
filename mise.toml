@@ -10,6 +10,15 @@
 [settings]
 lockfile = true
 
+# Tasks below are bash, and mise's default task shell is sh — dash on the
+# Ubuntu runners, which chokes on `[[ ]]` and `<<<`. `-euo pipefail`
+# rather than a bare `bash -c`, because without it a task whose failure
+# signal is a tool's exit status passes as long as anything follows it:
+# the check goes green having not checked. Same block, same reason, as
+# the belt's own (.github#700).
+[task_config]
+shell = "bash -euo pipefail -c"
+
 [env]
 # Which nightly audit:fuzz runs the sanitized targets under
 # (.github#445). AddressSanitizer is cargo-fuzz's default and needs
