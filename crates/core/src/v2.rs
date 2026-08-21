@@ -324,6 +324,6 @@ mod tests {
                 .iter()
                 .any(|feature| feature == "sizeAboveFull")
         );
-        assert_eq!(json["tiles"][0]["width"], 256);
+        assert_eq!(json["tiles"][0]["width"], 256_i32);
     }
 }

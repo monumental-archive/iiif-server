@@ -240,7 +240,7 @@ fn resolve_size(
             (round_u32(rw * scale), height)
         }
         SizeKind::Percent(pct) => {
-            let scale = pct / 100.0;
+            let scale = pct / 100.0_f64;
             (round_u32(rw * scale), round_u32(rh * scale))
         }
         SizeKind::WidthHeight(width, height) => {
@@ -254,7 +254,7 @@ fn resolve_size(
             // A confining box strictly larger than the region can only be
             // satisfied "as large as possible" by upscaling; without the
             // `^` flag the official validator requires a 400 here.
-            if !size.upscale && fit > 1.0 {
+            if !size.upscale && fit > 1.0_f64 {
                 return Err(EvalError::UpscaleWithoutFlag);
             }
             (round_u32(rw * fit), round_u32(rh * fit))

@@ -94,10 +94,10 @@ pub fn execute(source: &mut dyn Master, plan: &Plan) -> Result<Vec<u8>, Pipeline
     if plan.mirror {
         raster.mirror();
     }
-    let raster = if plan.degrees == 0.0 {
+    let raster = if plan.degrees == 0.0_f64 {
         raster
-    } else if plan.degrees % 90.0 == 0.0 {
-        raster.rotate_quarters((plan.degrees / 90.0).to_u8().unwrap_or(0))
+    } else if plan.degrees % 90.0_f64 == 0.0_f64 {
+        raster.rotate_quarters((plan.degrees / 90.0_f64).to_u8().unwrap_or(0))
     } else {
         raster.rotate_arbitrary(plan.degrees)
     };

@@ -40,6 +40,15 @@ use crate::{
 ///
 /// Found by fuzzing: a 12-byte PNG header claiming 512×16777335 drove a
 /// 25 GB allocation before any pixel arrived.
+#[expect(
+    clippy::decimal_literal_representation,
+    reason = "clippy suggests 0x1000_0000. The doc comment two lines up \
+              says \"268 million pixels\" and the fuzzing record says \
+              512x16777335 — this constant is read against decimal pixel \
+              counts, and hex would hide the one property a reader checks \
+              it for. Being a round power of two is a coincidence of the \
+              ceiling, not its meaning."
+)]
 pub const MAX_RESIDENT_PIXELS: u64 = 268_435_456;
 
 /// Reject declared dimensions that would exceed [`MAX_RESIDENT_PIXELS`],

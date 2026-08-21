@@ -97,7 +97,7 @@ impl Identifier {
             };
             if escape {
                 out.push('%');
-                out.push(char::from(HEX[usize::from(byte >> 4)]));
+                out.push(char::from(HEX[usize::from(byte >> 4_i32)]));
                 out.push(char::from(HEX[usize::from(byte & 0xF)]));
             } else {
                 out.push(char::from(byte));

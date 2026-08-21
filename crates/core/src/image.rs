@@ -437,8 +437,8 @@ impl Raster {
         let src_channels = self.channels() as usize;
         let out_channels: usize = if gray { 2 } else { 4 };
         let mut out = vec![0_u8; canvas_w as usize * canvas_h as usize * out_channels];
-        let source_center = (src_w / 2.0, src_h / 2.0);
-        let canvas_center = (out_w / 2.0, out_h / 2.0);
+        let source_center = (src_w / 2.0_f64, src_h / 2.0_f64);
+        let canvas_center = (out_w / 2.0_f64, out_h / 2.0_f64);
         let data = self.data();
         let columns = self.width() as usize;
         let rows = self.height() as usize;
@@ -446,11 +446,11 @@ impl Raster {
             for ox in 0..canvas_w {
                 // Inverse map: rotate the output pixel back by -θ around
                 // the canvas center.
-                let dx = f64::from(ox) + 0.5 - canvas_center.0;
-                let dy = f64::from(oy) + 0.5 - canvas_center.1;
-                let sx = dx * cos + dy * sin + source_center.0 - 0.5;
-                let sy = -(dx * sin) + dy * cos + source_center.1 - 0.5;
-                if sx < -0.5 || sy < -0.5 || sx > src_w - 0.5 || sy > src_h - 0.5 {
+                let dx = f64::from(ox) + 0.5_f64 - canvas_center.0;
+                let dy = f64::from(oy) + 0.5_f64 - canvas_center.1;
+                let sx = dx * cos + dy * sin + source_center.0 - 0.5_f64;
+                let sy = -(dx * sin) + dy * cos + source_center.1 - 0.5_f64;
+                if sx < -0.5_f64 || sy < -0.5_f64 || sx > src_w - 0.5_f64 || sy > src_h - 0.5_f64 {
                     continue; // stays transparent
                 }
                 let x_floor = sx.floor().max(0.0);

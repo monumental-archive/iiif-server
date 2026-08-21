@@ -251,7 +251,11 @@ impl Region {
                 fields.next().and_then(parse_f64).ok_or_else(err)?,
                 fields.next().and_then(parse_f64).ok_or_else(err)?,
             );
-            if fields.next().is_some() || width <= 0.0 || height <= 0.0 || x >= 100.0 || y >= 100.0
+            if fields.next().is_some()
+                || width <= 0.0_f64
+                || height <= 0.0_f64
+                || x >= 100.0_f64
+                || y >= 100.0_f64
             {
                 return Err(err());
             }
@@ -327,7 +331,7 @@ impl Size {
         } else if let Some(pct) = rest.strip_prefix("pct:") {
             let n = parse_f64(pct).ok_or_else(err)?;
             // Without `^`, pct > 100 would upscale — always a 400.
-            if n <= 0.0 || (!upscale && n > 100.0) {
+            if n <= 0.0_f64 || (!upscale && n > 100.0_f64) {
                 return Err(err());
             }
             SizeKind::Percent(n)
@@ -405,7 +409,7 @@ impl Rotation {
             .map_or((false, input), |rest| (true, rest));
         let degrees = parse_f64(rest).ok_or_else(err)?;
         // "any floating point number from 0 to 360" — inclusive.
-        if degrees > 360.0 {
+        if degrees > 360.0_f64 {
             return Err(err());
         }
         Ok(Self { mirror, degrees })
@@ -628,19 +632,19 @@ mod tests {
         assert_eq!(
             region("pct:41.6,7.5,40,70"),
             Region::Percent {
-                x: 41.6,
-                y: 7.5,
-                width: 40.0,
-                height: 70.0
+                x: 41.6_f64,
+                y: 7.5_f64,
+                width: 40.0_f64,
+                height: 70.0_f64
             }
         );
         assert_eq!(
             region("pct:0,0,100,100"),
             Region::Percent {
-                x: 0.0,
-                y: 0.0,
-                width: 100.0,
-                height: 100.0
+                x: 0.0_f64,
+                y: 0.0_f64,
+                width: 100.0_f64,
+                height: 100.0_f64
             }
         );
     }
