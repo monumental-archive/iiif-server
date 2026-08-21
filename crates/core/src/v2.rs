@@ -11,6 +11,16 @@
 //! v2 requests parse into the same [`ImageRequest`] the engine evaluates;
 //! only the size grammar and the document/canonical spellings differ.
 
+#![expect(
+    clippy::single_call_fn,
+    reason = "each of these is a named step called once from the dispatch \
+          above it. Inlining them to satisfy the lint would fold \
+          separate formats, decode paths or parse stages into one long \
+          body — the lint's own documentation calls it \"very \
+          restrictive\", and here the single call site is the point: \
+          one function per format is what makes the dispatch readable."
+)]
+
 use crate::{
     eval::Plan,
     grammar::{
@@ -235,7 +245,10 @@ pub fn info_json(id: &str, image: &ImageDescription, limits: Limits) -> String {
     if !tiles.is_empty() {
         document["tiles"] = tiles.into();
     }
-    #[expect(reason = "map-free static shape: to_string cannot fail")]
+    #[expect(
+        clippy::expect_used,
+        reason = "map-free static shape: to_string cannot fail"
+    )]
     serde_json::to_string(&document).expect("static shape")
 }
 

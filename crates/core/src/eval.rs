@@ -7,6 +7,16 @@
 //!
 //! All the dimension-dependent rules the grammar could not check live here.
 
+#![expect(
+    clippy::single_call_fn,
+    reason = "each of these is a named step called once from the dispatch \
+          above it. Inlining them to satisfy the lint would fold \
+          separate formats, decode paths or parse stages into one long \
+          body — the lint's own documentation calls it \"very \
+          restrictive\", and here the single call site is the point: \
+          one function per format is what makes the dispatch readable."
+)]
+
 use core::{error::Error, fmt};
 
 use num_traits::cast::ToPrimitive as _;

@@ -12,6 +12,16 @@
 //! Formats: pyramidal/tiled TIFF (this file), JP2/HTJ2K ([`jp2`]), plain
 //! JPEG and PNG ([`simple`]).
 
+#![expect(
+    clippy::single_call_fn,
+    reason = "each of these is a named step called once from the dispatch \
+          above it. Inlining them to satisfy the lint would fold \
+          separate formats, decode paths or parse stages into one long \
+          body — the lint's own documentation calls it \"very \
+          restrictive\", and here the single call site is the point: \
+          one function per format is what makes the dispatch readable."
+)]
+
 pub mod jp2;
 pub mod simple;
 
