@@ -12,6 +12,44 @@ over the surface named in [MAINTENANCE.md](MAINTENANCE.md) — the HTTP API, the
 CLI flags and the container contract. Internal Rust APIs are not covered:
 nothing in this workspace is published to a registry.
 
+## [0.2.0](https://github.com/monumental-archive/iiif-server/compare/v0.1.0...v0.2.0) - 2026-08-21
+
+### Added
+
+- cooldown 14 days -> 7 (mise leg, three-layer policy) ([#79](https://github.com/monumental-archive/iiif-server/pull/79))
+- add CodeQL SAST workflow (rust + actions, build-mode none) ([#97](https://github.com/monumental-archive/iiif-server/pull/97))
+- run OpenSSF Scorecard weekly and publish the result ([#99](https://github.com/monumental-archive/iiif-server/pull/99))
+
+### Fixed
+
+- commit fuzz/Cargo.lock and gate the harness --locked ([#84](https://github.com/monumental-archive/iiif-server/pull/84))
+- changelog template emits malformed markdown from the second release on ([#96](https://github.com/monumental-archive/iiif-server/pull/96))
+- unjam the mise-action comments in scheduled.yml ([#100](https://github.com/monumental-archive/iiif-server/pull/100))
+- derive egress allowlists for codeql and scorecard, switch to block ([#108](https://github.com/monumental-archive/iiif-server/pull/108))
+- restore egress-policy block across the release path from audit data ([#110](https://github.com/monumental-archive/iiif-server/pull/110))
+
+### Documentation
+
+- add CLAUDE.md (agent guidance: commands, ground rules, architecture) ([#85](https://github.com/monumental-archive/iiif-server/pull/85))
+- Best Practices doc pack (CoC, governance, roadmap, assurance case) ([#98](https://github.com/monumental-archive/iiif-server/pull/98))
+- add the README badge row now that each one is backed ([#101](https://github.com/monumental-archive/iiif-server/pull/101))
+- fix two stale references ([#109](https://github.com/monumental-archive/iiif-server/pull/109))
+- the licensing pass — AGPL FAQ, plus the task ci correction ([#112](https://github.com/monumental-archive/iiif-server/pull/112))
+- state the Branch-Protection ceiling; unbreak lychee on the AGPL text ([#114](https://github.com/monumental-archive/iiif-server/pull/114))
+
+### CI
+
+- assert the image size so the under-25MB claim cannot rot ([#113](https://github.com/monumental-archive/iiif-server/pull/113))
+- conform to the org gate and declare the oci-image class ([#119](https://github.com/monumental-archive/iiif-server/pull/119))
+
+### Dependencies
+
+- update eclipse-temurin:25-jre-noble docker digest to fbcf915 ([#86](https://github.com/monumental-archive/iiif-server/pull/86))
+- sweep every pin to current — actions, mise tools, both lockfiles ([#94](https://github.com/monumental-archive/iiif-server/pull/94))
+- update dependency jdx/mise to v2026.8.0 ([#116](https://github.com/monumental-archive/iiif-server/pull/116))
+- update mise tools ([#117](https://github.com/monumental-archive/iiif-server/pull/117))
+- update docker/dockerfile to ecfaec9 ([#121](https://github.com/monumental-archive/iiif-server/pull/121))
+
 ## [0.1.0](https://github.com/monumental-archive/iiif-server/releases/tag/v0.1.0) - 2026-08-01
 
 ### Added
