@@ -93,7 +93,8 @@ rather than an argument. Each has a reason recorded in
 Contributions in the welcome categories — correctness fixes with a failing
 test, security fixes, documentation accuracy, additional golden, property
 or fuzz coverage — are wanted regardless of anything on this list. See
-[CONTRIBUTING.md](../CONTRIBUTING.md).
+the organisation's contributing guide
+([monumental-archive/.github](https://github.com/monumental-archive/.github)).
 
 ## How this document changes
 

@@ -92,6 +92,12 @@ changed.
   carries its own committed `Cargo.lock`. `lint:fuzz-build` compiles the
   targets on stable in the gate; `audit:fuzz` runs them under
   AddressSanitizer on the dated nightly, on the Monday cron.
+- **A new Rust or shell file carries the same two-line SPDX header every
+  other one carries** — `SPDX-FileCopyrightText` and
+  `SPDX-License-Identifier: AGPL-3.0-only`, above the `//!` docs in Rust
+  and below the shebang in shell. Copy it from a neighbour. Every other
+  file type is covered by the blanket entry in `REUSE.toml` and needs
+  nothing; `lint:reuse` proves it.
 - **The Dockerfile does not compile anything.** The binary is built by
   `scripts/oci-prepare.sh` in the mise-pinned toolchain and COPYed in
   (`.github#295`): the org's repro gate measured the in-container cargo

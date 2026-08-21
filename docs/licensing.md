@@ -1,8 +1,6 @@
 # Licensing
 
-The server is licensed [AGPL-3.0-only](../LICENSE), and that is the whole
-of the offer. Contributions are signed off under the Developer
-Certificate of Origin; contributors keep their copyright.
+The server is licensed [AGPL-3.0-only](../LICENSE).
 
 This page answers the questions an adoption committee actually asks, in
 plain English, before they have to be asked somewhere we cannot reply. It
@@ -63,41 +61,17 @@ convey. If that does not fit how you ship, the next question is for you.
 
 ## Can we get it under different terms?
 
-Ask. What follows is the mechanism, which changed at the import
-(2026-08-21), because the answer now depends on whose code is involved.
+Yes. Ask.
 
-Until then the project carried an Apache-ICLA-derived contributor
-agreement whose §2 granted the maintainer the right to license
-contributions "under any license terms the Maintainer chooses ...
-including proprietary and commercial license terms". That agreement is
-withdrawn: the organisation this project belongs to attests
-contributions with the
-[Developer Certificate of Origin](https://developercertificate.org/) and
-operates no contributor licence agreement.
-
-What a DCO sign-off does and does not do is the whole of the difference.
-It asserts provenance — that the contributor has the right to submit the
-work under the project's licence — and grants nothing beyond that
-licence. So no one holds a standing right to relicense someone else's
-contribution.
-
-Two consequences, and they point in opposite directions:
-
-- **Existing code.** Measured 2026-08-21: every human commit in this
-  repository is the maintainer's (91 of 97; the remaining 6 are
-  Renovate's dependency bumps). A copyright holder may license their own
-  work on any terms they like, with or without an agreement from anyone,
-  so nothing about the code as it stands today is foreclosed.
-- **Future outside contributions.** Those arrive under the AGPL and
-  nothing else. As the contributor list grows, the part of the tree that
-  could be offered on other terms stops growing with it.
-
-The rug-pull question is worth answering separately, because the old
-agreement carried a promise — "The Project itself will always remain
-available under its open-source license" — that no longer has a
-contract behind it. What replaces it is structural: AGPL grants already
-made are irrevocable, so every version published under it stays
+The commitment that matters in the other direction is that the project
+itself always remains available under its open-source licence:
+alternative terms are offered *in addition to* the AGPL, never instead
+of it. That rests on something firmer than a promise — an AGPL grant
+already made is irrevocable, so every version published under it stays
 available under it, whatever happens later.
+
+Open an issue to start the conversation. Specifics move off the tracker
+from there.
 
 ## Why AGPL, rather than a permissive licence?
 

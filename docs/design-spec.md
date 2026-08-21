@@ -335,9 +335,13 @@ the stillness is intentional.
 > Everything below that names a CLA is the 2026-07-26 decision as it was
 > made and is left standing as the record; what is true now is that
 > contributors sign off with `git commit -s`, keep their copyright, and
-> grant no relicensing right — so the "alternative terms on request"
-> position that agreement supported is withdrawn with it. The AGPL-3.0-only
-> licence itself is unchanged. See `docs/licensing.md`.
+> grant no relicensing right. What that means for the "alternative terms
+> on request" position is the owner's to decide and is not decided here:
+> every human commit in this repository is still the copyright holder's
+> own (measured 2026-08-21 — 91 of 97, the rest Renovate's), so nothing
+> about today's tree is foreclosed; it is future outside contributions
+> that would arrive AGPL-only. The AGPL-3.0-only licence itself is
+> unchanged. See `docs/licensing.md`.
 
 ## Milestones
 

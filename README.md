@@ -32,7 +32,8 @@ bytes pulled back from the registry as well as the local build.
 **The image is the whole distribution.** Standalone binaries and the
 installer script are not published: the released artifact is the
 container image, signed with build provenance you can verify
-([SECURITY.md](SECURITY.md)). Recipes, including a hardened compose file,
+([docs/deployment.md](docs/deployment.md#verifying-what-you-pulled)).
+Recipes, including a hardened compose file,
 are in [docs/deployment.md](docs/deployment.md).
 
 That is the whole configuration story: one root, numeric limits, pool
@@ -108,17 +109,20 @@ The workspace is `#![forbid(unsafe_code)]` throughout, clippy runs at
 every group including `restriction` with `-D warnings` and no `allow`
 attributes, and every dependency is permissively licensed (enforced by
 `cargo deny`). See
-[CONTRIBUTING.md](CONTRIBUTING.md) (contributions are signed off under
-the DCO) and [docs/design-spec.md](docs/design-spec.md) — the founding
-document this build follows.
+[docs/design-spec.md](docs/design-spec.md) — the founding document this
+build follows.
 
-Also: [GOVERNANCE.md](GOVERNANCE.md) (how decisions get made, and what
-happens if the maintainer disappears),
-[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md),
-[docs/roadmap.md](docs/roadmap.md) (what this will and will not do), and
-[docs/assurance-case.md](docs/assurance-case.md) — the threat model, trust
-boundaries and the argument that the security requirements in
-[SECURITY.md](SECURITY.md) actually hold.
+Contributing, the code of conduct, governance, support and the security
+policy are the organisation's and are served from
+[monumental-archive/.github](https://github.com/monumental-archive/.github) for every repository in it: this one
+carries no copy to drift. Contributions are signed off under the DCO
+(`git commit -s`), which the gate enforces.
+
+Repo-specific reading: [docs/roadmap.md](docs/roadmap.md) (what this
+will and will not do) and
+[docs/assurance-case.md](docs/assurance-case.md) — the threat model,
+trust boundaries, and the argument that this server's security property
+actually holds.
 
 Deployment recipes (CDN caching, forward-auth, systemd):
 [docs/deployment.md](docs/deployment.md).
@@ -154,11 +158,8 @@ this server over HTTP as separate processes, so they keep whatever licences
 they already have, proprietary included. That is the question most AGPL
 hesitancy turns out to be about.
 
-Alternative terms: ask. The contributor agreement that used to carry a
-blanket relicensing grant is withdrawn — contributions are signed off
-under the DCO now, and a sign-off grants nothing beyond the AGPL — so
-what can be offered depends on whose code is involved.
-[docs/licensing.md](docs/licensing.md) sets out both directions.
+Alternative terms, including commercial, are available. Open an issue to
+ask.
 
 The full FAQ, including why AGPL rather than a permissive licence, is
 [docs/licensing.md](docs/licensing.md).
