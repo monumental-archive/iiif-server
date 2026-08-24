@@ -1,4 +1,4 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["github>monumental-archive/.github#v1.59.0"]
+  "extends": ["github>monumental-archive/.github#v1.60.0"]
 }
