@@ -25,7 +25,7 @@ RUN wget -q -O /tmp/src.tar.gz \
     && mkdir /src \
     && tar xzf /tmp/src.tar.gz -C /src --strip-components=1
 
-FROM maven:3-eclipse-temurin-21@sha256:c07f7ccfb8ca6c9fa29ee523f00afa7d2ca6132c92f8652c4aebb5ee3491f502 AS build
+FROM maven:3-eclipse-temurin-21@sha256:8f6ac126f7810bb5549c4cd122d2bf0e9cda5bdeb0838aa928f09e779fd8bef8 AS build
 
 # Security backports upstream hasn't merged yet (see #962). bouncycastle is
 # shaded inside jruby-complete — unreachable by dependencyManagement — so its
