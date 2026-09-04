@@ -316,7 +316,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -354,9 +354,9 @@ dependencies = [
 
 [[package]]
 name = "fearless_simd"
-version = "0.4.1"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b97b65636e5b9ef369943878ac74335ba1c55c1cb6adbf1e2c293c624248d693"
+checksum = "f4beca3cb2444e3304ac30843cc091f44ed58932353cd492ce740067bfce6b12"
 
 [[package]]
 name = "find-msvc-tools"
@@ -880,11 +880,10 @@ checksum = "8f42a60cbdf9a97f5d2305f08a87dc4e09308d1276d28c869c684d7777685682"
 
 [[package]]
 name = "j2k"
-version = "0.8.1"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0371832fbd6d4e7c83ab85545bb41474f91f565dd1e5660b733de11b54a257eb"
+checksum = "df2b8f47cb9098f35d9a2bde2c6b1a907f33df6ee750e1f7dfe4749f067ee654"
 dependencies = [
- "j2k-codec-math",
  "j2k-core",
  "j2k-native",
  "j2k-types",
@@ -894,24 +893,27 @@ dependencies = [
 
 [[package]]
 name = "j2k-codec-math"
-version = "0.8.1"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "165366ed0d18b737c6f6cd2c3ffeb20c94dc40aac70e77c2f6dd1c8b518aec3e"
+checksum = "99c1842cb5bd9ee9b99fb545d21065be3d35d7f35a2a649f6812ff41f798c18b"
+dependencies = [
+ "j2k-types",
+]
 
 [[package]]
 name = "j2k-core"
-version = "0.8.1"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "058401c1957538158b1565d0b9453f8165ca0fc62e85197849364971d4be551a"
+checksum = "085fb673160afc821347344a5739dc300ac7f0148bd2ba1c347ac8843a35d8c5"
 dependencies = [
  "thiserror",
 ]
 
 [[package]]
 name = "j2k-native"
-version = "0.8.1"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7c8af5bf0762fdf381b2893a56a365c9a5916ec665716c981140afdbd0e9cb76"
+checksum = "0ace22559a16f427f33b521de26f03eef5cc295be98ebf154c653bb549ffb454"
 dependencies = [
  "fearless_simd",
  "j2k-codec-math",
@@ -923,15 +925,15 @@ dependencies = [
 
 [[package]]
 name = "j2k-profile"
-version = "0.8.1"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be460f47625754ece6c087e869d80b119775d3b76b107ffaf2769b8ca5c1caca"
+checksum = "398024e7c8470f50cf95d6b27c38c348f3a3cf54283d55bd89555575f6eb415c"
 
 [[package]]
 name = "j2k-types"
-version = "0.8.1"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dae71c13c5e4c230bbc5dcf338faa3e5e45cc2906acef762e613b33110e9423d"
+checksum = "45c0bfd46538ea72f663b6f93af8d9cb309cf85033322de29a8db5c201e885da"
 
 [[package]]
 name = "jni"
@@ -1523,7 +1525,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -1579,7 +1581,7 @@ dependencies = [
  "security-framework",
  "security-framework-sys",
  "webpki-root-certs",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -1870,7 +1872,7 @@ dependencies = [
  "getrandom 0.4.3",
  "once_cell",
  "rustix",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -2295,7 +2297,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
