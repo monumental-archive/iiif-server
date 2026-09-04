@@ -12,6 +12,21 @@ over the surface named in [MAINTENANCE.md](MAINTENANCE.md) — the HTTP API, the
 CLI flags and the container contract. Internal Rust APIs are not covered:
 nothing in this workspace is published to a registry.
 
+## [0.2.3](https://github.com/monumental-archive/iiif-server/compare/v0.2.2...v0.2.3) - 2026-09-04
+
+### Fixed
+
+- validate the published image, not a local tag ([#133](https://github.com/monumental-archive/iiif-server/pull/133))
+- lock file maintenance ([#138](https://github.com/monumental-archive/iiif-server/pull/138))
+- update hyper to 1 ([#147](https://github.com/monumental-archive/iiif-server/pull/147))
+
+### Dependencies
+
+- update github/codeql-action to v4.37.8 ([#142](https://github.com/monumental-archive/iiif-server/pull/142))
+- update eclipse-temurin to b4c93a5 ([#143](https://github.com/monumental-archive/iiif-server/pull/143))
+- update maven to 8f6ac12 ([#145](https://github.com/monumental-archive/iiif-server/pull/145))
+- update github/codeql-action to v4.37.9 ([#146](https://github.com/monumental-archive/iiif-server/pull/146))
+
 ## [0.2.2](https://github.com/monumental-archive/iiif-server/compare/v0.2.1...v0.2.2) - 2026-08-21
 
 ### Fixed
