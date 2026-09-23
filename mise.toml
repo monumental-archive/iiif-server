@@ -51,7 +51,7 @@ rust = [
 # binary carries its dependency tree in the .dep-v0 linker section, so
 # a scanner reading the IMAGE sees the Rust surface of the artifact
 # inside it. Without it every SBOM this image carries would be empty.
-"cargo:cargo-auditable" = "0.7.5"
+"cargo:cargo-auditable" = "0.7.6"
 # Build input of lint:fuzz-build / audit:fuzz (.github#316); cargo
 # backend, sanitizer-none on the stable pin.
 "cargo:cargo-fuzz" = "0.13.2"
