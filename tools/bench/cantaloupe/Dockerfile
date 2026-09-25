@@ -56,7 +56,7 @@ RUN sed -i \
     && mvn -q -DskipTests -Dmaven.javadoc.skip=true package \
     && mv target/cantaloupe-*-SNAPSHOT.jar /cantaloupe.jar
 
-FROM eclipse-temurin:25-jre-noble@sha256:b4c93a50fc67612798db73d68ca3b0ee4ebdd51736e59cca370e689b9797037e
+FROM eclipse-temurin:25-jre-noble@sha256:b573af9e331196fbc42e246da4df24df9b6c556c73e7efddfde0511f1c9508c5
 
 # Current security patches for the base's OS packages (temurin images lag
 # Ubuntu's archive between rebuilds); versionless by necessity, upgrade-only.
