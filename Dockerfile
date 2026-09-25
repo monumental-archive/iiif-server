@@ -26,7 +26,7 @@
 # unpinned file inside a signed artifact. Measured 2026-08-21 — this
 # digest ships etc/ssl/certs/ca-certificates.crt as a regular file,
 # 179359 bytes. Renovate rolls tag and digest together.
-FROM alpine:3.24@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b AS certs
+FROM alpine:3.24@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6 AS certs
 
 FROM scratch
 
