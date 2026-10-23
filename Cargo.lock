@@ -354,9 +354,9 @@ dependencies = [
 
 [[package]]
 name = "fearless_simd"
-version = "0.4.1"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b97b65636e5b9ef369943878ac74335ba1c55c1cb6adbf1e2c293c624248d693"
+checksum = "3296eb97d869113eaf148a6bdf01884e90b3828ad7ae2340b0f93362fc158611"
 
 [[package]]
 name = "find-msvc-tools"
@@ -880,11 +880,10 @@ checksum = "8f42a60cbdf9a97f5d2305f08a87dc4e09308d1276d28c869c684d7777685682"
 
 [[package]]
 name = "j2k"
-version = "0.8.1"
+version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0371832fbd6d4e7c83ab85545bb41474f91f565dd1e5660b733de11b54a257eb"
+checksum = "c8c3cc0d5f49422f37927ed5b865841b5e0890237161f5f3040071102d187c85"
 dependencies = [
- "j2k-codec-math",
  "j2k-core",
  "j2k-native",
  "j2k-types",
@@ -894,24 +893,27 @@ dependencies = [
 
 [[package]]
 name = "j2k-codec-math"
-version = "0.8.1"
+version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "165366ed0d18b737c6f6cd2c3ffeb20c94dc40aac70e77c2f6dd1c8b518aec3e"
+checksum = "04025e5d58825d896d179cff67595ac9d7f353953c83447fe5fb3a2073c869b4"
+dependencies = [
+ "j2k-types",
+]
 
 [[package]]
 name = "j2k-core"
-version = "0.8.1"
+version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "058401c1957538158b1565d0b9453f8165ca0fc62e85197849364971d4be551a"
+checksum = "e95fe1ed3855b263af459102af993bddc5d8f0689df7b38867831c7bdbd28848"
 dependencies = [
  "thiserror",
 ]
 
 [[package]]
 name = "j2k-native"
-version = "0.8.1"
+version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7c8af5bf0762fdf381b2893a56a365c9a5916ec665716c981140afdbd0e9cb76"
+checksum = "e4b859611e68319bf3314c120c1ceb50328573425704e35a6e18e4b52fcdfa87"
 dependencies = [
  "fearless_simd",
  "j2k-codec-math",
@@ -923,15 +925,15 @@ dependencies = [
 
 [[package]]
 name = "j2k-profile"
-version = "0.8.1"
+version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be460f47625754ece6c087e869d80b119775d3b76b107ffaf2769b8ca5c1caca"
+checksum = "56c9223478fda6a5e89a31cb340e2952d1808c0655743b565f321c31e6f07dad"
 
 [[package]]
 name = "j2k-types"
-version = "0.8.1"
+version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dae71c13c5e4c230bbc5dcf338faa3e5e45cc2906acef762e613b33110e9423d"
+checksum = "18f2e00877fbd526d5a56fc2e06bb93429c9b13d9cb25a30d0f8aff349a73d5e"
 
 [[package]]
 name = "jni"
