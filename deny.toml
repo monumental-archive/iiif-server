@@ -53,10 +53,8 @@ skip = [
   { crate = "crypto-common@0.1.7", reason = "digest 0.10 (via crc-fast) lags the 0.2 line" },
   { crate = "digest@0.10.7", reason = "crc-fast has not moved to digest 0.11" },
   { crate = "getrandom@0.2.17", reason = "ring still on the 0.2 line" },
-  { crate = "getrandom@0.3.4", reason = "rand 0.9 (via proptest) still on the 0.3 line" },
+  { crate = "miniz_oxide@0.8.9", reason = "png 0.18 still on the 0.8 line; the rest of the tree is on 0.9" },
   { crate = "quick-error@1.2.3", reason = "rusty-fork (proptest) still on the 1.x line" },
-  { crate = "rand@0.9.5", reason = "proptest has not moved to rand 0.10" },
-  { crate = "rand_core@0.9.5", reason = "proptest's rand 0.9 tree" },
   { crate = "syn@2.0.119", reason = "several proc-macro crates lag the syn 3 move" },
 ]
 
