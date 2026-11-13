@@ -27,7 +27,7 @@ concurrency:
 
 jobs:
   publish:
-    uses: monumental-archive/.github/.github/workflows/publish.yml@36420f8cc4762682a1945b9e55f9c5ce3a7811c6 # v1.60.0
+    uses: monumental-archive/.github/.github/workflows/publish.yml@d2e99dd346342426be4d54d585b188f0dce1f857 # v1.63.0
     with:
       # One class. The published artifact is the container image and
       # nothing else: the crates are workspace-internal (`publish =
