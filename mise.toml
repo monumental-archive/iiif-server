@@ -46,6 +46,11 @@ rust = [
   # which implies -Zbuild-std and rebuilds the standard library from
   # source.
   { version = "nightly-2026-07-20", components = "rust-src" },
+  # The MSRV toolchain: Cargo.toml promises rust-version 1.96, and
+  # lint:msrv compiles at exactly the version promised rather than
+  # trusting the stable pin to stand in for it. Move this line and
+  # rust-version together, never one alone.
+  { version = "1.96.0" },
 ]
 # Build input of the oci-image class's prepare script: the shipped
 # binary carries its dependency tree in the .dep-v0 linker section, so
