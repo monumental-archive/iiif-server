@@ -53,7 +53,18 @@ cd "$(dirname "$0")/.."
 root_dir=$(pwd)
 # Fixture tools (libvips, libmagic) — mise exec auto-installs, but the
 # mise-where lookup below does not, so install explicitly (idempotent).
-mise --cd "${root_dir}/tools/fixtures" install --quiet
+#
+# The fixture root opts out of locked mode, and says why in its own
+# file. The belt exports MISE_LOCKED=1 into every CI job, and an
+# environment variable outranks a config setting, so under the belt the
+# opt-out lost and the install died on "locked mode requires lockfile
+# to be enabled" before a validator was ever fetched (#140). The
+# variable is cleared for the fixture-root invocations and for nothing
+# else: every other mise call in this process tree keeps locked mode.
+fixture_mise() {
+  env -u MISE_LOCKED mise --cd "${root_dir}/tools/fixtures" "$@"
+}
+fixture_mise install --quiet
 gen=${root_dir}/tests/fixtures/generated
 mkdir -p "${gen}"
 
@@ -68,7 +79,7 @@ fi
 
 # 2. Convert to the pyramidal TIFF the server serves.
 if [ ! -f "${gen}/validation.tif" ]; then
-  mise --cd "${root_dir}/tools/fixtures" exec conda:libvips -- vips tiffsave \
+  fixture_mise exec conda:libvips -- vips tiffsave \
     "${gen}/${REF_NAME}.png" "${gen}/validation.tif" \
     --tile --tile-width 256 --tile-height 256 \
     --pyramid --compression deflate
@@ -97,7 +108,7 @@ done
 # console script's own `#!/bin/sh` shebang would strip DYLD_* through
 # macOS SIP, so we run the interpreter directly on the script instead of
 # exec'ing the script.
-libmagic_dir="$(mise --cd "${root_dir}/tools/fixtures" where conda:libmagic)/lib"
+libmagic_dir="$(fixture_mise where conda:libmagic)/lib"
 venv="${gen}/validator-venv"
 if [ ! -x "${venv}/bin/python" ]; then
   uv venv --quiet "${venv}"
