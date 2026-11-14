@@ -43,5 +43,10 @@ jobs:
       # measured on stele's standup, where this template's silence was
       # the one gate finding).
       contents: read # checkout of this repo and of the toolbelt
-    uses: monumental-archive/.github/.github/workflows/ci.yml@b331d229dc79895cd2be3060e81dc7e68ec8a42a # v1.64.1
+    secrets:
+      # The coverage shield's one producer: the gate's upload job skips
+      # clean without this, and the shield then reads "unknown" for
+      # ever (.github#1161). The org secret is readable by every repo.
+      codecov-token: ${{ secrets.CODECOV_TOKEN }}
+    uses: monumental-archive/.github/.github/workflows/ci.yml@be91bd2fb94d12fada94c1344dd2b98da20dc336 # v1.64.3
 ...

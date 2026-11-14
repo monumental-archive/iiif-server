@@ -8,13 +8,13 @@
 [![SLSA dependency](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fmonumental-archive%2Fiiif-server%2Flevels%2Fiiif-server%2Fdependency.shield.json)](https://raw.githubusercontent.com/monumental-archive/iiif-server/levels/iiif-server/dependency.report.json)
 <!-- pending (human step): OpenSSF Best Practices — answer the form from docs/best-practices.md, then set 'bestpractices <BP_ID>' in .badge-states and re-run fix:badges -->
 [![REUSE status](https://api.reuse.software/badge/github.com/monumental-archive/iiif-server)](https://api.reuse.software/info/github.com/monumental-archive/iiif-server)
+[![license](https://img.shields.io/badge/license-AGPL--3.0--only-blue)](LICENSES/)
 [![coverage](https://codecov.io/gh/monumental-archive/iiif-server/branch/main/graph/badge.svg)](https://codecov.io/gh/monumental-archive/iiif-server)
+[![release](https://img.shields.io/github/v/release/monumental-archive/iiif-server)](https://github.com/monumental-archive/iiif-server/releases/latest)
 [![ghcr iiif-server](https://img.shields.io/badge/ghcr.io-monumental--archive%2Fiiif--server-blue)](https://github.com/orgs/monumental-archive/packages/container/package/iiif-server)
+[![image](https://img.shields.io/badge/image-%3C25%20MB-blue)](scripts/check_image_size.sh)
 [![fair-software](https://img.shields.io/badge/fair--software.eu-%E2%97%8F%20%E2%97%8F%20%E2%97%8F%20%E2%97%8B%20%E2%97%8B-orange)](https://fair-software.eu)
 <!-- badges:end -->
-[![release](https://img.shields.io/github/v/release/monumental-archive/iiif-server)](https://github.com/monumental-archive/iiif-server/releases/latest)
-[![image size](https://img.shields.io/badge/image-%3C25%20MB-blue)](scripts/check_image_size.sh)
-[![license](https://img.shields.io/badge/license-AGPL--3.0--only-blue.svg)](LICENSE)
 
 A complete, correct, boring implementation of the [IIIF Image
 API](https://iiif.io/api/image/3.0/) — **3.0 and 2.1, level 2 plus the
