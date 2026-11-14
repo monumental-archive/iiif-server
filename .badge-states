@@ -5,3 +5,7 @@
 # reuse: 'pending' until FSFE registration confirms, then 'registered'.
 bestpractices pending
 reuse registered
+# static: a claim of this repository's own (.github#1161) —
+# 'static <path> <label>=<message>', where <path> is the tracked file
+# that enforces it. The release refuses an image over 25 MB unpacked.
+static scripts/check_image_size.sh image=<25 MB
