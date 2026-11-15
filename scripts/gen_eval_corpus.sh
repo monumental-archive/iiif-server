@@ -21,7 +21,8 @@ root_dir=$(pwd)
 gen=${root_dir}/tests/fixtures/generated/eval
 mkdir -p "${gen}"
 tmp=$(mktemp -d)
-trap 'rm -rf "${tmp}"' EXIT
+rc=0
+trap 'rc=$?; rm -rf "${tmp}"; [ -n "${org_done:-}" ] || [ "${rc}" -ne 0 ] || rc=1; exit "${rc}"' EXIT
 
 vips() {
   mise --cd "${root_dir}/tools/fixtures" exec conda:libvips -- vips "$@"
@@ -63,6 +64,7 @@ for f in scan_partial_ll.jp2 scan_partial_r20.jp2 scan_untiled_ll.jp2 \
 done
 if [ "${done_all}" = true ]; then
   echo "eval corpus already present in ${gen}"
+  org_done=1
   exit 0
 fi
 
@@ -111,3 +113,4 @@ rm -f "${tmp}/large.ppm"
 
 echo "eval corpus:"
 ls -la "${gen}"
+org_done=1

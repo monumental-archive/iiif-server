@@ -19,7 +19,8 @@ root_dir=$(pwd)
 gen=${root_dir}/tests/fixtures/generated
 mkdir -p "${gen}"
 tmp=$(mktemp -d)
-trap 'rm -rf "${tmp}"' EXIT
+rc=0
+trap 'rc=$?; rm -rf "${tmp}"; [ -n "${org_done:-}" ] || [ "${rc}" -ne 0 ] || rc=1; exit "${rc}"' EXIT
 
 opj() {
   tool=$1
@@ -100,3 +101,4 @@ done
 
 echo "spike2 fixtures:"
 ls -la "${gen}"/spike2_*
+org_done=1

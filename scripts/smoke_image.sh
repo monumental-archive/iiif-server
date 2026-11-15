@@ -24,7 +24,8 @@ root_dir=$(pwd)
 cleanup() {
   docker rm -f "${container}" > /dev/null 2>&1 || true
 }
-trap cleanup EXIT
+rc=0
+trap 'rc=$?; cleanup; [ -n "${org_done:-}" ] || [ "${rc}" -ne 0 ] || rc=1; exit "${rc}"' EXIT
 
 fail() {
   echo "FAIL: $*" >&2
@@ -94,3 +95,4 @@ echo "    exited 0"
 
 rm -f /tmp/smoke-derivative.jpg
 echo "PASS: ${image}"
+org_done=1

@@ -22,7 +22,12 @@ docker rm -f "${CONTAINER}" > /dev/null 2>&1 || true
 docker run -d --name "${CONTAINER}" -p "${PORT}:9000" \
   minio/minio server /data > /dev/null
 server_pid=0
-trap 'docker rm -f "${CONTAINER}" >/dev/null 2>&1 || true; kill "${server_pid}" 2>/dev/null || true' EXIT
+cleanup() {
+  docker rm -f "${CONTAINER}" > /dev/null 2>&1 || true
+  kill "${server_pid}" 2> /dev/null || true
+}
+rc=0
+trap 'rc=$?; cleanup; [ -n "${org_done:-}" ] || [ "${rc}" -ne 0 ] || rc=1; exit "${rc}"' EXIT
 
 for _ in $(seq 1 60); do
   if curl -sf "http://127.0.0.1:${PORT}/minio/health/ready" > /dev/null 2>&1; then
@@ -85,4 +90,5 @@ assert got == expected, f"pixel mismatch: {got} != {expected}"
 print(f"ok   pixel {got} matches pattern")
 EOF
 
-exit "${fail}"
+[ "${fail}" -eq 0 ] || exit "${fail}"
+org_done=1

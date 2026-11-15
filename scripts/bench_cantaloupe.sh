@@ -77,7 +77,8 @@ cleanup() {
   ours_stop
   cant_stop
 }
-trap cleanup EXIT
+rc=0
+trap 'rc=$?; cleanup; [ -n "${org_done:-}" ] || [ "${rc}" -ne 0 ] || rc=1; exit "${rc}"' EXIT
 ours_pid=0
 cant_stop # remove any leftover container from an aborted run
 
@@ -192,3 +193,4 @@ if [ "${PASS}" = all ] || [ "${PASS}" = cold ]; then
     i=$((i + 1))
   done
 fi
+org_done=1
