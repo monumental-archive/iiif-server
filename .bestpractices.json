@@ -21,7 +21,7 @@
   "osps_br_02_01_status": "Met",
   "osps_br_02_02_justification": "Verified on the published release v0.2.3: every asset is named for the release (iiif-server-0.2.3.spdx.json, iiif-server-0.2.3-image.spdx.json, sbom-image-iiif-server-0.2.3.spdx.json) and each is bound by digest in checksums.txt and in the attestations.intoto.jsonl evidence bundle; the container image is tagged v0.2.3 in GHCR and attested by digest. https://github.com/monumental-archive/iiif-server/releases/tag/v0.2.3",
   "osps_br_02_02_status": "Met",
-  "osps_br_03_01_justification": "Every official channel is HTTPS: the repository, releases, documentation and issue tracker are all served by GitHub over TLS, and no plaintext URI appears in the tree.",
+  "osps_br_03_01_justification": "Every official channel is HTTPS: the repository, releases, issue tracker and documentation are served by GitHub, and the image by GHCR, over TLS. The http:// strings in the source are the IIIF JSON-LD context and profile identifiers, which the specification fixes verbatim as identifiers, not channels. https://github.com/monumental-archive/iiif-server",
   "osps_br_03_01_status": "Met",
   "osps_br_03_02_justification": "The distributed artifact is the container image, served by GHCR over HTTPS and authenticated beyond transport: it is signed keylessly with build provenance, and docs/deployment.md 'Verifying what you pulled' gives the `gh attestation verify` command that checks the signer identity and source ref. Release assets are bound by digest in checksums.txt and attestations.intoto.jsonl. https://github.com/monumental-archive/iiif-server/blob/main/docs/deployment.md#verifying-what-you-pulled",
   "osps_br_03_02_status": "Met",
