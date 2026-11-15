@@ -9,6 +9,15 @@ publish = false
 [package.metadata]
 cargo-fuzz = true
 
+# Its own workspace root, as `cargo fuzz init` writes it. The root
+# manifest's `exclude = ["fuzz"]` only shields a checkout with no cargo
+# workspace above it; from a worktree nested inside another checkout,
+# cargo's upward walk would reach that checkout's manifest and refuse
+# this package (.github#1290).
+# Use independent workspace for fuzzers
+[workspace]
+members = ["."]
+
 # Lint canon: renovate-config templates/rust-lints/Cargo-lints.toml —
 # mirrored from the main workspace (this manifest cannot inherit). Keep in
 # lockstep.
