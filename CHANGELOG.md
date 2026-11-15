@@ -12,6 +12,17 @@ over the surface named in [MAINTENANCE.md](MAINTENANCE.md) — the HTTP API, the
 CLI flags and the container contract. Internal Rust APIs are not covered:
 nothing in this workspace is published to a registry.
 
+## [0.3.0](https://github.com/monumental-archive/iiif-server/compare/v0.2.4...v0.3.0) - 2026-11-15
+
+### Added
+
+- make iiif-server citable with a version doi per release ([#208](https://github.com/monumental-archive/iiif-server/pull/208))
+
+### Documentation
+
+- wear the openssf best practices badge ([#199](https://github.com/monumental-archive/iiif-server/pull/199))
+- cite where each assurance-case control runs today ([#201](https://github.com/monumental-archive/iiif-server/pull/201))
+
 ## [0.2.4](https://github.com/monumental-archive/iiif-server/compare/v0.2.3...v0.2.4) - 2026-11-15
 
 ### Fixed
