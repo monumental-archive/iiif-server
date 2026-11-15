@@ -25,7 +25,11 @@ fi
 docker rm -f "${CONTAINER}" > /dev/null 2>&1 || true
 docker run -d --name "${CONTAINER}" -p "${PORT}:9000" \
   minio/minio server /data > /dev/null
-trap 'docker rm -f "${CONTAINER}" >/dev/null 2>&1 || true' EXIT
+cleanup() {
+  docker rm -f "${CONTAINER}" > /dev/null 2>&1 || true
+}
+rc=0
+trap 'rc=$?; cleanup; [ -n "${org_done:-}" ] || [ "${rc}" -ne 0 ] || rc=1; exit "${rc}"' EXIT
 
 # Wait for MinIO, then create the bucket.
 for _ in $(seq 1 60); do
@@ -39,3 +43,4 @@ mise exec aqua:minio/mc -- mc --quiet alias set spikeminio \
 mise exec aqua:minio/mc -- mc --quiet mb "spikeminio/${SPIKE_BUCKET}" > /dev/null
 
 cargo run --release -p iiif-sources --example objstore_spike
+org_done=1

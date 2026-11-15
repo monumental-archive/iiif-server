@@ -18,7 +18,8 @@ root_dir=$(pwd)
 gen=${root_dir}/tests/fixtures/generated
 mkdir -p "${gen}"
 tmp=$(mktemp -d)
-trap 'rm -rf "${tmp}"' EXIT
+rc=0
+trap 'rc=$?; rm -rf "${tmp}"; [ -n "${org_done:-}" ] || [ "${rc}" -ne 0 ] || rc=1; exit "${rc}"' EXIT
 
 # Smooth photographic-ish pattern: JPEG-friendly (bounded error), position
 # identifiable (gradients + low-frequency color waves).
@@ -62,3 +63,4 @@ done
 
 echo "spike1 fixtures:"
 ls -la "${gen}"/spike1_*
+org_done=1

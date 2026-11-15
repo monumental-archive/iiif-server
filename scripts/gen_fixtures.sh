@@ -17,7 +17,8 @@ cd "$(dirname "$0")/.."
 root_dir=$(pwd)
 mkdir -p "${root_dir}/tests/fixtures"
 tmp=$(mktemp -d)
-trap 'rm -rf "${tmp}"' EXIT
+rc=0
+trap 'rc=$?; rm -rf "${tmp}"; [ -n "${org_done:-}" ] || [ "${rc}" -ne 0 ] || rc=1; exit "${rc}"' EXIT
 
 python3 - "${tmp}/pattern.ppm" << 'EOF'
 import sys
@@ -64,3 +65,4 @@ cd "${root_dir}" && shasum -a 256 tests/fixtures/*.tif tests/fixtures/*.jp2 \
   tests/fixtures/*.jpg tests/fixtures/*.png > tests/fixtures/SHA256SUMS
 echo "regenerated:"
 cat "${root_dir}/tests/fixtures/SHA256SUMS"
+org_done=1

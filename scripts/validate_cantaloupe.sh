@@ -50,7 +50,11 @@ docker run -d --name validate-cant -m 4g -p "127.0.0.1:${PORT}:8182" \
   "${IMAGE}" \
   java -Xmx2g -Dcantaloupe.config=/opt/cantaloupe/cantaloupe.properties \
   -jar /opt/cantaloupe/cantaloupe.jar > /dev/null
-trap 'docker rm -f validate-cant >/dev/null 2>&1 || true' EXIT
+cleanup() {
+  docker rm -f validate-cant > /dev/null 2>&1 || true
+}
+rc=0
+trap 'rc=$?; cleanup; [ -n "${org_done:-}" ] || [ "${rc}" -ne 0 ] || rc=1; exit "${rc}"' EXIT
 for _ in $(seq 1 180); do
   curl -sf "http://127.0.0.1:${PORT}/health" > /dev/null 2>&1 && break
   sleep 0.5
@@ -80,3 +84,4 @@ case "${api_version}" in
     exit 2
     ;;
 esac
+org_done=1

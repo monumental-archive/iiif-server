@@ -93,7 +93,8 @@ else
   cargo build --release -p iiif-server > /dev/null
   ./target/release/iiif-server serve "${gen}" --bind "${server}" &
   server_pid=$!
-  trap 'kill "${server_pid}" 2>/dev/null || true' EXIT
+  rc=0
+  trap 'rc=$?; kill "${server_pid}" 2>/dev/null || true; [ -n "${org_done:-}" ] || [ "${rc}" -ne 0 ] || rc=1; exit "${rc}"' EXIT
 fi
 for _ in $(seq 1 50); do
   if curl -sf "http://${server}/healthz" > /dev/null 2>&1; then
@@ -139,3 +140,4 @@ case "${api_version}" in
     exit 2
     ;;
 esac
+org_done=1

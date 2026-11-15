@@ -46,7 +46,8 @@ cleanup() {
   [ -z "${container}" ] || docker rm -f "${container}" > /dev/null 2>&1 || true
   rm -f "${tarball}"
 }
-trap cleanup EXIT
+rc=0
+trap 'rc=$?; cleanup; [ -n "${org_done:-}" ] || [ "${rc}" -ne 0 ] || rc=1; exit "${rc}"' EXIT
 
 fail() {
   echo "FAIL: $*" >&2
@@ -77,3 +78,4 @@ if [ "${bytes}" -gt "${ceiling}" ]; then
 fi
 
 echo "PASS: ${image} is under the ${ceiling_mb} MB ceiling"
+org_done=1

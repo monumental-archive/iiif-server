@@ -23,7 +23,8 @@ root_dir=$(pwd)
 cleanup() {
   docker rm -f "${container}" > /dev/null 2>&1 || true
 }
-trap cleanup EXIT
+rc=0
+trap 'rc=$?; cleanup; [ -n "${org_done:-}" ] || [ "${rc}" -ne 0 ] || rc=1; exit "${rc}"' EXIT
 
 # validate.sh generates the reference master itself (libvips, via mise) before
 # it validates anything, and writes it into this directory — which is bind
@@ -46,3 +47,4 @@ done
 # Deliberately not exec: the cleanup trap has to survive to remove the
 # container.
 scripts/validate.sh --server "127.0.0.1:${port}"
+org_done=1

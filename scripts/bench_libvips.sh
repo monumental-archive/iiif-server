@@ -29,7 +29,8 @@ cargo build --release -p iiif-server > /dev/null
 ./target/release/iiif-server serve "${gen}" --bind "127.0.0.1:${PORT}" \
   --max-width 20000 --max-height 20000 --max-area 400000000 &
 server_pid=0
-trap 'kill "${server_pid}" 2>/dev/null || true' EXIT
+rc=0
+trap 'rc=$?; kill "${server_pid}" 2>/dev/null || true; [ -n "${org_done:-}" ] || [ "${rc}" -ne 0 ] || rc=1; exit "${rc}"' EXIT
 server_pid=$!
 for _ in $(seq 1 50); do
   if curl -sf "http://127.0.0.1:${PORT}/healthz" > /dev/null 2>&1; then
@@ -139,3 +140,4 @@ print()
 print("gate: p50 <= 1.5x libvips, p99 <= 2x")
 sys.exit(1 if failures else 0)
 EOF
+org_done=1
