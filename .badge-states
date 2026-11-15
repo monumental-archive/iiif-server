@@ -3,7 +3,7 @@
 # the issuer, and an id set before the issuer agrees is a red Monday.
 # bestpractices: 'pending' until the form binds, then the BP_ID.
 # reuse: 'pending' until FSFE registration confirms, then 'registered'.
-bestpractices pending
+bestpractices 16735
 reuse registered
 # static: a claim of this repository's own (.github#1161) —
 # 'static <path> <label>=<message>', where <path> is the tracked file
