@@ -48,5 +48,5 @@ jobs:
       # clean without this, and the shield then reads "unknown" for
       # ever (.github#1161). The org secret is readable by every repo.
       codecov-token: ${{ secrets.CODECOV_TOKEN }}
-    uses: monumental-archive/.github/.github/workflows/ci.yml@8decfc194efeb8125bd50ca876b9b91e1de604d0 # v1.67.3
+    uses: monumental-archive/.github/.github/workflows/ci.yml@205a3b040292cd2cf3eac2473fab8cbf4f843e7a # v1.67.4
 ...
