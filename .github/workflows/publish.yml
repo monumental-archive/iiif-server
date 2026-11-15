@@ -51,6 +51,14 @@ jobs:
       # claim is made about the image a stranger pulls, not a local
       # twin.
       smoke-test: scripts/image-checks.sh
+      # An image server that libraries, museums and archives run should
+      # be citable by the people who document that infrastructure in
+      # papers and dataset descriptions. Licence and creators come from
+      # the derived CITATION.cff; the pipeline stamps version and
+      # date-released. The mint job runs LAST — after proof, after
+      # publish — so a DOI only ever cites a release that actually
+      # published.
+      mint-doi: true
     permissions:
       # The union every nested job needs. A reusable workflow can only
       # reduce what the caller grants, so a missing scope here kills the
@@ -62,4 +70,5 @@ jobs:
       packages: write # oci-image pushes to GHCR; harmless if unused
     secrets:
       app-private-key: ${{ secrets.TAG_MINT_APP_PRIVATE_KEY }}
+      zenodo-token: ${{ secrets.ZENODO_TOKEN }}
 ...
