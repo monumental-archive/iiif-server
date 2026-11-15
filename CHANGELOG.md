@@ -12,6 +12,24 @@ over the surface named in [MAINTENANCE.md](MAINTENANCE.md) — the HTTP API, the
 CLI flags and the container contract. Internal Rust APIs are not covered:
 nothing in this workspace is published to a registry.
 
+## [0.2.4](https://github.com/monumental-archive/iiif-server/compare/v0.2.3...v0.2.4) - 2026-11-15
+
+### Fixed
+
+- lock file maintenance ([#144](https://github.com/monumental-archive/iiif-server/pull/144))
+
+### Documentation
+
+- add the best practices self-attestation file ([#197](https://github.com/monumental-archive/iiif-server/pull/197))
+
+### CI
+
+- adopt the scheduled security release ([#195](https://github.com/monumental-archive/iiif-server/pull/195))
+
+### Dependencies
+
+- update alpine to f59abe6 ([#192](https://github.com/monumental-archive/iiif-server/pull/192))
+
 ## [0.2.3](https://github.com/monumental-archive/iiif-server/compare/v0.2.2...v0.2.3) - 2026-11-14
 
 ### Fixed
