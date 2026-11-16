@@ -14,3 +14,7 @@ repository-code: https://github.com/monumental-archive/iiif-server
 license: AGPL-3.0-only
 version: 0.3.0
 date-released: 2026-11-15
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.24267359
+    description: The concept DOI of the software.
