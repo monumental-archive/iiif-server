@@ -11,7 +11,7 @@
 [![REUSE status](https://api.reuse.software/badge/github.com/monumental-archive/iiif-server)](https://api.reuse.software/info/github.com/monumental-archive/iiif-server)
 [![license](https://img.shields.io/badge/license-AGPL--3.0--only-blue)](LICENSES/)
 [![coverage](https://codecov.io/gh/monumental-archive/iiif-server/branch/main/graph/badge.svg)](https://codecov.io/gh/monumental-archive/iiif-server)
-<!-- pending (first mint): DOI — the concept DOI lands in CITATION.cff after the first release mints it; re-run fix:badges -->
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24267359.svg)](https://doi.org/10.5281/zenodo.24267359)
 [![release](https://img.shields.io/github/v/release/monumental-archive/iiif-server)](https://github.com/monumental-archive/iiif-server/releases/latest)
 [![ghcr iiif-server](https://img.shields.io/badge/ghcr.io-monumental--archive%2Fiiif--server-blue)](https://github.com/orgs/monumental-archive/packages/container/package/iiif-server)
 [![image](https://img.shields.io/badge/image-%3C25%20MB-blue)](scripts/check_image_size.sh)
