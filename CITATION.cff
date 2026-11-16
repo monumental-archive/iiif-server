@@ -12,5 +12,5 @@ authors:
     given-names: Carl
 repository-code: https://github.com/monumental-archive/iiif-server
 license: AGPL-3.0-only
-version: 0.2.4
+version: 0.3.0
 date-released: 2026-11-15
