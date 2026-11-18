@@ -20,5 +20,5 @@ jobs:
   audit:
     permissions:
       contents: read # the audit reads the tree and the advisory feed
-    uses: monumental-archive/.github/.github/workflows/repo-audit.yml@c2cd9d9dd4167b6ac3f6727cc077e247a8c0b47c # v1.70.0
+    uses: monumental-archive/.github/.github/workflows/repo-audit.yml@d6dc516e7e57ad2c9da9025bc5d65778ed479ecf # v1.70.2
 ...
