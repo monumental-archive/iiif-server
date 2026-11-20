@@ -120,6 +120,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "87a0cf66fd1eb2fb7b822cb78370d82303750809bc6ba855f3f58e517d3238db"
 
 [[package]]
+name = "bytemuck"
+version = "1.25.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "95832e849adfb21180ccb6826a99da14e5d266ae5c2e668e1602cf234f153797"
+
+[[package]]
 name = "byteorder-lite"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -388,9 +394,9 @@ dependencies = [
 
 [[package]]
 name = "fearless_simd"
-version = "0.4.1"
+version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b97b65636e5b9ef369943878ac74335ba1c55c1cb6adbf1e2c293c624248d693"
+checksum = "629c9d6b6f30b5604089e0980f4d924a013aacb1654a6cdf5d3d852224f68651"
 
 [[package]]
 name = "find-msvc-tools"
@@ -904,39 +910,45 @@ checksum = "3bd1574e617a9a6c1f8f8181bd7e841e1f20e4277607ef28945765188d6284d4"
 
 [[package]]
 name = "j2k"
-version = "0.8.1"
+version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0371832fbd6d4e7c83ab85545bb41474f91f565dd1e5660b733de11b54a257eb"
+checksum = "505afd1045f2cc7b7570789a435978d5a059773ac3a2868876e330185c9daeb2"
 dependencies = [
- "j2k-codec-math",
  "j2k-core",
  "j2k-native",
  "j2k-types",
  "moxcms",
+ "rayon",
  "thiserror",
 ]
 
 [[package]]
 name = "j2k-codec-math"
-version = "0.8.1"
+version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "165366ed0d18b737c6f6cd2c3ffeb20c94dc40aac70e77c2f6dd1c8b518aec3e"
+checksum = "7fca2353bc4e3e990c7f749491d132095d9475fa2bb2227a4aecd62441494323"
+dependencies = [
+ "j2k-types",
+]
 
 [[package]]
 name = "j2k-core"
-version = "0.8.1"
+version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "058401c1957538158b1565d0b9453f8165ca0fc62e85197849364971d4be551a"
+checksum = "cc87cbba1b8db392e32554cf48ca9bdb24f6d4eca6a4ee7c96515b1b022adb08"
 dependencies = [
+ "libc",
  "thiserror",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
 name = "j2k-native"
-version = "0.8.1"
+version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7c8af5bf0762fdf381b2893a56a365c9a5916ec665716c981140afdbd0e9cb76"
+checksum = "5dd69d012d7ec6040f7b8b6b783f8a1239a5575a155ee7941eea5185ead39a37"
 dependencies = [
+ "bytemuck",
  "fearless_simd",
  "j2k-codec-math",
  "j2k-profile",
@@ -947,15 +959,15 @@ dependencies = [
 
 [[package]]
 name = "j2k-profile"
-version = "0.8.1"
+version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be460f47625754ece6c087e869d80b119775d3b76b107ffaf2769b8ca5c1caca"
+checksum = "b0d6fe6c9e6ea9ca7fd3425fcc8fca7d4facb46c5517a29070828879ee83f05a"
 
 [[package]]
 name = "j2k-types"
-version = "0.8.1"
+version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dae71c13c5e4c230bbc5dcf338faa3e5e45cc2906acef762e613b33110e9423d"
+checksum = "1b15b058e26501024f6b593100165c86b3af4c19af9fc7383e67310aad412cd1"
 
 [[package]]
 name = "jni"
