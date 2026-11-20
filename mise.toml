@@ -63,7 +63,7 @@ rust = [
 
 [tasks.test]
 description = "The workspace test suite, all features, against the reviewed lockfile"
-run = "cargo test --workspace --all-features --locked"
+run = '"${ORG_BELT_DIR}/measured" cargo test --workspace --all-features --locked'
 
 [tasks."lint:docs"]
 description = "rustdoc builds clean and the doc tests pass (warnings are errors)"
