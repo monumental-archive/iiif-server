@@ -17,6 +17,6 @@ pin = true
 minimum_release_age = "72h"
 
 [tools]
-"conda:libvips" = "8.18.4"
+"conda:libvips" = "8.18.7"
 "conda:openjpeg" = "2.5.4"
 "conda:libmagic" = "5.48"
