@@ -51,7 +51,7 @@ url = "https://github.com/rust-secure-code/cargo-auditable/releases/download/v0.
 url_api = "https://api.github.com/repos/rust-secure-code/cargo-auditable/releases/assets/605646426"
 
 [[tools.rust]]
-version = "1.97.1"
+version = "1.100.0"
 backend = "core:rust"
 
 [tools.rust.options]
