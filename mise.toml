@@ -27,11 +27,6 @@ shell = "bash -euo pipefail -c"
 # a pinned input, and this is the one pin in the org Renovate cannot
 # bump.
 FUZZ_TOOLCHAIN = "nightly-2026-07-20"
-# How long each target fuzzes on the Monday cron. 300 rather than the
-# 60s floor: the four targets parse bytes someone else produced (URL
-# grammar, identifiers, v2 grammar, master images), which is exactly
-# the surface worth the extra executions on a weekly public cron.
-FUZZ_SECONDS = "300"
 
 [tools]
 # Two toolchains, both locked by mise. The stable pin builds and
