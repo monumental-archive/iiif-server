@@ -12,6 +12,21 @@ over the surface named in [MAINTENANCE.md](MAINTENANCE.md) — the HTTP API, the
 CLI flags and the container contract. Internal Rust APIs are not covered:
 nothing in this workspace is published to a registry.
 
+## [0.3.1](https://github.com/monumental-archive/iiif-server/compare/v0.3.0...v0.3.1) - 2026-11-21
+
+### Changed
+
+- turn the five inner allows into expects ([#228](https://github.com/monumental-archive/iiif-server/pull/228))
+
+### Documentation
+
+- record the concept doi minted by the first release ([#211](https://github.com/monumental-archive/iiif-server/pull/211))
+
+### Dependencies
+
+- update maven to 851ccd7 ([#221](https://github.com/monumental-archive/iiif-server/pull/221))
+- update conda:libvips to 8.18.7 ([#225](https://github.com/monumental-archive/iiif-server/pull/225))
+
 ## [0.3.0](https://github.com/monumental-archive/iiif-server/compare/v0.2.4...v0.3.0) - 2026-11-15
 
 ### Added

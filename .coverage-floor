@@ -1,10 +1,11 @@
 # Coverage floor -- DERIVED STATE, not a number to edit (#652).
 #
 # The release machinery re-derives this file at every release:
-# floor = measured - band, and the floor only rises. A release whose
-# measurement falls below floor + band FAILS, loudly; the resolution is
-# tests, or a conscious reset recorded in place of the derivation below
-# (replace the `measured` and `derived` lines with `reset: <reason>`).
+# floor = min(90, measured - band), and the floor never falls. A
+# release whose measurement falls below the floor FAILS, loudly; the
+# resolution is tests, or a conscious reset recorded in place of the
+# derivation below (replace the `measured` and `derived` lines with
+# `reset: <reason>`).
 # `coverage:check` refuses a floor that disagrees with this record as
 # drift, and never repairs it. `legs` names the legs the floor holds
 # (#1666): a leg it names that a run measures nothing of is red, and a
@@ -12,7 +13,7 @@
 #
 # band: 2
 # measured: 74.1
-# derived: coverage:adopt
+# derived: v0.3.1
 # legs: rust
 72.1
 #
