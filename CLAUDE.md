@@ -92,6 +92,10 @@ changed.
   carries its own committed `Cargo.lock`. `lint:fuzz-build` compiles the
   targets on stable in the gate; `audit:fuzz` runs them under
   AddressSanitizer on the dated nightly, on the Monday cron.
+  Each target's corpus is committed under `fuzz/corpus/<target>/`:
+  `master_open` links to the image fixtures, and the grammar targets
+  hold `seed-NN` files curated from the tests' own literals. A crash
+  input the fuzzer finds is committed beside them as a regression seed.
 - **A new Rust or shell file carries the same two-line SPDX header every
   other one carries** — a copyright line and a licence-identifier line
   naming AGPL-3.0-only — above the `//!` docs in Rust and below the
