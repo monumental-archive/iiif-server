@@ -1,0 +1,8 @@
+# Mutation testing (canon #1355, iiif-server #220): tracking this file
+# adopts the belt's `audit:mutants` Rust leg, run weekly by the canon's
+# repo-mutants.yml and never in the gate or the audit. Every workspace
+# crate is mutated; the fuzz crate is outside the workspace and stays
+# outside. The measure is no unexplained surviving mutant: kill a
+# survivor with an assertion, or record it here as an `exclude_re`
+# entry with a `#` line above it saying why the mutant is equivalent.
+# Never `#[mutants::skip]` (a dependency in shipped code).
