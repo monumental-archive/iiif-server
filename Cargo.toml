@@ -51,14 +51,6 @@ all = { level = "warn", priority = -1 }
 pedantic = { level = "warn", priority = -1 }
 nursery = { level = "warn", priority = -1 }
 cargo = { level = "warn", priority = -1 }
-# Conflicts with rustc's unreachable_pub (each lint's fix triggers the
-# other on pub(crate) items in private modules); the compiler-native lint
-# wins. Recorded in the template README.
-redundant_pub_crate = "allow"
-# Duplicate-version policy lives in cargo-deny (multiple-versions = deny
-# with reasoned, pinned skips); clippy's copy of the check has no skip
-# mechanism, so it would just re-flag the recorded exceptions.
-multiple_crate_versions = "allow"
 # restriction tier: individual opt-ins, each a recorded decision (see the
 # template README).
 unwrap_used = "warn"
