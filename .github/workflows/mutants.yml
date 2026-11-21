@@ -1,0 +1,34 @@
+# The repo-side weekly mutation run (#1355). This stub is a repository's
+# entire mutation obligation: which languages' legs run, and how the run
+# is sharded, is repo-mutants.yml's business, so a leg the canon adds
+# later reaches this repository on its next pin bump with nothing to
+# edit here. A repository adopts a language by tracking that tool's own
+# config: `.cargo/mutants.toml` for Rust, a root `cosmic-ray.toml` for
+# Python (#1771), and a root
+# `.gomuignore` with no pattern for Go (#1356), and a root
+# `stryker.config.json` for TypeScript (#1358). Without one every leg
+# skips clean by name. Its own workflow, apart from the audit, so a
+# survivor reds this run and never the audit's.
+---
+name: mutation-tests
+
+"on":
+  schedule:
+    # Mondays 07:00 UTC, an hour after the audit: its own slot.
+    - cron: 0 7 * * 1
+  workflow_dispatch: {}
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  mutants:
+    permissions:
+      contents: read # this repository's contents, read-only
+      issues: write # the callee's report job: its workflow's red-check issue (#1887)
+      actions: read # the callee's report job: the run's job list and job logs (#1887)
+    uses: monumental-archive/.github/.github/workflows/repo-mutants.yml@fc7e077dca7378fe88854de97cd9900617ab1f53 # v1.73.0
+...
