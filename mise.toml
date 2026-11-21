@@ -87,9 +87,10 @@ description = "The official IIIF validators (v3 level 2 + v2.1) against a built 
 # this is not.
 #
 # IT HAS A SCHEDULER NOW, and that is why the default below is not a
-# local tag. The canon's repo-audit.yml collects `mise run audit` —
-# every audit:* a caller defines — since .github#704, and this
-# repository's audit stub is pinned past it, so the Monday cron runs
+# local tag. The canon's repo-own-audits.yml collects `mise run audit`
+# — every audit:* a caller defines — since .github#704 (in
+# repo-audit.yml until .github#1858), and this repository's own-audits
+# stub is pinned past it, so the Monday cron runs
 # this task. A cron runner has no locally built image, so the previous
 # default (iiif-server:local) would have failed on a missing image the
 # first time it fired. Found before it fired, not after.
