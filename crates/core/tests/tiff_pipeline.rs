@@ -29,7 +29,7 @@
               integration test IS. The crate under test is held to every \
               one of these."
 )]
-#![allow(
+#![expect(
     clippy::unwrap_used,
     clippy::expect_used,
     reason = "test/bench code: a panic here is the failure signal, not a crash path"
