@@ -36,11 +36,9 @@
               integration test IS. The crate under test is held to every \
               one of these."
 )]
-#![allow(
-    clippy::unwrap_used,
+#![expect(
     clippy::expect_used,
     clippy::print_stdout,
-    clippy::print_stderr,
     reason = "diagnostic spike harness: prints findings, panics are failures"
 )]
 

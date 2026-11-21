@@ -34,7 +34,7 @@
               an integration test IS. The crate under test is held to all of \
               these — this is the harness that proves it."
 )]
-#![allow(
+#![expect(
     clippy::print_stdout,
     reason = "spike harness: measured timings/deltas are the test's output"
 )]
