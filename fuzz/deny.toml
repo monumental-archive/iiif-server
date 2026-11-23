@@ -51,6 +51,10 @@ private = { ignore = true }
 # duplicate would silently exempt every other repo. One policy, one home,
 # at the layer that can describe a single tree.
 wildcards = "deny"
+# The one path dependency (iiif-core) is the parent workspace, not a
+# registry requirement; a path cannot carry an unpinned version. The
+# root deny.toml carries the same allowance.
+allow-wildcard-paths = true
 multiple-versions = "deny"
 # Reached through iiif-core, the same laggards the root deny.toml skips;
 # each pin is the OLD version, so the entry dies with the laggard.

@@ -5,14 +5,8 @@
 //! Successful opens additionally serve one bounded crop through the full
 //! pipeline (decode → resize → encode).
 #![no_main]
-#![expect(
-    clippy::std_instead_of_core,
-    reason = "open_master needs Read + Seek over the fuzz input; the \
-              core::io::Cursor the lint suggests is unstable (core_io), \
-              and the lint ignores an expectation on the use item"
-)]
 
-use std::io::Cursor;
+use std::io;
 
 use iiif_core::codec::open_master;
 use iiif_core::eval::evaluate;
@@ -29,7 +23,7 @@ const MAX_PIXELS: u64 = 16_000_000;
 const MAX_EDGE: u32 = 512;
 
 fuzz_target!(|data: &[u8]| {
-    let Ok(mut master) = open_master(Cursor::new(data.to_vec())) else {
+    let Ok(mut master) = open_master(io::Cursor::new(data.to_vec())) else {
         return;
     };
     let (width, height) = master.dimensions();
