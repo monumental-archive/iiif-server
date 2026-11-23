@@ -12,6 +12,35 @@ over the surface named in [MAINTENANCE.md](MAINTENANCE.md) — the HTTP API, the
 CLI flags and the container contract. Internal Rust APIs are not covered:
 nothing in this workspace is published to a registry.
 
+## [0.3.1](https://github.com/monumental-archive/iiif-server/compare/v0.3.0...v0.3.1) - 2026-11-23
+
+### Changed
+
+- turn the five inner allows into expects ([#228](https://github.com/monumental-archive/iiif-server/pull/228))
+- drop dead single_call_fn and test-module expectations ([#247](https://github.com/monumental-archive/iiif-server/pull/247))
+
+### Fixed
+
+- update url to 2.5.9 (#239) ([#240](https://github.com/monumental-archive/iiif-server/pull/240))
+- lock file maintenance ([#243](https://github.com/monumental-archive/iiif-server/pull/243))
+
+### Documentation
+
+- record the concept doi minted by the first release ([#211](https://github.com/monumental-archive/iiif-server/pull/211))
+
+### Testing
+
+- commit a seed corpus for all four fuzz targets ([#232](https://github.com/monumental-archive/iiif-server/pull/232))
+
+### Build
+
+- hold the fuzz crate to the clippy ladder and deny ([#241](https://github.com/monumental-archive/iiif-server/pull/241))
+
+### Dependencies
+
+- update maven to 851ccd7 ([#221](https://github.com/monumental-archive/iiif-server/pull/221))
+- update conda:libvips to 8.18.7 ([#225](https://github.com/monumental-archive/iiif-server/pull/225))
+
 ## [0.3.0](https://github.com/monumental-archive/iiif-server/compare/v0.2.4...v0.3.0) - 2026-11-15
 
 ### Added
