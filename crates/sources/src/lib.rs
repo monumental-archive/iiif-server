@@ -6,16 +6,6 @@
 //! M0 ships the local-filesystem backend; `object_store` backends arrive
 //! at M4 through the same seam.
 
-#![expect(
-    clippy::single_call_fn,
-    reason = "each is a named step called once from the backend it belongs \
-          to — `LocalFile::open` from the `LocalRoot` resolver, \
-          `read_exact_at` from the blocking read. Folding them into \
-          their callers would put path resolution and positional I/O \
-          in the same body, which is the seam this crate exists to \
-          keep separate."
-)]
-
 extern crate alloc;
 
 use alloc::sync::Arc;

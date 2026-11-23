@@ -17,14 +17,11 @@
     clippy::missing_panics_doc,
     clippy::panic,
     clippy::std_instead_of_core,
-    clippy::tests_outside_test_module,
     reason = "test and example code. A panic IS the failure signal here, so \
               `# Panics` sections and assertion messages would describe the \
               mechanism the harness works by; fixtures are indexed and \
-              scaled with arithmetic over constants in the file above them; \
-              and a `#[test]` at the top level of a `tests/` file is what an \
-              integration test IS. The crate under test is held to every \
-              one of these."
+              scaled with arithmetic over constants in the file above them. \
+              The crate under test is held to every one of these."
 )]
 #![expect(
     clippy::unwrap_used,

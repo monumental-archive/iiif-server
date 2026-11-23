@@ -21,13 +21,6 @@
           a shared reference` — and what satisfies the lint is `ref` \
           bindings, the pre-2018 style default binding modes replaced."
 )]
-#![expect(
-    clippy::single_call_fn,
-    reason = "the response helpers and the route classifier are each called \
-          once, from the one handler that needs them. Folding them into \
-          it would put routing, CORS and every error mapping in one \
-          body."
-)]
 
 extern crate alloc;
 

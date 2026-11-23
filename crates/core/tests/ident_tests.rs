@@ -6,15 +6,12 @@
 #![expect(
     clippy::min_ident_chars,
     clippy::missing_panics_doc,
-    clippy::tests_outside_test_module,
     clippy::unwrap_used,
     reason = "test and example code. A panic IS the failure signal here, so \
               `# Panics` sections and assertion messages would describe the \
               mechanism the harness works by; fixtures are indexed and \
-              scaled with arithmetic over constants in the file above them; \
-              and a `#[test]` at the top level of a `tests/` file is what an \
-              integration test IS. The crate under test is held to every \
-              one of these."
+              scaled with arithmetic over constants in the file above them. \
+              The crate under test is held to every one of these."
 )]
 
 use iiif_core::ident::{Identifier, IdentifierError};
