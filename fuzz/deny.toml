@@ -1,0 +1,120 @@
+# Org dependency policy (docs/dependency-track.md in monumental-archive/.github).
+# Copied from the canon's scaffold/deny.toml and sized to the fuzz
+# workspace's own graph (fuzz/Cargo.lock): iiif-core plus libfuzzer-sys.
+# lint:deny (gate) runs bans+licenses+sources over it, audit:deny (Monday
+# cron) runs advisories.
+#
+# The gate half is deterministic: outcome is a function of Cargo.lock plus
+# this file. The advisory half is a moving feed and lives outside the gate.
+
+[graph]
+# All targets: the lock is one artifact; policy must not vary by the
+# machine that happens to evaluate it.
+all-features = true
+
+[licenses]
+# Pure allowlist — anything not named here is denied by default (the only
+# shape the current config offers; the old copyleft/osi knobs are gone).
+# Additions are a canon decision, not a repo edit.
+#
+# Sized to the fuzz graph: the scaffold's licences this lock never
+# reaches are dropped, and two it does reach are added.
+allow = [
+  "MIT",
+  "Apache-2.0",
+  "Unicode-3.0",
+  # jpeg-encoder (via iiif-core) is (MIT OR Apache-2.0) AND IJG; IJG is
+  # the Independent JPEG Group's permissive notice licence, already
+  # allowed for the same crate in the root deny.toml.
+  "IJG",
+  # libfuzzer-sys is (MIT OR Apache-2.0) AND NCSA: it vendors LLVM's
+  # libFuzzer, which is under the University of Illinois/NCSA licence
+  # (permissive, OSI-approved). A fuzz harness cannot run without it.
+  "NCSA",
+]
+# The harness itself is publish = false; its AGPL-3.0 parent is
+# unpublished too. Neither is a dependency anyone receives.
+private = { ignore = true }
+
+[bans]
+# A `*` requirement is an unpinned intention — deny. Duplicate transitive
+# versions are a gate failure too (#445): the tree is a thing the repo
+# resolves, not a thing it tolerates. Where upstream genuinely forces a
+# duplicate, the exit is a written `[[bans.skip]]` entry citing the
+# upstream issue — a decision recorded once, in the repo whose tree it
+# describes, never a standing warning nobody reads.
+#
+# This is the org's ONLY statement of the duplicate policy.
+# `clippy::multiple_crate_versions` says the same thing and is allowed in
+# the canon's clippy.toml for exactly that reason (docs/dependency-track.md):
+# its allow-list is canon-owned and org-wide, so one repo's unavoidable
+# duplicate would silently exempt every other repo. One policy, one home,
+# at the layer that can describe a single tree.
+wildcards = "deny"
+# The one path dependency (iiif-core) is the parent workspace, not a
+# registry requirement; a path cannot carry an unpinned version. The
+# root deny.toml carries the same allowance.
+allow-wildcard-paths = true
+multiple-versions = "deny"
+# Reached through iiif-core, the same laggards the root deny.toml skips;
+# each pin is the OLD version, so the entry dies with the laggard.
+skip = [
+  { crate = "miniz_oxide@0.8.9", reason = "png 0.18 still on the 0.8 line; the rest of the tree is on 0.9" },
+  { crate = "syn@2.0.119", reason = "several proc-macro crates lag the syn 3 move" },
+]
+
+[bans.build]
+# Every crate in the fuzz graph with a build script, enumerated from
+# fuzz/Cargo.lock; all but libfuzzer-sys are iiif-core's, as the root
+# deny.toml lists them.
+allow-build-scripts = [
+  "crc32fast",
+  "crossbeam-deque",
+  "crossbeam-epoch",
+  "crossbeam-utils",
+  "crunchy",
+  "getrandom",
+  "j2k-codec-math",
+  "libc",
+  # Compiles the vendored libFuzzer C++ runtime the targets link
+  # against; that runtime is what drives every fuzz target.
+  "libfuzzer-sys",
+  "libm",
+  "num-traits",
+  "proc-macro2",
+  "quote",
+  "rayon-core",
+  "serde",
+  "serde_core",
+  "serde_json",
+  "thiserror",
+  "zerocopy",
+  "zmij",
+]
+executables = "deny"
+interpreted = "deny"
+enable-builtin-globs = true
+
+# Reviewed script shipment, one the root deny.toml bypasses too.
+[[bans.build.bypass]]
+crate = "zerocopy"
+# CI/release helper scripts left in the published crate, never executed
+# by build.rs.
+allow-globs = ["ci/**", "*.sh", "*.bat"]
+
+[sources]
+# Where dependencies come from is a gated invariant: crates.io only.
+# A git or alternate-registry dependency is a decision for the canon,
+# recorded here as an allow entry, never a repo-local default.
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+
+[advisories]
+# Defaults are already maximal: every advisory class errors. The only
+# exit is the decision in the canon's security/vex/, keyed by advisory,
+# package and version: audit:deny hands cargo-deny's scan to stele,
+# which judges it against those decisions (the L2 contract: known,
+# decided, written down — once). Write no `ignore` here: an advisory
+# ignore is a second copy keyed by the advisory alone, and lint:deny
+# refuses it (#1926).
