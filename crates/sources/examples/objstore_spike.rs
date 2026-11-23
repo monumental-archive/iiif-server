@@ -27,7 +27,6 @@
     clippy::missing_docs_in_private_items,
     clippy::missing_panics_doc,
     clippy::shadow_unrelated,
-    clippy::single_call_fn,
     reason = "test and example code. A panic IS the failure signal here, so \
               `# Panics` sections and assertion messages would describe the \
               mechanism the harness works by; fixtures are indexed and \

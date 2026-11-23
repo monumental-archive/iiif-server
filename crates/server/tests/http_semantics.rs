@@ -15,7 +15,6 @@
     clippy::shadow_unrelated,
     clippy::single_char_lifetime_names,
     clippy::std_instead_of_alloc,
-    clippy::tests_outside_test_module,
     clippy::unwrap_used,
     reason = "test and example code. A panic IS the failure signal, so \
               `# Panics` sections and assertion messages would describe \

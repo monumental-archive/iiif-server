@@ -5,22 +5,18 @@
 //! parser total-safety (never panics on arbitrary input).
 
 #![expect(
-    clippy::tests_outside_test_module,
     clippy::absolute_paths,
     clippy::default_numeric_fallback,
     clippy::min_ident_chars,
     clippy::missing_panics_doc,
     clippy::shadow_reuse,
-    clippy::single_call_fn,
     clippy::unwrap_used,
     clippy::wildcard_enum_match_arm,
     reason = "test and example code. A panic IS the failure signal here, so \
               `# Panics` sections and assertion messages would describe the \
               mechanism the harness works by; fixtures are indexed and \
-              scaled with arithmetic over constants in the file above them; \
-              and a `#[test]` at the top level of a `tests/` file is what an \
-              integration test IS. The crate under test is held to every \
-              one of these."
+              scaled with arithmetic over constants in the file above them. \
+              The crate under test is held to every one of these."
 )]
 
 use iiif_core::grammar::{Format, ImageRequest, Quality, Region, Rotation, Size, SizeKind};
