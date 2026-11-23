@@ -24,7 +24,6 @@
     clippy::missing_panics_doc,
     clippy::print_stdout,
     clippy::shadow_same,
-    clippy::single_call_fn,
     reason = "test and example code. A panic IS the failure signal, so \
               `# Panics` sections and assertion messages would describe \
               the mechanism the harness works by; fixtures are indexed and \

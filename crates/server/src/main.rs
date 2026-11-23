@@ -17,13 +17,6 @@
     reason = "`core::io` and friends are not stable on this toolchain; the \
               suggestion does not compile (E0658, `core_io`)."
 )]
-#![expect(
-    clippy::single_call_fn,
-    reason = "each is a named step of `main`'s dispatch — one per \
-              subcommand, one for the shutdown future, one for the arg \
-              parse. Folding them into `main` would put the whole binary \
-              in one body."
-)]
 
 extern crate alloc;
 

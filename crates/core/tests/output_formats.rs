@@ -20,14 +20,12 @@
     clippy::panic,
     clippy::shadow_unrelated,
     clippy::std_instead_of_core,
-    clippy::tests_outside_test_module,
     clippy::unwrap_used,
     reason = "integration-test code. A panic IS the failure signal, so \
               `# Panics` sections and assertion messages would describe the \
               mechanism a test works by; fixtures are indexed and scaled \
               with arithmetic whose operands are constants in the file above \
-              it; and a `#[test]` at the top level of a `tests/` file is what \
-              an integration test IS. The crate under test is held to all of \
+              it. The crate under test is held to all of \
               these — this is the harness that proves it."
 )]
 
