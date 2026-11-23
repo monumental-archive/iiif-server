@@ -89,8 +89,11 @@ changed.
   wildcard bans, reasoned skips for duplicate versions. `deny.toml` is
   repo content — its skips describe this tree.
 - The fuzz workspace (`fuzz/`) is excluded from the main workspace and
-  carries its own committed `Cargo.lock`. `lint:fuzz-build` compiles the
-  targets on stable in the gate; `audit:fuzz` runs them under
+  carries its own committed `Cargo.lock`, `rust-version` (the parent's)
+  and `fuzz/deny.toml` (sized to the fuzz graph; it adds NCSA and the
+  `libfuzzer-sys` build script). It is held to the same clippy ladder as
+  the main workspace. `lint:fuzz-build` compiles the targets on stable
+  in the gate; `audit:fuzz` runs them under
   AddressSanitizer on the dated nightly, on the Monday cron.
   Each target's corpus is committed under `fuzz/corpus/<target>/`:
   `master_open` links to the image fixtures, and the grammar targets

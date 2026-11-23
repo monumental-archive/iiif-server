@@ -5,15 +5,18 @@
 //! value round-trips through its canonical printing.
 #![no_main]
 
+use core::str::from_utf8;
+
+use iiif_core::grammar::ImageRequest;
 use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|data: &[u8]| {
-    let Ok(input) = std::str::from_utf8(data) else {
+    let Ok(input) = from_utf8(data) else {
         return;
     };
-    if let Ok(request) = iiif_core::grammar::ImageRequest::parse(input) {
+    if let Ok(request) = ImageRequest::parse(input) {
         let printed = request.to_string();
-        let reparsed = iiif_core::grammar::ImageRequest::parse(&printed);
+        let reparsed = ImageRequest::parse(&printed);
         assert_eq!(reparsed, Ok(request), "round-trip mismatch for {input:?}");
     }
 });
