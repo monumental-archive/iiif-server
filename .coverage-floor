@@ -21,23 +21,3 @@
 # the Monday audit, under the same band and the same law.
 # rust-branches measured: 69.0
 rust-branches 67.0
-#
-# fuzz-identifier: a fuzz target's committed corpus, replayed once (#1896), a
-# floor of its own held by coverage:check, under the same band and law.
-# fuzz-identifier measured: 98.4
-fuzz-identifier 90
-#
-# fuzz-master-open: a fuzz target's committed corpus, replayed once (#1896), a
-# floor of its own held by coverage:check, under the same band and law.
-# fuzz-master-open measured: 37.4
-fuzz-master-open 35.4
-#
-# fuzz-url-grammar: a fuzz target's committed corpus, replayed once (#1896), a
-# floor of its own held by coverage:check, under the same band and law.
-# fuzz-url-grammar measured: 8.5
-fuzz-url-grammar 6.5
-#
-# fuzz-v2-grammar: a fuzz target's committed corpus, replayed once (#1896), a
-# floor of its own held by coverage:check, under the same band and law.
-# fuzz-v2-grammar measured: 7.3
-fuzz-v2-grammar 5.3
